@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/joho/godotenv"
+	"github.com/varrcan/dl/cmd"
 	"log"
 	"os"
 )
@@ -13,12 +14,14 @@ var colorGreen = "\033[32m"
 func init() {
 	// загрузить переменные из .env
 	if err := godotenv.Load(); err != nil {
-		log.Println(colorRed, "No .env file found")
-		os.Exit(1)
+		//log.Println(colorRed, "No .env file found")
+		//os.Exit(1)
 	}
 }
 
 func main() {
+	cmd.Execute()
+
 	composeProjectName := getProjectName()
 
 	log.Println(colorGreen, composeProjectName)
