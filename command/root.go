@@ -1,17 +1,18 @@
-package cmd
+package command
 
 import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/varrcan/dl/lang"
 	"os"
 	"path/filepath"
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "dl",
-	Short: "Short dl",
-	Long:  `Long dl.`,
+	Short: lang.Text("shortDl"),
+	Long:  lang.Text("longDl"),
 }
 
 func Execute() {
@@ -19,13 +20,15 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	initConfig()
+
+	lang.SetLang("en")
 
 	usageTemplate := UsageTemplate()
 	rootCmd.SetUsageTemplate(usageTemplate)
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -55,35 +58,35 @@ func initConfig() {
 	env.SetConfigFile(".env")
 	env.SetConfigType("env")
 	env.ReadInConfig()
-	env.Debug()
+	//env.Debug()
 
 	viper.AutomaticEnv()
 }
 
 // UsageTemplate returns usage template for the command.
 func UsageTemplate() string {
-	return `Usage:{{if .Runnable}}
+	return lang.Text("rootUsage") + `:{{if .Runnable}}
   {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
   {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
 
-Aliases:
+` + lang.Text("rootAliases") + `:
   {{.NameAndAliases}}{{end}}{{if .HasExample}}
 
-Examples:
+` + lang.Text("rootExample") + `:
 {{.Example}}{{end}}{{if .HasAvailableSubCommands}}
 
-Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+` + lang.Text("rootAvailable") + `:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
   {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
 
-Flags:
+` + lang.Text("rootFlags") + `:
 {{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
 
-Global Flags:
+` + lang.Text("rootGlobalFlags") + `:
 {{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
 
-Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+` + lang.Text("rootAdditionalHelp") + `:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
   {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
 
-Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
+` + lang.Text("rootUseHelp") + ` "{{.CommandPath}} [command] --help" ` + lang.Text("rootUseHelpMore") + `{{end}}
 `
 }

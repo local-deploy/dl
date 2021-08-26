@@ -1,0 +1,13 @@
+{
+  "shortDl": "Short DL",
+  "longDl": "Long DL",
+  "rootUsage": "Usage",
+  "rootAliases": "Aliases",
+  "rootExample": "Example",
+  "rootAvailable": "Available Commands",
+  "rootFlags": "Flags",
+  "rootGlobalFlags": "Global Flags",
+  "rootAdditionalHelp": "Additional help topics",
+  "rootUseHelp": "Use",
+  "rootUseHelpMore": "for more information about a command."
+}

@@ -1,15 +1,15 @@
 package lang
 
 import (
-	"golang.org/x/text/language"
-	"golang.org/x/text/message"
-	"golang.org/x/text/message/catalog"
+	"github.com/bykovme/gotrans"
 )
 
-func trans() {
-	lang, _ := language.Parse("ru")
-	_ = message.Set(language.Russian, "Hello {name}", catalog.String("Привет %s"))
-	hello := message.NewPrinter(lang).Sprintf("Hello {name}", "Andrey")
-	panic(hello)
-	//Output: Привет Andrey
+func Text(key string) string {
+	_ = gotrans.InitLocales("./lang")
+
+	return gotrans.T(key)
+}
+
+func SetLang(locale string) {
+	_ = gotrans.SetDefaultLocale(locale)
 }

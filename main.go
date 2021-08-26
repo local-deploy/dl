@@ -2,16 +2,16 @@ package main
 
 import (
 	"github.com/spf13/viper"
-	"github.com/varrcan/dl/cmd"
+	"github.com/varrcan/dl/command"
 )
 
 var colorRed = "\033[31m"
 var colorGreen = "\033[32m"
 
 func main() {
-	cmd.Execute()
+	command.Execute()
 
-	viper.Debug()
+	//viper.Debug()
 
 	//composeProjectName := getProjectName()
 	//
