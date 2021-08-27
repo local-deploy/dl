@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/bykovme/gotrans v1.1.0
+	github.com/dixonwille/wmenu/v5 v5.1.0
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/joho/godotenv v1.3.0 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.1.2 // indirect
