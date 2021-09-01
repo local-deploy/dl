@@ -22,7 +22,8 @@ func Execute() {
 func init() {
 	initConfig()
 
-	lang.SetLang("en")
+	//lang.SetLang(viper.GetString("lang"))
+	//lang.SetLang("en")
 
 	usageTemplate := UsageTemplate()
 	rootCmd.SetUsageTemplate(usageTemplate)
@@ -36,6 +37,8 @@ func initConfig() {
 	home, err := os.UserHomeDir()
 	configDir := filepath.Join(home, ".dl")
 	cobra.CheckErr(err)
+
+	//viper.SetDefault("lang", "en")
 
 	viper.AddConfigPath(configDir)
 	viper.SetConfigType("yaml")
@@ -52,12 +55,12 @@ func initConfig() {
 		}
 	}
 
-	env := viper.New()
-
-	env.AddConfigPath("./")
-	env.SetConfigFile(".env")
-	env.SetConfigType("env")
-	env.ReadInConfig()
+	//env := viper.New()
+	//
+	//env.AddConfigPath("./")
+	//env.SetConfigFile(".env")
+	//env.SetConfigType("env")
+	//env.ReadInConfig()
 	//env.Debug()
 
 	viper.AutomaticEnv()
