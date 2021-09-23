@@ -12,7 +12,4 @@ var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Application configuration",
 	Long:  `Menu for setting up the application.`,
-	//Run: func(cmd *cobra.Command, args []string) {
-	//	configMenu()
-	//},
 }

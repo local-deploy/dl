@@ -7,7 +7,8 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "dl",
 	Short: "Deploy Local",
-	Long:  "Deploy Local",
+	Long: `Deploy Local — site deployment assistant locally.
+Complete documentation is available at https://dl.varme.pw/`,
 }
 
 func Execute() {
