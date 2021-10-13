@@ -3,7 +3,7 @@ package command
 import (
 	"context"
 	"fmt"
-	"github.com/docker/docker/integration/network"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/go-connections/nat"
 	"github.com/spf13/cobra"
 	"io"
@@ -30,64 +30,56 @@ var upCmd = &cobra.Command{
 func up() {
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		panic(err)
-	}
+	handleError(err)
 
-	imageName := "traefik:latest"
+	imageName := "traefik:2.5.3"
 
 	out, err := cli.ImagePull(ctx, imageName, types.ImagePullOptions{})
-	if err != nil {
-		panic(err)
-	}
-	io.Copy(os.Stdout, out)
+	_, err = io.Copy(os.Stdout, out)
+	handleError(err)
 
-	isNet := network.IsNetworkNotAvailable(cli, "traefik_default")
-	if isNet().Success() {
-		_, err = cli.NetworkCreate(ctx, "traefik_default", types.NetworkCreate{})
+	if isNotNet(cli) {
+		_, err = cli.NetworkCreate(ctx, localNetworkName, types.NetworkCreate{})
 	}
 
-	resp, err := cli.ContainerCreate(ctx, &container.Config{
-		ExposedPorts: nil,
-		Env:          nil,
-		Cmd:          []string{"--api.insecure=true", " --providers.docker", " --providers.docker.network=traefik_default", " --providers.docker.exposedByDefault=false"},
-		Image:        imageName,
-		Volumes: map[string]struct{}{
-			"/var/run/docker.sock": {},
-		},
-		WorkingDir: "",
-		Entrypoint: []string{"/entrypoint.sh"},
-		OnBuild:    nil,
-		Labels:     nil,
-	}, &container.HostConfig{
-		Binds: []string{
-			"/var/run/docker.sock:/var/run/docker.sock:ro",
-		},
-		NetworkMode: "traefik_default",
-		IpcMode:     "private",
-		PortBindings: nat.PortMap{
-			nat.Port("8080/tcp"): []nat.PortBinding{{HostIP: "0.0.0.0", HostPort: "8080"}},
-		},
-		RestartPolicy: container.RestartPolicy{
-			Name: "always",
-		},
-		AutoRemove:      false,
-		VolumeDriver:    "",
-		VolumesFrom:     nil,
-		DNS:             nil,
-		DNSOptions:      nil,
-		DNSSearch:       nil,
-		Links:           nil,
-		Privileged:      false,
-		PublishAllPorts: false,
-	}, nil, nil, "dl-traefik")
-	if err != nil {
-		panic(err)
+	containerFilters := filters.NewArgs(filters.Arg("name", "dl-traefik"))
+	isExists, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerFilters})
+
+	if len(isExists) > 0 {
+		err := cli.ContainerRestart(ctx, isExists[0].ID, nil)
+		handleError(err)
+
+		fmt.Println("Container restarted")
+		return
 	}
 
-	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
-		panic(err)
-	}
+	//TODO: https://tilrnt.github.io/golang/network/2017/12/30/golang-check-for-open-ports.html
+
+	resp, err := cli.ContainerCreate(ctx,
+		&container.Config{
+			Cmd:        []string{"--api.insecure=true", " --providers.docker", " --providers.docker.network=dl_default", " --providers.docker.exposedByDefault=false"},
+			Image:      imageName,
+			Volumes:    map[string]struct{}{"/var/run/docker.sock": {}},
+			Entrypoint: []string{"/entrypoint.sh"},
+			Labels:     map[string]string{"com.docker.compose.project": "dl-services"},
+			ExposedPorts: nat.PortSet{
+				"8080/tcp": {},
+				"80/tcp":   {},
+			},
+		},
+		&container.HostConfig{
+			Binds:         []string{"/var/run/docker.sock:/var/run/docker.sock:ro"},
+			NetworkMode:   container.NetworkMode(localNetworkName),
+			RestartPolicy: container.RestartPolicy{Name: "always", MaximumRetryCount: 10},
+			PortBindings: nat.PortMap{
+				nat.Port("8080/tcp"): []nat.PortBinding{{HostIP: "0.0.0.0", HostPort: "8080"}},
+				nat.Port("80/tcp"):   []nat.PortBinding{{HostIP: "0.0.0.0", HostPort: "80"}},
+			},
+		}, nil, nil, "dl-traefik")
+	handleError(err)
+
+	err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
+	handleError(err)
 
 	fmt.Println(resp.ID)
 }

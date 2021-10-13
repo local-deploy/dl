@@ -2,6 +2,7 @@ package command
 
 import (
 	"github.com/spf13/cobra"
+	"log"
 )
 
 var rootCmd = &cobra.Command{
@@ -9,6 +10,12 @@ var rootCmd = &cobra.Command{
 	Short: "Deploy Local",
 	Long: `Deploy Local — site deployment assistant locally.
 Complete documentation is available at https://dl.varme.pw/`,
+}
+
+func handleError(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func Execute() {
