@@ -14,7 +14,7 @@ Complete documentation is available at https://dl.varme.pw/`,
 
 func handleError(err error) {
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 }
 
