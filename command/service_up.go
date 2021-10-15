@@ -7,11 +7,13 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/nat"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -64,16 +66,18 @@ func up() {
 		}
 
 		// Check ports
-		ports := local.PortBindings
+		ports := local.Ports
 		busyPort := false
 		for _, port := range ports {
-			conn, _ := net.DialTimeout("tcp", net.JoinHostPort("0.0.0.0", port[0].HostPort), time.Second)
+			rawIP, hostPort, _ := splitParts(port)
+
+			conn, _ := net.DialTimeout("tcp", net.JoinHostPort(rawIP, hostPort), time.Second)
 			if conn != nil {
 				defer func(conn net.Conn) {
 					_ = conn.Close()
 				}(conn)
 				busyPort = true
-				fmt.Printf("Unable to start container %s: port %s is busy.\n", local.Name, port[0].HostPort)
+				fmt.Printf("Unable to start container %s: port %s is busy.\n", local.Name, hostPort)
 			}
 		}
 		if busyPort {
@@ -96,6 +100,8 @@ func up() {
 		fmt.Print("Starting container ", local.Name, "... ")
 
 		// Create containers
+		exposedPorts, portBindings, _ := nat.ParsePortSpecs(local.Ports)
+
 		resp, err := cli.ContainerCreate(ctx,
 			&container.Config{
 				Cmd:          local.Cmd,
@@ -103,13 +109,13 @@ func up() {
 				Volumes:      local.Volumes,
 				Entrypoint:   local.Entrypoint,
 				Labels:       local.Labels,
-				ExposedPorts: local.Ports,
+				ExposedPorts: exposedPorts,
 				Env:          local.Env,
 			},
 			&container.HostConfig{
 				NetworkMode:   container.NetworkMode(localNetworkName),
 				RestartPolicy: container.RestartPolicy{Name: "always"},
-				PortBindings:  local.PortBindings,
+				PortBindings:  portBindings,
 				Mounts:        local.Mounts,
 			}, nil, nil, local.Name)
 		handleError(err)
@@ -121,4 +127,21 @@ func up() {
 		fmt.Println("Success")
 	}
 
+}
+
+func splitParts(rawPort string) (string, string, string) {
+	parts := strings.Split(rawPort, ":")
+	n := len(parts)
+	containerPort := parts[n-1]
+
+	switch n {
+	case 1:
+		return "", "", containerPort
+	case 2:
+		return "", parts[0], containerPort
+	case 3:
+		return parts[0], parts[1], containerPort
+	default:
+		return strings.Join(parts[:n-2], ":"), parts[n-2], containerPort
+	}
 }

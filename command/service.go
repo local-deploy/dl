@@ -4,7 +4,6 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/integration/network"
-	"github.com/docker/go-connections/nat"
 	"github.com/spf13/cobra"
 	"os"
 	"path/filepath"
@@ -12,17 +11,16 @@ import (
 
 //localServicesContainer list of container names of the local stack
 type localServicesContainer struct {
-	Name         string
-	Image        string
-	Version      string
-	Cmd          []string
-	Volumes      map[string]struct{}
-	Entrypoint   []string
-	Labels       map[string]string
-	Ports        nat.PortSet
-	Mounts       []mount.Mount
-	PortBindings nat.PortMap
-	Env          []string
+	Name       string
+	Image      string
+	Version    string
+	Cmd        []string
+	Volumes    map[string]struct{}
+	Entrypoint []string
+	Labels     map[string]string
+	Ports      []string
+	Mounts     []mount.Mount
+	Env        []string
 }
 
 func init() {
@@ -47,17 +45,14 @@ func getServicesContainer() []localServicesContainer {
 	defaultLabels := map[string]string{"com.docker.compose.project": "dl-services"}
 	containers := []localServicesContainer{
 		{
-			Name:       "dl-traefik",
+			Name:       "traefik",
 			Image:      "traefik",
 			Version:    "latest",
 			Cmd:        []string{"--api.insecure=true", "--providers.docker", "--providers.docker.network=dl_default", "--providers.docker.exposedByDefault=false"},
 			Volumes:    map[string]struct{}{"/var/run/docker.sock": {}},
 			Entrypoint: []string{"/entrypoint.sh"},
 			Labels:     defaultLabels,
-			Ports: nat.PortSet{
-				"8080/tcp": {},
-				"80/tcp":   {},
-			},
+			Ports:      []string{"0.0.0.0:8080:8080", "0.0.0.0:80:80"},
 			Mounts: []mount.Mount{
 				{
 					Type:     mount.TypeBind,
@@ -66,42 +61,29 @@ func getServicesContainer() []localServicesContainer {
 					ReadOnly: true,
 				},
 			},
-			PortBindings: nat.PortMap{
-				nat.Port("8080/tcp"): []nat.PortBinding{{HostPort: "8080"}},
-				nat.Port("80/tcp"):   []nat.PortBinding{{HostPort: "80"}},
-			},
 			Env: nil,
 		},
 		{
-			Name:       "dl-mailcatcher",
+			Name:       "mailcatcher",
 			Image:      "mailhog/mailhog",
 			Version:    "latest",
 			Cmd:        nil,
 			Volumes:    nil,
 			Entrypoint: nil,
 			Labels:     defaultLabels,
-			Ports: nat.PortSet{
-				"8025/tcp": {},
-				"1025/tcp": {},
-			},
-			Mounts: nil,
-			PortBindings: nat.PortMap{
-				nat.Port("8025/tcp"): []nat.PortBinding{{HostPort: "8025"}},
-				nat.Port("1025/tcp"): []nat.PortBinding{{HostPort: "1025"}},
-			},
-			Env: nil,
+			Ports:      []string{"0.0.0.0:8025:8025", "0.0.0.0:1025:1025"},
+			Mounts:     nil,
+			Env:        nil,
 		},
 		{
-			Name:       "dl-portainer",
+			Name:       "portainer",
 			Image:      "portainer/portainer",
 			Version:    "latest",
 			Cmd:        []string{"--no-analytics"},
 			Volumes:    map[string]struct{}{"/var/run/docker.sock:/var/run/docker.sock": {}},
 			Entrypoint: nil,
 			Labels:     defaultLabels,
-			Ports: nat.PortSet{
-				"9000/tcp": {},
-			},
+			Ports:      []string{"0.0.0.0:9000:9000"},
 			Mounts: []mount.Mount{
 				{
 					Type:     mount.TypeBind,
@@ -115,9 +97,6 @@ func getServicesContainer() []localServicesContainer {
 					Target:   "/data",
 					ReadOnly: false,
 				},
-			},
-			PortBindings: nat.PortMap{
-				nat.Port("9000/tcp"): []nat.PortBinding{{HostPort: "9000"}},
 			},
 			Env: []string{"VIRTUAL_HOST=portainer.localhost"},
 		},
