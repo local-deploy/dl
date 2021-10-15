@@ -18,9 +18,12 @@ func handleError(err error) {
 	}
 }
 
+//Execute root command
 func Execute() {
 	usageTemplate := UsageTemplate()
+
 	rootCmd.SetUsageTemplate(usageTemplate)
+	rootCmd.DisableAutoGenTag = true
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 
 	cobra.CheckErr(rootCmd.Execute())

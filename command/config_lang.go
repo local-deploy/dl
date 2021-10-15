@@ -19,6 +19,7 @@ var configLangCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		setLang()
 	},
+	Hidden: true,
 }
 
 func setLang() {
