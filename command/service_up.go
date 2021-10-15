@@ -51,8 +51,8 @@ func up() {
 	localContainers := getServicesContainer()
 
 	for _, local := range localContainers {
-		// Check running containers
-		containerFilter := filters.NewArgs(filters.Arg("name", local.Name))
+		// Check dl-services running containers
+		containerFilter := filters.NewArgs(filters.Arg("name", local.Name), filters.Arg("label", "com.docker.compose.project=dl-services"))
 		isExists, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerFilter})
 		if len(isExists) > 0 {
 			fmt.Print("Restarting container ", local.Name, "... ")
@@ -62,6 +62,18 @@ func up() {
 
 			fmt.Println("Success")
 
+			continue
+		}
+
+		// Check name running containers
+		busyName := false
+		containerNameFilter := filters.NewArgs(filters.Arg("name", local.Name))
+		isExistsName, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerNameFilter})
+		if len(isExistsName) > 0 {
+			busyName = true
+			fmt.Printf("Unable to start container %s: name is already in use by container %s.\n", local.Name, isExistsName[0].ID)
+		}
+		if busyName {
 			continue
 		}
 
@@ -126,7 +138,6 @@ func up() {
 
 		fmt.Println("Success")
 	}
-
 }
 
 func splitParts(rawPort string) (string, string, string) {

@@ -48,7 +48,7 @@ func down() {
 	handleError(err)
 
 	for _, container := range containers {
-		fmt.Print("Stopping container ", container.Names, "... ")
+		fmt.Print("Stopping container ", container.Names[0], "... ")
 		err := cli.ContainerStop(ctx, container.ID, nil)
 		err = cli.ContainerRemove(ctx, container.ID, types.ContainerRemoveOptions{
 			RemoveVolumes: true,
