@@ -11,8 +11,10 @@ import (
 
 func init() {
 	serviceCmd.AddCommand(downCmd)
+	downCmd.Flags().StringVarP(&source, "service", "s", "", "Stop and remove single service")
 }
 
+var source string
 var downCmd = &cobra.Command{
 	Use:   "down",
 	Short: "Stop and remove services",
@@ -31,7 +33,15 @@ func down() {
 
 	containerFilters := filters.NewArgs()
 	for _, container := range localContainers {
+		if len(source) > 0 && source != container.Name {
+			continue
+		}
 		containerFilters.Add("name", container.Name)
+	}
+
+	if containerFilters.Len() == 0 {
+		fmt.Println("Unknown service")
+		return
 	}
 
 	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerFilters})
@@ -49,7 +59,7 @@ func down() {
 		fmt.Println("Success")
 	}
 
-	if isNet(cli) {
+	if isNet(cli) && len(source) == 0 {
 		netFilters := filters.NewArgs(filters.Arg("name", localNetworkName))
 		list, err := cli.NetworkList(ctx, types.NetworkListOptions{Filters: netFilters})
 		err = cli.NetworkRemove(ctx, list[0].ID)
