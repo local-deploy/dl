@@ -2,12 +2,12 @@ package command
 
 import (
 	"context"
-	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"net"
@@ -34,6 +34,8 @@ var upCmd = &cobra.Command{
 }
 
 func up() {
+	pterm.DisableColor()
+
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 
@@ -41,16 +43,27 @@ func up() {
 	home, err := os.UserHomeDir()
 	portainerDataDir := filepath.Join(home, ".dl/portainer_data")
 	if _, err := os.Stat(portainerDataDir); err != nil {
+		spinnerCreateDir, _ := pterm.DefaultSpinner.Start("Creating a directory for portainer")
 		if os.IsNotExist(err) {
-			_ = os.Mkdir(portainerDataDir, 0755)
+			err = os.Mkdir(portainerDataDir, 0755)
+			if err != nil {
+				spinnerCreateDir.Warning("Error creating directory for portainer")
+			}
 		}
+		spinnerCreateDir.Success("Portainer directory created")
 	}
 
 	handleError(err)
 
 	// Check network
 	if isNotNet(cli) {
+		spinnerNet, _ := pterm.DefaultSpinner.Start("Network creation")
 		_, err = cli.NetworkCreate(ctx, localNetworkName, types.NetworkCreate{})
+		if err != nil {
+			spinnerNet.Fail("Network creation error")
+			return
+		}
+		spinnerNet.Success("Network successfully created")
 	}
 
 	localContainers := getServicesContainer()
@@ -67,12 +80,13 @@ func up() {
 			if !recreate {
 				continue
 			}
-			fmt.Print("Restarting container ", local.Name, "... ")
 
+			spinnerRecreate, _ := pterm.DefaultSpinner.Start("Restarting container " + local.Name)
 			err := cli.ContainerRestart(ctx, isExists[0].ID, nil)
-			handleError(err)
-
-			fmt.Println("Success")
+			if err != nil {
+				spinnerRecreate.Warning("Container " + local.Name + " cannot be recreated")
+			}
+			spinnerRecreate.Success("Container " + local.Name + " has been successfully recreated")
 
 			continue
 		}
@@ -83,7 +97,7 @@ func up() {
 		isExistsName, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerNameFilter})
 		if len(isExistsName) > 0 {
 			busyName = true
-			fmt.Printf("Unable to start container %s: name is already in use by container %s.\n", local.Name, isExistsName[0].ID)
+			pterm.Warning.Printfln("Unable to start container %s: name is already in use by container %s", isExistsName[0].ID, local.Name)
 		}
 		if busyName {
 			continue
@@ -100,7 +114,7 @@ func up() {
 					_ = conn.Close()
 				}(conn)
 				busyPort = true
-				fmt.Printf("Unable to start container %s: port %s is busy.\n", local.Name, hostPort)
+				pterm.Warning.Printfln("Unable to start container %s: port %s is busy.", local.Name, hostPort)
 			}
 		}
 		if busyPort {
@@ -111,16 +125,19 @@ func up() {
 		imageFiler := filters.NewArgs(filters.Arg("reference", local.Image+":"+local.Version))
 		isImageExists, err := cli.ImageList(ctx, types.ImageListOptions{All: true, Filters: imageFiler})
 		if len(isImageExists) == 0 {
-			fmt.Print("Pulling image ", local.Image, "... ")
+			spinnerPulling, _ := pterm.DefaultSpinner.WithRemoveWhenDone(true).Start("Pulling image " + local.Name)
 
 			out, err := cli.ImagePull(ctx, local.Image+":"+local.Version, types.ImagePullOptions{})
 			_, err = ioutil.ReadAll(out)
-			handleError(err)
+			if err != nil {
+				spinnerPulling.Warning("Unable to load image: " + err.Error())
+				return
+			}
 
-			fmt.Println("Success")
+			spinnerPulling.Success("Image downloaded successfully")
 		}
 
-		fmt.Print("Starting container ", local.Name, "... ")
+		spinnerStarting, _ := pterm.DefaultSpinner.Start("Starting container " + local.Name)
 
 		// Create containers
 		exposedPorts, portBindings, _ := nat.ParsePortSpecs(local.Ports)
@@ -147,7 +164,7 @@ func up() {
 		err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
 		handleError(err)
 
-		fmt.Println("Success")
+		spinnerStarting.Success("Container " + local.Name + " started")
 	}
 }
 

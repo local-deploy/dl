@@ -6,6 +6,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"strings"
 )
@@ -25,6 +26,8 @@ var downCmd = &cobra.Command{
 }
 
 func down() {
+	pterm.DisableColor()
+
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	handleError(err)
@@ -48,21 +51,30 @@ func down() {
 	handleError(err)
 
 	for _, container := range containers {
-		fmt.Print("Stopping container ", strings.TrimPrefix(container.Names[0], "/"), "... ")
+		containerName := strings.TrimPrefix(container.Names[0], "/")
+
+		spinnerStopping, _ := pterm.DefaultSpinner.Start("Stopping and remove container " + containerName)
 		err := cli.ContainerStop(ctx, container.ID, nil)
+
+		spinnerStopping.UpdateText("Removing container" + containerName)
 		err = cli.ContainerRemove(ctx, container.ID, types.ContainerRemoveOptions{
 			RemoveVolumes: true,
 			Force:         true,
 		})
 
-		handleError(err)
-		fmt.Println("Success")
+		if err != nil {
+			spinnerStopping.Fail("Error while deleting container " + containerName)
+		}
+
+		spinnerStopping.Success("Container " + containerName + " deleted successfully")
 	}
 
 	if isNet(cli) && len(source) == 0 {
 		netFilters := filters.NewArgs(filters.Arg("name", localNetworkName))
 		list, err := cli.NetworkList(ctx, types.NetworkListOptions{Filters: netFilters})
 		err = cli.NetworkRemove(ctx, list[0].ID)
+
+		pterm.Success.Printfln("Network deleted successfully")
 
 		handleError(err)
 	}

@@ -11,6 +11,7 @@ require (
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
+	github.com/pterm/pterm v0.12.31
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/viper v1.8.1
 	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf // indirect
