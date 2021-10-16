@@ -6,6 +6,7 @@ import (
 
 func init() {
 	serviceCmd.AddCommand(recreateCmd)
+	recreateCmd.Flags().StringVarP(&source, "service", "s", "", "Recreate single service")
 }
 
 var recreateCmd = &cobra.Command{

@@ -7,6 +7,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
+	"strings"
 )
 
 func init() {
@@ -14,7 +15,6 @@ func init() {
 	downCmd.Flags().StringVarP(&source, "service", "s", "", "Stop and remove single service")
 }
 
-var source string
 var downCmd = &cobra.Command{
 	Use:   "down",
 	Short: "Stop and remove services",
@@ -48,7 +48,7 @@ func down() {
 	handleError(err)
 
 	for _, container := range containers {
-		fmt.Print("Stopping container ", container.Names[0], "... ")
+		fmt.Print("Stopping container ", strings.TrimPrefix(container.Names[0], "/"), "... ")
 		err := cli.ContainerStop(ctx, container.ID, nil)
 		err = cli.ContainerRemove(ctx, container.ID, types.ContainerRemoveOptions{
 			RemoveVolumes: true,

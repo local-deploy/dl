@@ -23,7 +23,6 @@ var configLangCmd = &cobra.Command{
 }
 
 func setLang() {
-	wmenu.Clear()
 	menu := wmenu.NewMenu("Select application language:")
 	menu.LoopOnInvalid()
 

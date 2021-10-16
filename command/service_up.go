@@ -19,6 +19,7 @@ import (
 
 func init() {
 	serviceCmd.AddCommand(upCmd)
+	upCmd.Flags().StringVarP(&source, "service", "s", "", "Start single service")
 }
 
 var upCmd = &cobra.Command{
@@ -34,6 +35,7 @@ func up() {
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 
+	// Create portainer data directory
 	home, err := os.UserHomeDir()
 	portainerDataDir := filepath.Join(home, ".dl/portainer_data")
 	if _, err := os.Stat(portainerDataDir); err != nil {
@@ -44,6 +46,7 @@ func up() {
 
 	handleError(err)
 
+	// Check network
 	if isNotNet(cli) {
 		_, err = cli.NetworkCreate(ctx, localNetworkName, types.NetworkCreate{})
 	}
@@ -51,6 +54,10 @@ func up() {
 	localContainers := getServicesContainer()
 
 	for _, local := range localContainers {
+		if len(source) > 0 && source != local.Name {
+			continue
+		}
+
 		// Check dl-services running containers
 		containerFilter := filters.NewArgs(filters.Arg("name", local.Name), filters.Arg("label", "com.docker.compose.project=dl-services"))
 		isExists, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerFilter})
@@ -82,7 +89,6 @@ func up() {
 		busyPort := false
 		for _, port := range ports {
 			rawIP, hostPort, _ := splitParts(port)
-
 			conn, _ := net.DialTimeout("tcp", net.JoinHostPort(rawIP, hostPort), time.Second)
 			if conn != nil {
 				defer func(conn net.Conn) {

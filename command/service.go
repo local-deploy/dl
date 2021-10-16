@@ -27,6 +27,7 @@ func init() {
 	rootCmd.AddCommand(serviceCmd)
 }
 
+var source string
 var localNetworkName = "dl_default"
 
 var serviceCmd = &cobra.Command{
