@@ -56,7 +56,7 @@ func down() {
 		spinnerStopping, _ := pterm.DefaultSpinner.Start("Stopping and remove container " + containerName)
 		err := cli.ContainerStop(ctx, container.ID, nil)
 
-		spinnerStopping.UpdateText("Removing container" + containerName)
+		spinnerStopping.UpdateText("Removing container " + containerName)
 		err = cli.ContainerRemove(ctx, container.ID, types.ContainerRemoveOptions{
 			RemoveVolumes: true,
 			Force:         true,
@@ -64,18 +64,23 @@ func down() {
 
 		if err != nil {
 			spinnerStopping.Fail("Error while deleting container " + containerName)
+			continue
 		}
 
-		spinnerStopping.Success("Container " + containerName + " deleted successfully")
+		spinnerStopping.Success()
 	}
 
 	if isNet(cli) && len(source) == 0 {
+		spinnerNetwork, _ := pterm.DefaultSpinner.Start("Deleting network")
 		netFilters := filters.NewArgs(filters.Arg("name", localNetworkName))
 		list, err := cli.NetworkList(ctx, types.NetworkListOptions{Filters: netFilters})
 		err = cli.NetworkRemove(ctx, list[0].ID)
 
-		pterm.Success.Printfln("Network deleted successfully")
+		if err != nil {
+			spinnerNetwork.Fail("Network deleting error")
+			return
+		}
 
-		handleError(err)
+		spinnerNetwork.Success()
 	}
 }

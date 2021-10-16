@@ -50,7 +50,7 @@ func up() {
 				spinnerCreateDir.Warning("Error creating directory for portainer")
 			}
 		}
-		spinnerCreateDir.Success("Portainer directory created")
+		spinnerCreateDir.Success()
 	}
 
 	handleError(err)
@@ -63,7 +63,7 @@ func up() {
 			spinnerNet.Fail("Network creation error")
 			return
 		}
-		spinnerNet.Success("Network successfully created")
+		spinnerNet.Success()
 	}
 
 	localContainers := getServicesContainer()
@@ -86,7 +86,7 @@ func up() {
 			if err != nil {
 				spinnerRecreate.Warning("Container " + local.Name + " cannot be recreated")
 			}
-			spinnerRecreate.Success("Container " + local.Name + " has been successfully recreated")
+			spinnerRecreate.Success()
 
 			continue
 		}
@@ -134,7 +134,7 @@ func up() {
 				return
 			}
 
-			spinnerPulling.Success("Image downloaded successfully")
+			spinnerPulling.Success()
 		}
 
 		spinnerStarting, _ := pterm.DefaultSpinner.Start("Starting container " + local.Name)
@@ -164,7 +164,7 @@ func up() {
 		err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
 		handleError(err)
 
-		spinnerStarting.Success("Container " + local.Name + " started")
+		spinnerStarting.Success()
 	}
 }
 
