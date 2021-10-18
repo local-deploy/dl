@@ -77,14 +77,21 @@ func getServicesContainer() []localServicesContainer {
 			Ports:      []string{"0.0.0.0:8025:8025", "0.0.0.0:1025:1025"},
 		},
 		{
-			Name:       "portainer",
-			Image:      "portainer/portainer",
-			Version:    "latest",
-			Cmd:        []string{"--no-analytics"},
-			Volumes:    map[string]struct{}{"/var/run/docker.sock:/var/run/docker.sock": {}},
-			Entrypoint: nil,
-			Labels:     defaultLabels,
-			Ports:      []string{"0.0.0.0:9000:9000"},
+			Name:    "portainer",
+			Image:   "portainer/portainer",
+			Version: "latest",
+			Cmd:     []string{"--no-analytics"},
+			Volumes: map[string]struct{}{
+				"/var/run/docker.sock:/var/run/docker.sock": {},
+			},
+			Labels: map[string]string{
+				"com.docker.compose.project":                               "dl-services",
+				"traefik.enable":                                           "true",
+				"traefik.http.routers.portainer.entrypoints":               "web",
+				"traefik.http.routers.portainer.rule":                      "Host(`portainer.localhost`)",
+				"traefik.http.services.portainer.loadbalancer.server.port": "9000",
+			},
+			Ports: []string{"0.0.0.0:9000:9000"},
 			Mounts: []mount.Mount{
 				{
 					Type:     mount.TypeBind,
