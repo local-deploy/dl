@@ -46,14 +46,23 @@ func getServicesContainer() []localServicesContainer {
 	defaultLabels := map[string]string{"com.docker.compose.project": "dl-services"}
 	containers := []localServicesContainer{
 		{
-			Name:       "traefik",
-			Image:      "traefik",
-			Version:    "latest",
-			Cmd:        []string{"--api.insecure=true", "--providers.docker", "--providers.docker.network=dl_default", "--providers.docker.exposedByDefault=false"},
-			Volumes:    map[string]struct{}{"/var/run/docker.sock": {}},
-			Entrypoint: []string{"/entrypoint.sh"},
-			Labels:     defaultLabels,
-			Ports:      []string{"0.0.0.0:8080:8080", "0.0.0.0:80:80"},
+			Name:    "traefik",
+			Image:   "traefik",
+			Version: "latest",
+			Cmd: []string{
+				"--api.insecure=true",
+				"--providers.docker",
+				"--providers.docker.network=dl_default",
+				"--providers.docker.exposedbydefault=false",
+				"--entrypoints.web.address=:80",
+				"--entrypoints.websecure.address=:443",
+			},
+			Volumes: map[string]struct{}{"/var/run/docker.sock": {}},
+			Labels: map[string]string{
+				"traefik.enable":             "true",
+				"com.docker.compose.project": "dl-services",
+			},
+			Ports: []string{"0.0.0.0:8080:8080", "0.0.0.0:80:80", "0.0.0.0:443:443"},
 			Mounts: []mount.Mount{
 				{
 					Type:     mount.TypeBind,
