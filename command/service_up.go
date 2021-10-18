@@ -5,14 +5,13 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"io/ioutil"
 	"net"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 )
@@ -38,22 +37,21 @@ func up() {
 
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-
-	// Create portainer data directory
-	home, err := os.UserHomeDir()
-	portainerDataDir := filepath.Join(home, ".dl/portainer_data")
-	if _, err := os.Stat(portainerDataDir); err != nil {
-		spinnerCreateDir, _ := pterm.DefaultSpinner.Start("Creating a directory for portainer")
-		if os.IsNotExist(err) {
-			err = os.Mkdir(portainerDataDir, 0755)
-			if err != nil {
-				spinnerCreateDir.Warning("Error creating directory for portainer")
-			}
-		}
-		spinnerCreateDir.Success()
+	if err != nil {
+		pterm.Fatal.Printfln("Failed to connect to socket")
+		return
 	}
 
-	handleError(err)
+	// Create portainer data volume
+	volumeResponse, err := cli.VolumeList(ctx, filters.NewArgs(filters.Arg("name", "portainer_data")))
+
+	//goland:noinspection GoNilness
+	if len(volumeResponse.Volumes) == 0 {
+		_, err = cli.VolumeCreate(ctx, volume.VolumeCreateBody{Name: "portainer_data"})
+		if err != nil {
+			pterm.Warning.Printfln("Failed to create portainer_data volume")
+		}
+	}
 
 	// Check network
 	if isNotNet(cli) {
@@ -110,6 +108,7 @@ func up() {
 			rawIP, hostPort, _ := splitParts(port)
 			conn, _ := net.DialTimeout("tcp", net.JoinHostPort(rawIP, hostPort), time.Second)
 			if conn != nil {
+				//goland:noinspection GoDeferInLoop
 				defer func(conn net.Conn) {
 					_ = conn.Close()
 				}(conn)

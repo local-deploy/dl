@@ -58,8 +58,8 @@ func down() {
 
 		spinnerStopping.UpdateText("Removing container " + containerName)
 		err = cli.ContainerRemove(ctx, container.ID, types.ContainerRemoveOptions{
-			RemoveVolumes: true,
-			Force:         true,
+			//RemoveVolumes: true,
+			Force: true,
 		})
 
 		if err != nil {

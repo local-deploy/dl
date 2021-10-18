@@ -5,8 +5,6 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/integration/network"
 	"github.com/spf13/cobra"
-	"os"
-	"path/filepath"
 )
 
 //localServicesContainer list of container names of the local stack
@@ -38,11 +36,6 @@ var serviceCmd = &cobra.Command{
 
 //getServicesContainer local services containers
 func getServicesContainer() []localServicesContainer {
-	home, err := os.UserHomeDir()
-	portainerDataDir := filepath.Join(home, ".dl/portainer_data")
-
-	handleError(err)
-
 	defaultLabels := map[string]string{"com.docker.compose.project": "dl-services"}
 	containers := []localServicesContainer{
 		{
@@ -82,8 +75,6 @@ func getServicesContainer() []localServicesContainer {
 			Entrypoint: nil,
 			Labels:     defaultLabels,
 			Ports:      []string{"0.0.0.0:8025:8025", "0.0.0.0:1025:1025"},
-			Mounts:     nil,
-			Env:        nil,
 		},
 		{
 			Name:       "portainer",
@@ -102,13 +93,12 @@ func getServicesContainer() []localServicesContainer {
 					ReadOnly: true,
 				},
 				{
-					Type:     mount.TypeBind,
-					Source:   portainerDataDir,
+					Type:     mount.TypeVolume,
+					Source:   "portainer_data",
 					Target:   "/data",
 					ReadOnly: false,
 				},
 			},
-			Env: []string{"VIRTUAL_HOST=portainer.localhost"},
 		},
 	}
 
