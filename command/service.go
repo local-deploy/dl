@@ -49,6 +49,7 @@ func getServicesContainer() []localServicesContainer {
 				"--providers.docker.exposedbydefault=false",
 				"--entrypoints.web.address=:80",
 				"--entrypoints.websecure.address=:443",
+				"--serversTransport.insecureSkipVerify=true",
 			},
 			Volumes: map[string]struct{}{"/var/run/docker.sock": {}},
 			Labels: map[string]string{
@@ -87,11 +88,11 @@ func getServicesContainer() []localServicesContainer {
 			Labels: map[string]string{
 				"com.docker.compose.project":                               "dl-services",
 				"traefik.enable":                                           "true",
-				"traefik.http.routers.portainer.entrypoints":               "web",
-				"traefik.http.routers.portainer.rule":                      "Host(`portainer.localhost`)",
+				"traefik.http.routers.portainer.entrypoints":               "web, websecure",
+				"traefik.http.routers.portainer.rule":                      "Host(`portainer.localhost`) || HostRegexp(`portainer.{ip:.*}.nip.io`)",
 				"traefik.http.services.portainer.loadbalancer.server.port": "9000",
 			},
-			Ports: []string{"0.0.0.0:9000:9000"},
+			//Ports: []string{"0.0.0.0:9000:9000"},
 			Mounts: []mount.Mount{
 				{
 					Type:     mount.TypeBind,
