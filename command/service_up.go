@@ -33,8 +33,6 @@ var upCmd = &cobra.Command{
 }
 
 func up() {
-	pterm.DisableColor()
-
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {

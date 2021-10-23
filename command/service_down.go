@@ -26,8 +26,6 @@ var downCmd = &cobra.Command{
 }
 
 func down() {
-	pterm.DisableColor()
-
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	handleError(err)
