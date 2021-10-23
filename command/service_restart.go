@@ -13,6 +13,7 @@ var restartCmd = &cobra.Command{
 	Short: "Restart containers",
 	Long:  `Restart containers.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		restart = true
 		up()
 	},
 }

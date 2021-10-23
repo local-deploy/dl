@@ -19,10 +19,10 @@ import (
 func init() {
 	serviceCmd.AddCommand(upCmd)
 	upCmd.Flags().StringVarP(&source, "service", "s", "", "Start single service")
-	upCmd.Flags().BoolVarP(&recreate, "recreate", "r", false, "Recreate running containers")
+	upCmd.Flags().BoolVarP(&restart, "restart", "r", false, "Restart running containers")
 }
 
-var recreate bool
+var restart bool
 var upCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Start local services",
@@ -73,7 +73,7 @@ func up() {
 		containerFilter := filters.NewArgs(filters.Arg("name", local.Name), filters.Arg("label", "com.docker.compose.project=dl-services"))
 		isExists, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerFilter})
 		if len(isExists) > 0 {
-			if !recreate {
+			if !restart {
 				continue
 			}
 
