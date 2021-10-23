@@ -1,13 +1,12 @@
 package main
 
 import (
-	"fmt"
-	"github.com/spf13/cobra"
+	"github.com/pterm/pterm"
 	"github.com/spf13/viper"
 	"github.com/varrcan/dl/command"
+	"github.com/varrcan/dl/helper"
 	"log"
 	"os"
-	"path/filepath"
 )
 
 func handleError(err error) {
@@ -16,11 +15,22 @@ func handleError(err error) {
 	}
 }
 
-func init() {
-	initConfig()
-}
-
 func main() {
+	args := os.Args
+	if len(args[1:]) > 0 && args[1] == "install" {
+		installApp()
+
+		return
+	}
+
+	isConfig := helper.IsConfigDirExists()
+	if !isConfig {
+		pterm.FgRed.Printfln("The application has not been initialized. Please run the command: dl install")
+
+		return
+	}
+
+	initConfig()
 	command.Execute()
 
 	//viper.Debug()
@@ -32,27 +42,15 @@ func main() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	home, err := os.UserHomeDir()
-	configDir := filepath.Join(home, ".dl")
-	cobra.CheckErr(err)
-
-	viper.SetDefault("locale", "en")
+	configDir, _ := helper.ConfigDir()
 
 	viper.AddConfigPath(configDir)
 	viper.SetConfigType("yaml")
 	viper.SetConfigName("config")
 
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			errMakeDir := os.Mkdir(configDir, 0755)
-			handleError(errMakeDir)
-			viper.Set("version", command.Version)
-
-			errWrite := viper.SafeWriteConfig()
-			handleError(errWrite)
-		} else {
-			panic(fmt.Errorf("Fatal error config file: %w \n", err))
-		}
+	err := viper.ReadInConfig()
+	if err != nil {
+		pterm.FgRed.Printfln("Error config file: %w \n", err)
 	}
 
 	//env := viper.New()

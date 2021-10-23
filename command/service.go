@@ -36,7 +36,6 @@ var serviceCmd = &cobra.Command{
 
 //getServicesContainer local services containers
 func getServicesContainer() []localServicesContainer {
-	defaultLabels := map[string]string{"com.docker.compose.project": "dl-services"}
 	containers := []localServicesContainer{
 		{
 			Name:    "traefik",
@@ -53,10 +52,13 @@ func getServicesContainer() []localServicesContainer {
 			},
 			Volumes: map[string]struct{}{"/var/run/docker.sock": {}},
 			Labels: map[string]string{
-				"traefik.enable":             "true",
-				"com.docker.compose.project": "dl-services",
+				"traefik.enable":                                         "true",
+				"com.docker.compose.project":                             "dl-services",
+				"traefik.http.routers.traefik.entrypoints":               "web, websecure",
+				"traefik.http.routers.traefik.rule":                      "Host(`traefik.localhost`) || HostRegexp(`traefik.{ip:.*}.nip.io`)",
+				"traefik.http.services.traefik.loadbalancer.server.port": "8080",
 			},
-			Ports: []string{"0.0.0.0:8080:8080", "0.0.0.0:80:80", "0.0.0.0:443:443"},
+			Ports: []string{"0.0.0.0:80:80", "0.0.0.0:443:443"},
 			Mounts: []mount.Mount{
 				{
 					Type:     mount.TypeBind,
@@ -68,14 +70,20 @@ func getServicesContainer() []localServicesContainer {
 			Env: nil,
 		},
 		{
-			Name:       "mailcatcher",
+			Name:       "mail",
 			Image:      "mailhog/mailhog",
 			Version:    "latest",
 			Cmd:        nil,
 			Volumes:    nil,
 			Entrypoint: nil,
-			Labels:     defaultLabels,
-			Ports:      []string{"0.0.0.0:8025:8025", "0.0.0.0:1025:1025"},
+			Labels: map[string]string{
+				"com.docker.compose.project":                          "dl-services",
+				"traefik.enable":                                      "true",
+				"traefik.http.routers.mail.entrypoints":               "web, websecure",
+				"traefik.http.routers.mail.rule":                      "Host(`mail.localhost`) || HostRegexp(`mail.{ip:.*}.nip.io`)",
+				"traefik.http.services.mail.loadbalancer.server.port": "8025",
+			},
+			Ports: []string{"0.0.0.0:1025:1025"},
 		},
 		{
 			Name:    "portainer",
