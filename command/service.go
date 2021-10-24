@@ -44,7 +44,7 @@ func getServicesContainer() []localServicesContainer {
 			Cmd: []string{
 				"--api.insecure=true",
 				"--providers.docker",
-				"--providers.docker.network=dl_default",
+				//"--providers.docker.network=dl_default",
 				"--providers.docker.exposedbydefault=false",
 				"--entrypoints.web.address=:80",
 				"--entrypoints.websecure.address=:443",
@@ -57,6 +57,8 @@ func getServicesContainer() []localServicesContainer {
 				"traefik.http.routers.traefik.entrypoints":               "web, websecure",
 				"traefik.http.routers.traefik.rule":                      "Host(`traefik.localhost`) || HostRegexp(`traefik.{ip:.*}.nip.io`)",
 				"traefik.http.services.traefik.loadbalancer.server.port": "8080",
+				"traefik.http.middlewares.site-compress.compress":        "true",
+				"traefik.http.routers.traefik.middlewares":               "site-compress",
 			},
 			Ports: []string{"0.0.0.0:80:80", "0.0.0.0:443:443"},
 			Mounts: []mount.Mount{
