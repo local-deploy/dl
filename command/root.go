@@ -1,6 +1,7 @@
 package command
 
 import (
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"log"
 )
@@ -20,7 +21,20 @@ func handleError(err error) {
 
 //Execute root command
 func Execute() {
-	usageTemplate := UsageTemplate()
+	pterm.Info.Prefix = pterm.Prefix{
+		Text: "",
+	}
+	pterm.Success.Prefix = pterm.Prefix{
+		Text: "",
+	}
+	pterm.Error.Prefix = pterm.Prefix{
+		Text: "",
+	}
+	pterm.Warning.Prefix = pterm.Prefix{
+		Text: "",
+	}
+
+	usageTemplate := usageTemplate()
 
 	rootCmd.SetUsageTemplate(usageTemplate)
 	rootCmd.DisableAutoGenTag = true
@@ -29,8 +43,8 @@ func Execute() {
 	cobra.CheckErr(rootCmd.Execute())
 }
 
-// UsageTemplate returns usage template for the command.
-func UsageTemplate() string {
+// usageTemplate returns usage template for the command.
+func usageTemplate() string {
 	return `Usage:{{if .Runnable}}
   {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
   {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}

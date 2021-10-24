@@ -5,15 +5,15 @@ import (
 )
 
 func init() {
-	serviceCmd.AddCommand(restartCmd)
+	serviceCmd.AddCommand(restartServiceCmd)
 }
 
-var restartCmd = &cobra.Command{
+var restartServiceCmd = &cobra.Command{
 	Use:   "restart",
 	Short: "Restart containers",
 	Long:  `Restart containers.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		restart = true
-		up()
+		upService()
 	},
 }

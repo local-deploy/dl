@@ -17,22 +17,22 @@ import (
 )
 
 func init() {
-	serviceCmd.AddCommand(upCmd)
-	upCmd.Flags().StringVarP(&source, "service", "s", "", "Start single service")
-	upCmd.Flags().BoolVarP(&restart, "restart", "r", false, "Restart running containers")
+	serviceCmd.AddCommand(upServiceCmd)
+	upServiceCmd.Flags().StringVarP(&source, "service", "s", "", "Start single service")
+	upServiceCmd.Flags().BoolVarP(&restart, "restart", "r", false, "Restart running containers")
 }
 
 var restart bool
-var upCmd = &cobra.Command{
+var upServiceCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Start local services",
 	Long:  `Start local services.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		up()
+		upService()
 	},
 }
 
-func up() {
+func upService() {
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {

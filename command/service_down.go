@@ -12,20 +12,20 @@ import (
 )
 
 func init() {
-	serviceCmd.AddCommand(downCmd)
-	downCmd.Flags().StringVarP(&source, "service", "s", "", "Stop and remove single service")
+	serviceCmd.AddCommand(downServiceCmd)
+	downServiceCmd.Flags().StringVarP(&source, "service", "s", "", "Stop and remove single service")
 }
 
-var downCmd = &cobra.Command{
+var downServiceCmd = &cobra.Command{
 	Use:   "down",
 	Short: "Stop and remove services",
 	Long:  `Stop and remove services.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		down()
+		downService()
 	},
 }
 
-func down() {
+func downService() {
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	handleError(err)

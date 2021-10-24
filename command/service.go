@@ -4,7 +4,6 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/integration/network"
-	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
 
@@ -24,19 +23,6 @@ type localServicesContainer struct {
 
 func init() {
 	rootCmd.AddCommand(serviceCmd)
-
-	pterm.Info.Prefix = pterm.Prefix{
-		Text: "",
-	}
-	pterm.Success.Prefix = pterm.Prefix{
-		Text: "",
-	}
-	pterm.Error.Prefix = pterm.Prefix{
-		Text: "",
-	}
-	pterm.Warning.Prefix = pterm.Prefix{
-		Text: "",
-	}
 }
 
 var source string

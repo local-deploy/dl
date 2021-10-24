@@ -5,16 +5,16 @@ import (
 )
 
 func init() {
-	serviceCmd.AddCommand(recreateServiceCmd)
-	recreateServiceCmd.Flags().StringVarP(&source, "service", "s", "", "Recreate single service")
+	rootCmd.AddCommand(recreateCmd)
+	recreateCmd.Flags().StringVarP(&source, "container", "c", "", "Recreate single container")
 }
 
-var recreateServiceCmd = &cobra.Command{
+var recreateCmd = &cobra.Command{
 	Use:   "recreate",
 	Short: "Recreate containers",
 	Long:  `Recreate containers.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		downService()
-		upService()
+		down()
+		up()
 	},
 }

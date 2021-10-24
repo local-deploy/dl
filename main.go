@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/pterm/pterm"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/varrcan/dl/command"
 	"github.com/varrcan/dl/helper"
@@ -30,7 +31,7 @@ func main() {
 		return
 	}
 
-	initConfig()
+	cobra.OnInitialize(initConfig)
 	command.Execute()
 
 	//viper.Debug()
