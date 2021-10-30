@@ -14,7 +14,7 @@ func HomeDir() (string, error) {
 func ConfigDir() (string, error) {
 	home, err := HomeDir()
 
-	return filepath.Join(home, ".dl"), err
+	return filepath.Join(home, ".config/dl"), err
 }
 
 //IsConfigDirExists checking for the existence of a configuration directory
