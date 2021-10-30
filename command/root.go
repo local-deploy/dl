@@ -1,7 +1,6 @@
 package command
 
 import (
-	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"log"
 )
@@ -21,18 +20,18 @@ func handleError(err error) {
 
 //Execute root command
 func Execute() {
-	pterm.Info.Prefix = pterm.Prefix{
-		Text: "",
-	}
-	pterm.Success.Prefix = pterm.Prefix{
-		Text: "",
-	}
-	pterm.Error.Prefix = pterm.Prefix{
-		Text: "",
-	}
-	pterm.Warning.Prefix = pterm.Prefix{
-		Text: "",
-	}
+	//pterm.Info.Prefix = pterm.Prefix{
+	//	Text: "",
+	//}
+	//pterm.Success.Prefix = pterm.Prefix{
+	//	Text: "",
+	//}
+	//pterm.Error.Prefix = pterm.Prefix{
+	//	Text: "",
+	//}
+	//pterm.Warning.Prefix = pterm.Prefix{
+	//	Text: "",
+	//}
 
 	usageTemplate := usageTemplate()
 
