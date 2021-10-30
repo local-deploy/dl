@@ -10,7 +10,7 @@ func HomeDir() (string, error) {
 	return os.UserHomeDir()
 }
 
-//ConfigDir config directory (~/.dl)
+//ConfigDir config directory (~/.config/dl)
 func ConfigDir() (string, error) {
 	home, err := HomeDir()
 

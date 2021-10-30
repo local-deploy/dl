@@ -1,52 +1,52 @@
 version: "3.8"
 
 services:
-    php:
-        container_name: ${APP_NAME}_php
-        image: quay.io/local-deploy/php${PHP_VERSION:-7.3}
-        environment:
-            - "APACHE_DOCUMENT_ROOT=${DOCUMENT_ROOT:-/var/www/html}"
-            - LOCALTIME
-            - PHP_MEMORY_LIMIT
-            - PHP_POST_MAX_SIZE
-            - PHP_UPLOAD_MAX_FILESIZE
-            - PHP_MAX_FILE_UPLOADS
-            - PHP_MAX_EXECUTION_TIME
-            - XDEBUG
-            - XDEBUG_HOST
-            - XDEBUG_PORT
-            - VIRTUAL_HOST
-            - "ENVIRONMENT=dl"
-        volumes:
-            - "${PWD}/:/var/www/html/"
-            - "~/.ssh/${SSH_KEY:-id_rsa}:/var/www/.ssh/id_rsa:ro"
-            - "~/.ssh/known_hosts:/var/www/.ssh/known_hosts"
-        labels:
-            - "traefik.enable=true"
-            - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.entrypoints=web, websecure"
-            - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${APP_NAME}.localhost`) || HostRegexp(`${APP_NAME}.{ip:.*}.nip.io`)"
-            - "traefik.http.routers.${COMPOSE_PROJECT_NAME}.middlewares=site-compress"
-            - "traefik.docker.network=${COMPOSE_PROJECT_NAME}"
-        networks:
-            dl_default: {}
-            default:
-                aliases:
-                    - ${COMPOSE_PROJECT_NAME}
-        links:
-            - db
-    db:
-        container_name: ${APP_NAME}_db
-        image: alterway/mysql:${MYSQL_VERSION:-5.7}
-        command: --innodb_strict_mode=off --innodb_flush_log_at_trx_commit=2 --innodb_flush_method=O_DIRECT --transaction-isolation=READ-COMMITTED
-        environment:
-            - "MYSQL_DATABASE=${MYSQL_DATABASE:-db}"
-            - "MYSQL_USER=${MYSQL_USER:-db}"
-            - "MYSQL_PASSWORD=${MYSQL_PASSWORD:-db}"
-            - "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}"
-            - LOCALTIME
-        volumes:
-            - "${PWD}/.docker/volume/db/:/var/lib/mysql/:delegated"
+  php:
+    container_name: ${APP_NAME}_php
+    image: quay.io/local-deploy/php${PHP_VERSION:-7.3-apache}
+    environment:
+      - "APACHE_DOCUMENT_ROOT=${DOCUMENT_ROOT:-/var/www/html}"
+      - "LOCALTIME=${LOCALTIME:-Europe/Moscow}"
+      - "PHP_MEMORY_LIMIT=${PHP_MEMORY_LIMIT:-256M}"
+      - "PHP_POST_MAX_SIZE=${PHP_POST_MAX_SIZE:-100M}"
+      - "PHP_UPLOAD_MAX_FILESIZE=${PHP_UPLOAD_MAX_FILESIZE:-100M}"
+      - "PHP_MAX_FILE_UPLOADS=${PHP_MAX_FILE_UPLOADS:-50}"
+      - "PHP_MAX_EXECUTION_TIME=${PHP_MAX_EXECUTION_TIME:-60}"
+      - "XDEBUG=${XDEBUG:-off}"
+      - "XDEBUG_HOST=${XDEBUG_HOST:-host.docker.internal}"
+      - "XDEBUG_PORT=${XDEBUG_PORT:-9003}"
+      - "VIRTUAL_HOST=${APP_NAME:-localhost}"
+      - "PHP_MODULES=${PHP_MODULES:-opcache}"
+      - "ENVIRONMENT=dl"
+    volumes:
+      - "${PWD}/:/var/www/html/"
+      - "~/.ssh/${SSH_KEY:-id_rsa}:/var/www/.ssh/id_rsa:ro"
+      - "~/.ssh/known_hosts:/var/www/.ssh/known_hosts"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${NETWORK_NAME}.entrypoints=web, websecure"
+      - "traefik.http.routers.${NETWORK_NAME}.rule=Host(`${APP_NAME}.localhost`) || HostRegexp(`${APP_NAME}.{ip:.*}.nip.io`)"
+      - "traefik.http.routers.${NETWORK_NAME}.middlewares=site-compress"
+    networks:
+      dl_default: { }
+      default:
+        aliases:
+          - ${NETWORK_NAME}
+    links:
+      - db
+  db:
+    container_name: ${APP_NAME}_db
+    image: alterway/mysql:${MYSQL_VERSION:-5.7}
+    command: --innodb_strict_mode=off --innodb_flush_log_at_trx_commit=2 --innodb_flush_method=O_DIRECT --transaction-isolation=READ-COMMITTED
+    environment:
+      - "MYSQL_DATABASE=${MYSQL_DATABASE:-db}"
+      - "MYSQL_USER=${MYSQL_USER:-db}"
+      - "MYSQL_PASSWORD=${MYSQL_PASSWORD:-db}"
+      - "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}"
+      - LOCALTIME
+    volumes:
+      - "${PWD}/.docker/volume/db/:/var/lib/mysql/:delegated"
 
 networks:
-    dl_default:
-        external: true
+  dl_default:
+    external: true
