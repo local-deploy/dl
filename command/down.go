@@ -14,6 +14,7 @@ import (
 
 func init() {
 	rootCmd.AddCommand(downCmd)
+	downCmd.Flags().StringVarP(&projectContainer, "container", "c", "", "Stop and remove single container")
 }
 
 var downCmd = &cobra.Command{
@@ -23,6 +24,7 @@ var downCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		down()
 	},
+	Example: "dl down\ndl down -c db",
 }
 
 func down() {
@@ -32,7 +34,12 @@ func down() {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	handleError(err)
 
-	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true})
+	containerFilters := filters.NewArgs()
+	if len(projectContainer) > 0 {
+		containerFilters.Add("name", helper.ProjectEnv.GetString("APP_NAME")+"_"+projectContainer)
+	}
+
+	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerFilters})
 	handleError(err)
 
 	for _, container := range containers {
@@ -59,7 +66,7 @@ func down() {
 		spinnerStopping.Success()
 	}
 
-	if isProjectNet(cli) {
+	if isProjectNet(cli) && len(projectContainer) == 0 {
 		spinnerNetwork, _ := pterm.DefaultSpinner.Start("Deleting network")
 		netFilters := filters.NewArgs(filters.Arg("name", helper.ProjectEnv.GetString("NETWORK_NAME")))
 		list, err := cli.NetworkList(ctx, types.NetworkListOptions{Filters: netFilters})

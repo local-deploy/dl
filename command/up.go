@@ -11,6 +11,7 @@ import (
 
 func init() {
 	rootCmd.AddCommand(upCmd)
+	upCmd.Flags().StringVarP(&projectContainer, "container", "c", "", "Start single container")
 }
 
 var upCmd = &cobra.Command{
@@ -20,6 +21,7 @@ var upCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		up()
 	},
+	Example: "dl up\ndl up -c db",
 }
 
 func up() {
@@ -31,16 +33,23 @@ func up() {
 		return
 	}
 
+	var singleContainer = ""
+	if len(projectContainer) > 0 {
+		singleContainer = projectContainer
+	}
+
 	cmdCompose := &exec.Cmd{
 		Path: compose,
 		Dir:  helper.ProjectEnv.GetString("PWD"),
-		Args: []string{compose, "-p", helper.ProjectEnv.GetString("NETWORK_NAME"), "up", "-d"},
+		Args: []string{compose, "-p", helper.ProjectEnv.GetString("NETWORK_NAME"), "up", "-d", singleContainer},
 		Env:  helper.CmdEnv(),
 	}
 
 	startProject, _ := pterm.DefaultSpinner.Start("Starting project")
 	if err := cmdCompose.Run(); err != nil {
-		startProject.Fail("Error:", err)
+		//TODO: add errors
+		startProject.Fail(err)
+		return
 	}
 	startProject.UpdateText("Project has been successfully started")
 	startProject.Success()

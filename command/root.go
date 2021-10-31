@@ -5,6 +5,8 @@ import (
 	"log"
 )
 
+var projectContainer string
+
 var rootCmd = &cobra.Command{
 	Use:   "dl",
 	Short: "Deploy Local",
