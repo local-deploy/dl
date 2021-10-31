@@ -1,8 +1,10 @@
 package helper
 
 import (
+	"fmt"
 	"github.com/pterm/pterm"
 	"github.com/spf13/viper"
+	"net"
 	"os"
 	"strings"
 )
@@ -64,4 +66,28 @@ func CmdEnv() []string {
 	}
 
 	return env
+}
+
+//ShowProjectInfo Display project links
+func ShowProjectInfo() {
+	p := ProjectEnv.GetString("APP_NAME")
+	h := getLocalIp()
+	pterm.FgCyan.Println()
+	panels := pterm.Panels{
+		{{Data: pterm.FgYellow.Sprintf("nip.io\nlocal")},
+			{Data: pterm.FgYellow.Sprintf("http://%s.%s.nip.io/\nhttp://%s.localhost/", p, h, p)}},
+	}
+
+	_ = pterm.DefaultPanel.WithPanels(panels).WithPadding(5).Render()
+}
+
+func getLocalIp() string {
+	//name, _ := os.Hostname()
+	address, err := net.LookupHost("localhost")
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		return ""
+	}
+
+	return address[0]
 }
