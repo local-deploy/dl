@@ -5,7 +5,6 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
-	"github.com/docker/docker/integration/network"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/helper"
@@ -29,6 +28,7 @@ var downCmd = &cobra.Command{
 
 func down() {
 	helper.LoadEnv()
+	projectName := helper.ProjectEnv.GetString("APP_NAME")
 
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -36,7 +36,7 @@ func down() {
 
 	containerFilters := filters.NewArgs()
 	if len(projectContainer) > 0 {
-		containerFilters.Add("name", helper.ProjectEnv.GetString("APP_NAME")+"_"+projectContainer)
+		containerFilters.Add("name", projectName+"_"+projectContainer)
 	}
 
 	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerFilters})
@@ -45,7 +45,7 @@ func down() {
 	for _, container := range containers {
 		containerName := strings.TrimPrefix(container.Names[0], "/")
 
-		if !strings.Contains(containerName, helper.ProjectEnv.GetString("APP_NAME")) {
+		if !strings.Contains(containerName, projectName) {
 			continue
 		}
 
@@ -66,7 +66,7 @@ func down() {
 		spinnerStopping.Success()
 	}
 
-	if isProjectNet(cli) && len(projectContainer) == 0 {
+	if helper.IsProjectNet(cli) && len(projectContainer) == 0 {
 		spinnerNetwork, _ := pterm.DefaultSpinner.Start("Deleting network")
 		netFilters := filters.NewArgs(filters.Arg("name", helper.ProjectEnv.GetString("NETWORK_NAME")))
 		list, err := cli.NetworkList(ctx, types.NetworkListOptions{Filters: netFilters})
@@ -79,10 +79,4 @@ func down() {
 		spinnerNetwork.UpdateText("Network deleted")
 		spinnerNetwork.Success()
 	}
-}
-
-func isProjectNet(cli *client.Client) bool {
-	net := network.IsNetworkAvailable(cli, helper.ProjectEnv.GetString("NETWORK_NAME")+"_default")
-
-	return net().Success()
 }

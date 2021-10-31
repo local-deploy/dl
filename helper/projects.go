@@ -2,6 +2,8 @@ package helper
 
 import (
 	"fmt"
+	"github.com/docker/docker/client"
+	"github.com/docker/docker/integration/network"
 	"github.com/pterm/pterm"
 	"github.com/spf13/viper"
 	"net"
@@ -79,6 +81,13 @@ func ShowProjectInfo() {
 	}
 
 	_ = pterm.DefaultPanel.WithPanels(panels).WithPadding(5).Render()
+}
+
+//IsProjectNet Check if the project network is up
+func IsProjectNet(cli *client.Client) bool {
+	networkAvailable := network.IsNetworkAvailable(cli, ProjectEnv.GetString("NETWORK_NAME")+"_default")
+
+	return networkAvailable().Success()
 }
 
 func getLocalIp() string {
