@@ -3,7 +3,7 @@ module github.com/varrcan/dl
 go 1.15
 
 require (
-	github.com/containerd/containerd v1.5.5 // indirect
+	github.com/containerd/containerd v1.5.7 // indirect
 	github.com/dixonwille/wmenu/v5 v5.1.0
 	github.com/docker/docker v20.10.10+incompatible
 	github.com/docker/go-connections v0.4.0
