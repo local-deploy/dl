@@ -6,7 +6,6 @@ import (
 
 func init() {
 	rootCmd.AddCommand(recreateCmd)
-	recreateCmd.Flags().StringVarP(&projectContainer, "container", "c", "", "Recreate single container")
 }
 
 var recreateCmd = &cobra.Command{
@@ -17,5 +16,4 @@ var recreateCmd = &cobra.Command{
 		down()
 		up()
 	},
-	Example: "dl recreate\ndl recreate -c db",
 }
