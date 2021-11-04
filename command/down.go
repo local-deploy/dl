@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
-	"github.com/varrcan/dl/helper"
+	"github.com/varrcan/dl/project"
 	"os/exec"
 )
 
@@ -22,7 +22,7 @@ var downCmd = &cobra.Command{
 }
 
 func down() {
-	helper.LoadEnv()
+	project.LoadEnv()
 
 	compose, lookErr := exec.LookPath("docker-compose")
 	if lookErr != nil {
@@ -32,9 +32,9 @@ func down() {
 
 	cmdCompose := &exec.Cmd{
 		Path: compose,
-		Dir:  helper.ProjectEnv.GetString("PWD"),
-		Args: []string{compose, "-p", helper.ProjectEnv.GetString("NETWORK_NAME"), "down"},
-		Env:  helper.CmdEnv(),
+		Dir:  project.Env.GetString("PWD"),
+		Args: []string{compose, "-p", project.Env.GetString("NETWORK_NAME"), "down"},
+		Env:  project.CmdEnv(),
 	}
 
 	stopProject, _ := pterm.DefaultSpinner.Start("Stopping project")

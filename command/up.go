@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
-	"github.com/varrcan/dl/helper"
+	"github.com/varrcan/dl/project"
+	"net"
 	"os/exec"
 )
 
@@ -22,7 +23,7 @@ var upCmd = &cobra.Command{
 }
 
 func up() {
-	helper.LoadEnv()
+	project.LoadEnv()
 
 	compose, lookErr := exec.LookPath("docker-compose")
 	if lookErr != nil {
@@ -32,9 +33,9 @@ func up() {
 
 	cmdCompose := &exec.Cmd{
 		Path: compose,
-		Dir:  helper.ProjectEnv.GetString("PWD"),
-		Args: []string{compose, "-p", helper.ProjectEnv.GetString("NETWORK_NAME"), "up", "-d"},
-		Env:  helper.CmdEnv(),
+		Dir:  project.Env.GetString("PWD"),
+		Args: []string{compose, "-p", project.Env.GetString("NETWORK_NAME"), "up", "-d"},
+		Env:  project.CmdEnv(),
 	}
 
 	startProject, _ := pterm.DefaultSpinner.Start("Starting project")
@@ -46,5 +47,29 @@ func up() {
 	startProject.UpdateText("Project has been successfully started")
 	startProject.Success()
 
-	helper.ShowProjectInfo()
+	showProjectInfo()
+}
+
+//showProjectInfo Display project links
+func showProjectInfo() {
+	p := project.Env.GetString("APP_NAME")
+	h := getLocalIp()
+	pterm.FgCyan.Println()
+	panels := pterm.Panels{
+		{{Data: pterm.FgYellow.Sprintf("nip.io\nlocal")},
+			{Data: pterm.FgYellow.Sprintf("http://%s.%s.nip.io/\nhttp://%s.localhost/", p, h, p)}},
+	}
+
+	_ = pterm.DefaultPanel.WithPanels(panels).WithPadding(5).Render()
+}
+
+func getLocalIp() string {
+	//name, _ := os.Hostname()
+	address, err := net.LookupHost("localhost")
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		return ""
+	}
+
+	return address[0]
 }
