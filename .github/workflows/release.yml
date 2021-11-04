@@ -11,6 +11,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Make release
-        uses: local-deploy/build-release@master
+        uses: docker://gcr.io/local-deploy/build-release:latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
