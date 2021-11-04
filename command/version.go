@@ -6,7 +6,7 @@ import (
 )
 
 //Version init
-var Version = "v.0.0.1"
+var Version = "v.0.1.0"
 
 func init() {
 	rootCmd.AddCommand(versionCmd)
