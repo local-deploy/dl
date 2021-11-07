@@ -7,8 +7,9 @@ import (
 	"github.com/varrcan/dl/command"
 	"github.com/varrcan/dl/helper"
 	"log"
-	"os"
 )
+
+var version = "0.0.4"
 
 func handleError(err error) {
 	if err != nil {
@@ -17,24 +18,18 @@ func handleError(err error) {
 }
 
 func main() {
-	args := os.Args
-	if len(args[1:]) > 0 && args[1] == "install" {
-		installApp()
+	if !helper.IsConfigDirExists() {
+		pterm.FgRed.Printfln("The application has not been initialized. Please run the command:\nwget --no-check-certificate https://raw.githubusercontent.com/local-deploy/dl/master/install_dl.sh && chmod +x ./install_dl.sh && ./install_dl.sh")
 
 		return
 	}
 
-	isConfig := helper.IsConfigDirExists()
-	if !isConfig {
-		pterm.FgRed.Printfln("The application has not been initialized. Please run the command: dl install")
-
-		return
+	if !helper.IsConfigFileExists() {
+		firstStart()
 	}
 
 	cobra.OnInitialize(initConfig)
 	command.Execute()
-
-	//viper.Debug()
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -51,4 +46,31 @@ func initConfig() {
 	}
 
 	viper.AutomaticEnv()
+}
+
+func firstStart() {
+	err := createConfigFile()
+
+	if err != nil {
+		pterm.FgRed.Printfln("Unable to create config file: %w \n", err)
+	}
+}
+
+func createConfigFile() error {
+	configDir, _ := helper.ConfigDir()
+
+	viper.AddConfigPath(configDir)
+	viper.SetConfigType("yaml")
+	viper.SetConfigName("config")
+
+	viper.Set("version", version)
+	viper.Set("locale", "en")
+
+	errWrite := viper.SafeWriteConfig()
+
+	if errWrite != nil {
+		return errWrite
+	}
+
+	return errWrite
 }

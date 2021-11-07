@@ -28,3 +28,17 @@ func IsConfigDirExists() bool {
 
 	return true
 }
+
+//IsConfigFileExists checking for the existence of a configuration file
+func IsConfigFileExists() bool {
+	confDir, _ := ConfigDir()
+	config := filepath.Join(confDir, "config.yaml")
+
+	_, err := os.Stat(config)
+
+	if err != nil {
+		return false
+	}
+
+	return true
+}

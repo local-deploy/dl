@@ -3,10 +3,8 @@ package command
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
-
-//Version init
-var Version = "v.0.1.0"
 
 func init() {
 	rootCmd.AddCommand(versionCmd)
@@ -17,6 +15,7 @@ var versionCmd = &cobra.Command{
 	Short: "Print the version number",
 	Long:  `Print the version number.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("DL " + Version)
+		version := viper.GetString("version")
+		fmt.Println("DL v" + version)
 	},
 }
