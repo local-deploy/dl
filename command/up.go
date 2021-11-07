@@ -1,7 +1,11 @@
 package command
 
 import (
+	"context"
 	"fmt"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/client"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/project"
@@ -24,6 +28,21 @@ var upCmd = &cobra.Command{
 
 func up() {
 	project.LoadEnv()
+
+	ctx := context.Background()
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		pterm.Fatal.Printfln("Failed to connect to socket")
+		return
+	}
+
+	containerFilter := filters.NewArgs(filters.Arg("name", "traefik"))
+	traefikExists, err := cli.ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter})
+
+	if len(traefikExists) == 0 {
+		pterm.FgRed.Printfln("Start local services first: dl service up")
+		return
+	}
 
 	compose, lookErr := exec.LookPath("docker-compose")
 	if lookErr != nil {
