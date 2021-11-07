@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/project"
 	"net"
+	"os"
 	"os/exec"
 )
 
@@ -50,21 +51,23 @@ func up() {
 		return
 	}
 
+	pterm.FgGreen.Printfln("Starting project...")
+
 	cmdCompose := &exec.Cmd{
-		Path: compose,
-		Dir:  project.Env.GetString("PWD"),
-		Args: []string{compose, "-p", project.Env.GetString("NETWORK_NAME"), "up", "-d"},
-		Env:  project.CmdEnv(),
+		Path:   compose,
+		Dir:    project.Env.GetString("PWD"),
+		Args:   []string{compose, "-p", project.Env.GetString("NETWORK_NAME"), "up", "-d"},
+		Env:    project.CmdEnv(),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
 	}
 
-	startProject, _ := pterm.DefaultSpinner.Start("Starting project")
-	output, err := cmdCompose.CombinedOutput()
+	err = cmdCompose.Run()
 	if err != nil {
-		startProject.Fail(fmt.Sprint(err) + ": " + string(output))
+		pterm.FgGreen.Printfln(fmt.Sprint(err))
 		return
 	}
-	startProject.UpdateText("Project has been successfully started")
-	startProject.Success()
+	pterm.FgGreen.Printfln("Project has been successfully started")
 
 	showProjectInfo()
 }

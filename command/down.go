@@ -5,6 +5,7 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/project"
+	"os"
 	"os/exec"
 )
 
@@ -30,19 +31,21 @@ func down() {
 		return
 	}
 
+	pterm.FgGreen.Printfln("Stopping project...")
+
 	cmdCompose := &exec.Cmd{
-		Path: compose,
-		Dir:  project.Env.GetString("PWD"),
-		Args: []string{compose, "-p", project.Env.GetString("NETWORK_NAME"), "down"},
-		Env:  project.CmdEnv(),
+		Path:   compose,
+		Dir:    project.Env.GetString("PWD"),
+		Args:   []string{compose, "-p", project.Env.GetString("NETWORK_NAME"), "down"},
+		Env:    project.CmdEnv(),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
 	}
 
-	stopProject, _ := pterm.DefaultSpinner.Start("Stopping project")
-	output, err := cmdCompose.CombinedOutput()
+	err := cmdCompose.Run()
 	if err != nil {
-		stopProject.Fail(fmt.Sprint(err) + ": " + string(output))
+		pterm.FgGreen.Printfln(fmt.Sprint(err))
 		return
 	}
-	stopProject.UpdateText("Project has been successfully stopped")
-	stopProject.Success()
+	pterm.FgGreen.Printfln("Project has been successfully stopped")
 }
