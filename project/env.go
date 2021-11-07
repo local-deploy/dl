@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/varrcan/dl/helper"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -30,6 +31,12 @@ func LoadEnv() {
 //setNetworkName Set network name from project name
 func setDefaultEnv() {
 	projectName := Env.GetString("APP_NAME")
+
+	if len(projectName) == 0 {
+		pterm.FgRed.Printfln("The APP_NAME variable is not defined! Please initialize .env file.")
+		os.Exit(1)
+	}
+
 	res := strings.ReplaceAll(projectName, ".", "")
 	Env.SetDefault("NETWORK_NAME", res)
 
@@ -45,6 +52,12 @@ func setDefaultEnv() {
 func setComposeFiles() {
 	var files []string
 	confDir, _ := helper.ConfigDir()
+	phpVersion := Env.GetString("PHP_VERSION")
+
+	if len(phpVersion) == 0 {
+		pterm.FgRed.Printfln("The PHP_VERSION variable is not defined! Please initialize .env file.")
+		os.Exit(1)
+	}
 
 	images := map[string]string{
 		"mysql":     confDir + "/config-files/docker-compose-mysql.yaml",
@@ -55,7 +68,7 @@ func setComposeFiles() {
 	}
 
 	for imageType, imageComposeFile := range images {
-		if strings.Contains(Env.GetString("PHP_VERSION"), imageType) {
+		if strings.Contains(phpVersion, imageType) {
 			files = append(files, imageComposeFile)
 		}
 	}
@@ -85,4 +98,18 @@ func CmdEnv() []string {
 	}
 
 	return env
+}
+
+//IsEnvFileExists checking for the existence of .env file
+func IsEnvFileExists() bool {
+	dir, _ := os.Getwd()
+	env := filepath.Join(dir, ".env")
+
+	_, err := os.Stat(env)
+
+	if err != nil {
+		return false
+	}
+
+	return true
 }
