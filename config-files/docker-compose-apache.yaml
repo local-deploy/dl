@@ -27,6 +27,7 @@ services:
       - "traefik.http.routers.${NETWORK_NAME}.entrypoints=web, websecure"
       - "traefik.http.routers.${NETWORK_NAME}.rule=Host(`${APP_NAME}.localhost`) || HostRegexp(`${APP_NAME}.{ip:.*}.nip.io`)"
       - "traefik.http.routers.${NETWORK_NAME}.middlewares=site-compress"
+      - "traefik.docker.network=dl_default"
     networks:
       dl_default: { }
       default:
