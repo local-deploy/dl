@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  db:
+    container_name: ${APP_NAME}_db
+    image: alterway/mysql:${MYSQL_VERSION:-5.7}
+    command: --innodb_strict_mode=off --innodb_flush_log_at_trx_commit=2 --innodb_flush_method=O_DIRECT --transaction-isolation=READ-COMMITTED
+    environment:
+      - "MYSQL_DATABASE=${MYSQL_DATABASE:-db}"
+      - "MYSQL_USER=${MYSQL_USER:-db}"
+      - "MYSQL_PASSWORD=${MYSQL_PASSWORD:-db}"
+      - "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}"
+      - "LOCALTIME=${LOCALTIME:-Europe/Moscow}"
+    volumes:
+      - "${PWD}/.docker/volume/db/:/var/lib/mysql/:delegated"

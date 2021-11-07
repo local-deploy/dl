@@ -47,6 +47,7 @@ func setComposeFiles() {
 	confDir, _ := helper.ConfigDir()
 
 	images := map[string]string{
+		"mysql":     confDir + "/config-files/docker-compose-mysql.yaml",
 		"fpm":       confDir + "/config-files/docker-compose-fpm.yaml",
 		"apache":    confDir + "/config-files/docker-compose-apache.yaml",
 		"redis":     confDir + "/config-files/docker-compose-redis.yaml",
@@ -59,6 +60,9 @@ func setComposeFiles() {
 		}
 	}
 
+	if Env.GetFloat64("MYSQL_VERSION") > 0 {
+		files = append(files, images["mysql"])
+	}
 	if Env.GetBool("REDIS") == true {
 		files = append(files, images["redis"])
 	}
