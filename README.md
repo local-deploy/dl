@@ -67,5 +67,9 @@ Available env:
 | XDEBUG_HOST             | host.docker.internal                               |
 | XDEBUG_PORT             | 9003                                               |
 |                         |                                                    |
+| REDIS                   | false                                              |
+| REDIS_PASSWORD          | pass                                               |
+| MEMCACHED               | false                                              |
+|                         |                                                    |
 
 Xdebug mode https://xdebug.org/docs/all_settings#mode

@@ -24,7 +24,7 @@ func LoadEnv() {
 	}
 
 	setDefaultEnv()
-	setComposeFile()
+	setComposeFiles()
 }
 
 //setNetworkName Set network name from project name
@@ -35,23 +35,39 @@ func setDefaultEnv() {
 
 	dir, _ := os.Getwd()
 	Env.SetDefault("PWD", dir)
+
+	Env.SetDefault("REDIS", false)
+	Env.SetDefault("REDIS_PASSWORD", "pass")
+	Env.SetDefault("MEMCACHED", false)
 }
 
-//setNetworkName Set network name from project name
-func setComposeFile() {
-	php := Env.GetString("PHP_VERSION")
+//setComposeFile Set docker-compose files
+func setComposeFiles() {
+	var files []string
 	confDir, _ := helper.ConfigDir()
 
 	images := map[string]string{
-		"fpm":    confDir + "/config-files/docker-compose-fpm.yaml",
-		"apache": confDir + "/config-files/docker-compose-apache.yaml",
+		"fpm":       confDir + "/config-files/docker-compose-fpm.yaml",
+		"apache":    confDir + "/config-files/docker-compose-apache.yaml",
+		"redis":     confDir + "/config-files/docker-compose-redis.yaml",
+		"memcached": confDir + "/config-files/docker-compose-memcached.yaml",
 	}
 
 	for imageType, imageComposeFile := range images {
-		if strings.Contains(php, imageType) {
-			Env.SetDefault("COMPOSE_FILE", imageComposeFile)
+		if strings.Contains(Env.GetString("PHP_VERSION"), imageType) {
+			files = append(files, imageComposeFile)
 		}
 	}
+
+	if Env.GetBool("REDIS") == true {
+		files = append(files, images["redis"])
+	}
+	if Env.GetBool("MEMCACHED") == true {
+		files = append(files, images["memcached"])
+	}
+
+	containers := strings.Join(files, ":")
+	Env.SetDefault("COMPOSE_FILE", containers)
 }
 
 //CmdEnv Getting variables in the "key=value" format
