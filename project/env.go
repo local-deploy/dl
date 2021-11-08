@@ -6,6 +6,7 @@ import (
 	"github.com/varrcan/dl/helper"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -37,7 +38,8 @@ func setDefaultEnv() {
 		os.Exit(1)
 	}
 
-	res := strings.ReplaceAll(projectName, ".", "")
+	var re = regexp.MustCompile(`[[:punct:]]`)
+	res := re.ReplaceAllString(projectName, "")
 	Env.SetDefault("NETWORK_NAME", res)
 
 	dir, _ := os.Getwd()
