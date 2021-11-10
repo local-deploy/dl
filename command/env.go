@@ -27,7 +27,7 @@ var envCmd = &cobra.Command{
 
 func env() {
 	if project.IsEnvFileExists() {
-		showMenu()
+		showEnvMenu()
 	} else {
 		if copyEnv() {
 			pterm.FgGreen.Println("The .env file has been created successfully. Please specify the necessary variables.")
@@ -35,7 +35,7 @@ func env() {
 	}
 }
 
-func showMenu() {
+func showEnvMenu() {
 	pterm.FgYellow.Println("The .env file exists!")
 	menu := wmenu.NewMenu("Select the necessary action:")
 	menu.LoopOnInvalid()
