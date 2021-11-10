@@ -23,6 +23,7 @@ func LoadEnv() {
 	err := Env.ReadInConfig()
 	if err != nil {
 		pterm.FgRed.Printfln(".env file not found. Please run the command: dl env")
+		os.Exit(1)
 	}
 
 	setDefaultEnv()

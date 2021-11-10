@@ -122,7 +122,7 @@ func upService() {
 		imageFiler := filters.NewArgs(filters.Arg("reference", local.Image+":"+local.Version))
 		isImageExists, err := cli.ImageList(ctx, types.ImageListOptions{All: true, Filters: imageFiler})
 		if len(isImageExists) == 0 {
-			spinnerPulling, _ := pterm.DefaultSpinner.WithRemoveWhenDone(true).Start("Pulling image " + local.Name)
+			spinnerPulling, _ := pterm.DefaultSpinner.WithRemoveWhenDone(true).Start("Pulling image " + local.Image)
 
 			out, err := cli.ImagePull(ctx, local.Image+":"+local.Version, types.ImagePullOptions{})
 			_, err = ioutil.ReadAll(out)
