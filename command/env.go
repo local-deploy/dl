@@ -100,10 +100,17 @@ func deleteEnv() {
 }
 
 func copyEnv() bool {
+	var src string
+
 	currentDir, _ := os.Getwd()
 	configDir, _ := helper.ConfigDir()
 
-	src := filepath.Join(configDir, "/config-files/.env.example")
+	if project.IsEnvExampleFileExists() {
+		src = filepath.Join(currentDir, ".env.example")
+	} else {
+		src = filepath.Join(configDir, "/config-files/.env.example")
+	}
+
 	dest := filepath.Join(currentDir, ".env")
 
 	bytesRead, err := ioutil.ReadFile(src)

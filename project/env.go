@@ -115,3 +115,17 @@ func IsEnvFileExists() bool {
 
 	return true
 }
+
+//IsEnvExampleFileExists checking for the existence of .env.example file
+func IsEnvExampleFileExists() bool {
+	dir, _ := os.Getwd()
+	env := filepath.Join(dir, ".env.example")
+
+	_, err := os.Stat(env)
+
+	if err != nil {
+		return false
+	}
+
+	return true
+}
