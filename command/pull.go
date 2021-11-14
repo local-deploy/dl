@@ -15,10 +15,19 @@ import (
 	"strings"
 )
 
-type access struct {
+type serverSettings struct {
 	Server, Key, User, Catalog string
 	Port                       uint
 }
+
+type dbSettings struct {
+	Host, DataBase, Login, Password string
+	ExcludedTables                  []string
+}
+
+var sshClient *goph.Client
+var server serverSettings
+var db dbSettings
 
 func init() {
 	rootCmd.AddCommand(pullCmd)
@@ -36,19 +45,7 @@ var pullCmd = &cobra.Command{
 func pull() {
 	project.LoadEnv()
 
-	//client, err := goph.NewConn(&goph.Config{
-	//	User:     remote.User,
-	//	Addr:     remote.Server,
-	//	Port:     remote.Port,
-	//	Auth:     auth,
-	//	Callback: verifyHost,
-	//})
-
-	client, err := newClient()
-	if err != nil {
-		pterm.FgRed.Println(err)
-		return
-	}
+	sshClient = newClient()
 
 	// Defer closing the network connection.
 	defer func(client *goph.Client) {
@@ -57,48 +54,45 @@ func pull() {
 			pterm.FgRed.Println(err)
 			return
 		}
-	}(client)
+	}(sshClient)
 
-	out, err := client.Run("ls")
+	cmd := strings.Join([]string{"cd", server.Catalog, "&&", "ls"}, " ")
+	out, err := sshClient.Run(cmd)
+
+	if strings.Contains(string(out), "bitrix") {
+		accessBitrixDb()
+	}
+
+	dumpDb()
 
 	if err != nil {
 		pterm.FgRed.Println(err)
 		return
 	}
-
-	fmt.Println(string(out))
 }
 
-func newClient() (c *goph.Client, err error) {
-	remote := getRemote()
+func newClient() (c *goph.Client) {
+	server = getRemote()
 	home, _ := helper.HomeDir()
 
-	auth, err := goph.Key(filepath.Join(home, ".ssh", remote.Key), "")
+	auth, err := goph.Key(filepath.Join(home, ".ssh", server.Key), "")
 	if err != nil {
 		pterm.FgRed.Println(err)
 		return
 	}
 
-	//callback, err := goph.DefaultKnownHosts()
-
-	//if err != nil {
-	//	pterm.FgRed.Println(err)
-	//	return
-	//}
-
 	c, err = goph.NewConn(&goph.Config{
-		User:     remote.User,
-		Addr:     remote.Server,
-		Port:     remote.Port,
+		User:     server.User,
+		Addr:     server.Server,
+		Port:     server.Port,
 		Auth:     auth,
-		Timeout:  goph.DefaultTimeout,
-		Callback: ssh.InsecureIgnoreHostKey(),
+		Callback: verifyHost,
 	})
 	return
 }
 
-func getRemote() access {
-	return access{
+func getRemote() serverSettings {
+	return serverSettings{
 		Server:  project.Env.GetString("SERVER"),
 		Port:    project.Env.GetUint("PORT_SRV"),
 		User:    project.Env.GetString("USER_SRV"),
@@ -109,37 +103,17 @@ func getRemote() access {
 
 func verifyHost(host string, remote net.Addr, key ssh.PublicKey) error {
 
-	//
-	// If you want to connect to new hosts.
-	// here your should check new connections public keys
-	// if the key not trusted you shuld return an error
-	//
-
-	// hostFound: is host in known hosts file.
-	// err: error if key not in known hosts file OR host in known hosts file but key changed!
 	hostFound, err := goph.CheckKnownHost(host, remote, key, "")
 
-	// Host in known hosts but key mismatch!
-	// Maybe because of MAN IN THE MIDDLE ATTACK!
-	if hostFound && err != nil {
-
-		return err
-	}
-
-	// handshake because public key already exists.
 	if hostFound && err == nil {
-
 		return nil
 	}
 
-	// Ask user to check if he trust the host public key.
 	if askIsHostTrusted(host, key) == false {
-
-		pterm.FgRed.Println("aborted!")
+		pterm.FgRed.Println("Connection aborted")
 		return nil
 	}
 
-	// Add the new host to known hosts file.
 	return goph.AddKnownHost(host, remote, key, "")
 }
 
@@ -147,8 +121,8 @@ func askIsHostTrusted(host string, key ssh.PublicKey) bool {
 
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Printf("Unknown Host: %s \nFingerprint: %s \n", host, ssh.FingerprintSHA256(key))
-	fmt.Print("Would you like to add it? type yes or no: ")
+	fmt.Printf("The authenticity of host %s can't be established \nFingerprint key: %s \n", host, ssh.FingerprintSHA256(key))
+	fmt.Print("Are you sure you want to continue connecting (Y/n)?")
 
 	a, err := reader.ReadString('\n')
 
@@ -157,5 +131,96 @@ func askIsHostTrusted(host string, key ssh.PublicKey) bool {
 		return false
 	}
 
-	return strings.ToLower(strings.TrimSpace(a)) == "yes"
+	switch strings.ToLower(strings.TrimSpace(a)) {
+	case "n":
+		return false
+	case "y":
+	default:
+		return true
+	}
+
+	return true
+}
+
+func accessBitrixDb() {
+	catCmd := strings.Join([]string{"cd", server.Catalog, "&&",
+		`cat bitrix/.settings.php | grep "'host' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`, "&&",
+		`cat bitrix/.settings.php | grep "'database' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`, "&&",
+		`cat bitrix/.settings.php | grep "'login' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`, "&&",
+		`cat bitrix/.settings.php | grep "'password' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`,
+	}, " ")
+	cat, err := sshClient.Run(catCmd)
+
+	dbArray := strings.Split(strings.TrimSpace(string(cat)), "\n")
+
+	if len(dbArray) != 4 {
+		pterm.FgRed.Println("Failed to access the database")
+		os.Exit(1)
+	}
+
+	excludedTables := strings.Split(strings.TrimSpace(project.Env.GetString("EXCLUDED_TABLES")), ",")
+
+	db = dbSettings{
+		Host:           dbArray[0],
+		DataBase:       dbArray[1],
+		Login:          dbArray[2],
+		Password:       dbArray[3],
+		ExcludedTables: excludedTables,
+	}
+
+	if err != nil {
+		pterm.FgRed.Println(err)
+		os.Exit(1)
+	}
+}
+
+func dumpDb() {
+	ignoredTablesString := formatIgnoredTables()
+	dumpCmd := strings.Join([]string{"cd", server.Catalog, "&&",
+		"mysqldump",
+		"--host=" + db.Host,
+		"--user=" + db.Login,
+		"--password=" + db.Password,
+		"--single-transaction=1",
+		"--lock-tables=false",
+		"--no-data",
+		"--no-tablespaces",
+		db.DataBase,
+		"|",
+		"gzip > " + server.Catalog + "/production.sql.gz",
+		"&&",
+		"mysqldump",
+		"--host=" + db.Host,
+		"--user=" + db.Login,
+		"--password=" + db.Password,
+		"--single-transaction=1",
+		"--force",
+		"--lock-tables=false",
+		"--no-tablespaces",
+		"--no-create-info",
+		ignoredTablesString,
+		db.DataBase,
+		"|",
+		"gzip >> " + server.Catalog + "/production.sql.gz",
+	}, " ")
+	_, err := sshClient.Run(dumpCmd)
+
+	if err != nil {
+		pterm.FgRed.Printfln("Failed to create database dump: %w \n", err)
+		os.Exit(1)
+	}
+}
+
+func formatIgnoredTables() string {
+	var ignoredTables []string
+
+	if len(db.ExcludedTables) == 0 {
+		return ""
+	}
+
+	for _, value := range db.ExcludedTables {
+		ignoredTables = append(ignoredTables, "--ignore-table="+db.DataBase+"."+value)
+	}
+
+	return strings.Join(ignoredTables, " ")
 }
