@@ -11,6 +11,7 @@ import (
 	"golang.org/x/crypto/ssh"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -66,6 +67,27 @@ func pull() {
 	dumpDb()
 	downloadDump()
 
+	bash, lookErr := exec.LookPath("bash")
+	docker, lookErr := exec.LookPath("docker")
+	gunzip, lookErr := exec.LookPath("gunzip")
+	if lookErr != nil {
+		pterm.FgRed.Println(lookErr)
+		return
+	}
+
+	//TODO: проверить, что контейнер запущен
+	localPath := filepath.Join(project.Env.GetString("PWD"), "production.sql.gz")
+	siteDb := project.Env.GetString("APP_NAME") + "_db"
+
+	cmdCompose := &exec.Cmd{
+		Path:   bash,
+		Args:   []string{bash, "-c", gunzip + " < " + localPath + " | " + docker + " exec -i " + siteDb + " /usr/bin/mysql --user=root --password=root db"},
+		Env:    project.CmdEnv(),
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	err = cmdCompose.Run()
 	if err != nil {
 		pterm.FgRed.Println(err)
 		return
