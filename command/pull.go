@@ -56,14 +56,15 @@ func pull() {
 		}
 	}(sshClient)
 
-	cmd := strings.Join([]string{"cd", server.Catalog, "&&", "ls"}, " ")
-	out, err := sshClient.Run(cmd)
+	ls := strings.Join([]string{"cd", server.Catalog, "&&", "ls"}, " ")
+	out, err := sshClient.Run(ls)
 
 	if strings.Contains(string(out), "bitrix") {
 		accessBitrixDb()
 	}
 
 	dumpDb()
+	downloadDump()
 
 	if err != nil {
 		pterm.FgRed.Println(err)
@@ -223,4 +224,16 @@ func formatIgnoredTables() string {
 	}
 
 	return strings.Join(ignoredTables, " ")
+}
+
+func downloadDump() {
+	serverPath := filepath.Join(server.Catalog, "production.sql.gz")
+	localPath := filepath.Join(project.Env.GetString("PWD"), "production.sql.gz")
+
+	err := sshClient.Download(serverPath, localPath)
+
+	if err != nil {
+		pterm.FgRed.Println("Download error: ", err)
+		os.Exit(1)
+	}
 }

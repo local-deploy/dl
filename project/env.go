@@ -45,6 +45,7 @@ func setDefaultEnv() {
 
 	dir, _ := os.Getwd()
 	Env.SetDefault("PWD", dir)
+	Env.SetDefault("SSH_KEY", "id_rsa")
 
 	Env.SetDefault("REDIS", false)
 	Env.SetDefault("REDIS_PASSWORD", "pass")
