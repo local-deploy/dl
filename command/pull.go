@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/melbahja/goph"
+	"github.com/pkg/sftp"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/helper"
@@ -61,9 +62,11 @@ func pull() {
 	out, err := sshClient.Run(ls)
 
 	if strings.Contains(string(out), "bitrix") {
+		pterm.FgGreen.Println("Bitrix CMS detected")
 		accessBitrixDb()
 	}
 
+	pterm.FgGreen.Println("Create and download database dump")
 	dumpDb()
 	downloadDump()
 
@@ -77,9 +80,10 @@ func pull() {
 
 	//TODO: проверить, что контейнер запущен
 	localPath := filepath.Join(project.Env.GetString("PWD"), "production.sql.gz")
-	siteDb := project.Env.GetString("APP_NAME") + "_db"
+	site := project.Env.GetString("APP_NAME")
+	siteDb := site + "_db"
 
-	cmdCompose := &exec.Cmd{
+	cmdDump := &exec.Cmd{
 		Path:   bash,
 		Args:   []string{bash, "-c", gunzip + " < " + localPath + " | " + docker + " exec -i " + siteDb + " /usr/bin/mysql --user=root --password=root db"},
 		Env:    project.CmdEnv(),
@@ -87,11 +91,23 @@ func pull() {
 		Stderr: os.Stderr,
 	}
 
-	err = cmdCompose.Run()
+	strSQL := "\"UPDATE b_option SET VALUE = 'Y' WHERE MODULE_ID = 'main' AND NAME = 'update_devsrv'; UPDATE b_lang SET SERVER_NAME='" + site + "' WHERE LID='s1';\""
+	cmdUpdateSite := &exec.Cmd{
+		Path: bash,
+		Args: []string{bash, "-c", "echo " + strSQL + " | " + docker + " exec -i " + siteDb + " /usr/bin/mysql --user=db --password=db --host=db db"},
+		Env:  project.CmdEnv(),
+	}
+
+	pterm.FgGreen.Println("Import database")
+	err = cmdDump.Run()
+
+	pterm.FgGreen.Println("Update additional options")
+	err = cmdUpdateSite.Run()
 	if err != nil {
 		pterm.FgRed.Println(err)
-		return
 	}
+
+	pterm.FgGreen.Println("All done")
 }
 
 func newClient() (c *goph.Client) {
@@ -258,4 +274,29 @@ func downloadDump() {
 		pterm.FgRed.Println("Download error: ", err)
 		os.Exit(1)
 	}
+
+	err = cleanRemote(serverPath)
+	if err != nil {
+		pterm.FgRed.Println("File deletion error: ", err)
+	}
+}
+
+func cleanRemote(remotePath string) (err error) {
+	pterm.FgGreen.Println("Cleaning up temporary files")
+
+	ftp, err := sshClient.NewSftp()
+	if err != nil {
+		return err
+	}
+
+	defer func(ftp *sftp.Client) {
+		err := ftp.Close()
+		if err != nil {
+			pterm.FgRed.Println(err)
+		}
+	}(ftp)
+
+	err = ftp.Remove(remotePath)
+
+	return err
 }

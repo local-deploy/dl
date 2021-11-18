@@ -8,6 +8,7 @@ require (
 	github.com/docker/docker v20.10.10+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/melbahja/goph v1.3.0 // indirect
+	github.com/pkg/sftp v1.13.4 // indirect
 	github.com/pterm/pterm v0.12.33
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/viper v1.9.0
