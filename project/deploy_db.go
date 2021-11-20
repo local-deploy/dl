@@ -17,26 +17,18 @@ type dbSettings struct {
 
 //DumpDb Database import from server
 func (c SshClient) DumpDb() {
-	ls := strings.Join([]string{"cd", c.Server.Catalog, "&&", "ls"}, " ")
-	out, err := c.Run(ls)
-	if err != nil {
-		pterm.FgRed.Println(err)
-	}
-
 	var db *dbSettings
+	var err error
 
-	//TODO: change to switch
-	if strings.Contains(string(out), "bitrix") {
-		pterm.FgGreen.Println("Bitrix CMS detected")
+	switch c.Server.FwType {
+	case "bitrix":
 		db, err = c.accessBitrixDb()
-		if err != nil {
-			pterm.FgRed.Printfln("Database access error: %w \n", err)
-			os.Exit(1)
-		}
+	case "laravel": //TODO
+	case "wordpress": //TODO
 	}
 
-	if db == nil {
-		pterm.FgRed.Printfln("Failed to determine the FW. Please specify the database accesses manually.")
+	if err != nil {
+		pterm.FgRed.Printfln("Database access error: %w \n", err)
 		os.Exit(1)
 	}
 

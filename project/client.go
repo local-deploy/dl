@@ -20,8 +20,8 @@ type SshClient struct {
 
 // Server config
 type Server struct {
-	Server, Key, User, Catalog string
-	Port                       uint
+	Server, Key, User, Catalog, FwType string
+	Port                               uint
 }
 
 //NewClient returns new client and error if any

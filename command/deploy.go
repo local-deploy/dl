@@ -4,6 +4,8 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/project"
+	"os"
+	"strings"
 	"sync"
 )
 
@@ -12,11 +14,11 @@ func init() {
 }
 
 var pullCmd = &cobra.Command{
-	Use:   "pull",
+	Use:   "deploy",
 	Short: "Downloading db and files from the production server",
 	Long:  `Downloading database and kernel files from the production server.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		pull()
+		deploy()
 	},
 }
 
@@ -25,7 +27,7 @@ var (
 	sshClient     *project.SshClient
 )
 
-func pull() {
+func deploy() {
 	project.LoadEnv()
 
 	var err error
@@ -46,6 +48,12 @@ func pull() {
 		}
 	}(sshClient)
 
+	sshClient.Server.FwType, err = detectFw()
+	if err != nil {
+		pterm.FgRed.Printfln("Failed to determine the FW. Please specify accesses manually.")
+		os.Exit(1)
+	}
+
 	pterm.FgGreen.Println("Create and download database dump")
 	go startDump()
 
@@ -58,4 +66,29 @@ func pull() {
 func startDump() {
 	defer pullWaitGroup.Done()
 	sshClient.DumpDb()
+}
+
+func detectFw() (string, error) {
+	ls := strings.Join([]string{"cd", sshClient.Server.Catalog, "&&", "ls"}, " ")
+	out, err := sshClient.Run(ls)
+	if err != nil {
+		pterm.FgRed.Println(err)
+	}
+
+	if strings.Contains(string(out), "bitrix") {
+		pterm.FgGreen.Println("Bitrix CMS detected")
+		return "bitrix", nil
+	}
+
+	if strings.Contains(string(out), "wp-config.php") {
+		pterm.FgGreen.Println("WordPress CMS detected")
+		return "wordpress", nil
+	}
+
+	if strings.Contains(string(out), "artisan") {
+		pterm.FgGreen.Println("Laravel FW detected")
+		return "laravel", nil
+	}
+
+	return "", err
 }
