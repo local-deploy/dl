@@ -35,8 +35,8 @@ func deploy() {
 		Server:  project.Env.GetString("SERVER"),
 		Key:     project.Env.GetString("SSH_KEY"),
 		User:    project.Env.GetString("USER_SRV"),
-		Catalog: project.Env.GetString("CATALOG_SRV"),
 		Port:    project.Env.GetUint("PORT_SRV"),
+		Catalog: project.Env.GetString("CATALOG_SRV"),
 	})
 
 	// Defer closing the network connection.
@@ -54,13 +54,19 @@ func deploy() {
 		os.Exit(1)
 	}
 
-	pterm.FgGreen.Println("Create and download database dump")
+	pullWaitGroup.Add(2)
+
+	go startFiles()
 	go startDump()
 
-	pullWaitGroup.Add(1)
 	pullWaitGroup.Wait()
 
 	pterm.FgGreen.Println("All done")
+}
+
+func startFiles() {
+	defer pullWaitGroup.Done()
+	sshClient.CopyFiles()
 }
 
 func startDump() {

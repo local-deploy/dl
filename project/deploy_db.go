@@ -2,7 +2,6 @@ package project
 
 import (
 	"errors"
-	"github.com/pkg/sftp"
 	"github.com/pterm/pterm"
 	"os"
 	"os/exec"
@@ -123,6 +122,7 @@ func (d dbSettings) formatIgnoredTables() string {
 
 //downloadDump Downloading a dump and deleting an archive from the server
 func (c SshClient) downloadDump() {
+	pterm.FgGreen.Println("Download database dump")
 	serverPath := filepath.Join(c.Server.Catalog, "production.sql.gz")
 	localPath := filepath.Join(Env.GetString("PWD"), "production.sql.gz")
 
@@ -133,31 +133,11 @@ func (c SshClient) downloadDump() {
 		os.Exit(1)
 	}
 
+	pterm.FgGreen.Println("Cleaning up temporary dump")
 	err = c.cleanRemote(serverPath)
 	if err != nil {
 		pterm.FgRed.Println("File deletion error: ", err)
 	}
-}
-
-//cleanRemote Deleting file on the server
-func (c SshClient) cleanRemote(remotePath string) (err error) {
-	pterm.FgGreen.Println("Cleaning up temporary files")
-
-	ftp, err := c.NewSftp()
-	if err != nil {
-		return err
-	}
-
-	defer func(ftp *sftp.Client) {
-		err := ftp.Close()
-		if err != nil {
-			pterm.FgRed.Println(err)
-		}
-	}(ftp)
-
-	err = ftp.Remove(remotePath)
-
-	return err
 }
 
 //importDb Importing a database into a local container
@@ -177,11 +157,11 @@ func importDb() {
 
 	//TODO: переписать на sdk
 	cmdDump := &exec.Cmd{
-		Path:   bash,
-		Args:   []string{bash, "-c", gunzip + " < " + localPath + " | " + docker + " exec -i " + siteDb + " /usr/bin/mysql --user=root --password=root db"},
-		Env:    CmdEnv(),
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		Path: bash,
+		Args: []string{bash, "-c", gunzip + " < " + localPath + " | " + docker + " exec -i " + siteDb + " /usr/bin/mysql --user=root --password=root db"},
+		Env:  CmdEnv(),
+		//Stdout: os.Stdout,
+		//Stderr: os.Stderr,
 	}
 
 	strSQL := "\"UPDATE b_option SET VALUE = 'Y' WHERE MODULE_ID = 'main' AND NAME = 'update_devsrv'; UPDATE b_lang SET SERVER_NAME='" + site + "' WHERE LID='s1';\""

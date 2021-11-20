@@ -3,6 +3,7 @@ package project
 import (
 	"bufio"
 	"github.com/melbahja/goph"
+	"github.com/pkg/sftp"
 	"github.com/pterm/pterm"
 	"github.com/varrcan/dl/helper"
 	"golang.org/x/crypto/ssh"
@@ -87,4 +88,23 @@ func askIsHostTrusted(host string, key ssh.PublicKey) bool {
 	}
 
 	return true
+}
+
+//cleanRemote Deleting file on the server
+func (c SshClient) cleanRemote(remotePath string) (err error) {
+	ftp, err := c.NewSftp()
+	if err != nil {
+		return err
+	}
+
+	defer func(ftp *sftp.Client) {
+		err := ftp.Close()
+		if err != nil {
+			pterm.FgRed.Println(err)
+		}
+	}(ftp)
+
+	err = ftp.Remove(remotePath)
+
+	return err
 }
