@@ -20,13 +20,33 @@ var pullCmd = &cobra.Command{
 	},
 }
 
-var pullWaitGroup sync.WaitGroup
+var (
+	pullWaitGroup sync.WaitGroup
+	sshClient     *project.SshClient
+)
 
 func pull() {
 	project.LoadEnv()
 
-	pterm.FgGreen.Println("Create and download database dump")
+	var err error
+	sshClient, err = project.NewClient(&project.Server{
+		Server:  project.Env.GetString("SERVER"),
+		Key:     project.Env.GetString("SSH_KEY"),
+		User:    project.Env.GetString("USER_SRV"),
+		Catalog: project.Env.GetString("CATALOG_SRV"),
+		Port:    project.Env.GetUint("PORT_SRV"),
+	})
 
+	// Defer closing the network connection.
+	defer func(client *project.SshClient) {
+		err = client.Close()
+		if err != nil {
+			pterm.FgRed.Println(err)
+			return
+		}
+	}(sshClient)
+
+	pterm.FgGreen.Println("Create and download database dump")
 	go startDump()
 
 	pullWaitGroup.Add(1)
@@ -37,5 +57,5 @@ func pull() {
 
 func startDump() {
 	defer pullWaitGroup.Done()
-	project.DumpDb()
+	sshClient.DumpDb()
 }
