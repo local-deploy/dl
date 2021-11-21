@@ -141,53 +141,29 @@ func (c SshClient) downloadDump() {
 
 //importDb Importing a database into a local container
 func importDb() {
-	bash, lookErr := exec.LookPath("bash")
+	var err error
+
+	pterm.FgGreen.Println("Import database")
+
 	docker, lookErr := exec.LookPath("docker")
 	gunzip, lookErr := exec.LookPath("gunzip")
-	rm, lookErr := exec.LookPath("rm")
 	if lookErr != nil {
 		pterm.FgRed.Println(lookErr)
 		return
 	}
 
 	//TODO: проверить, что контейнер запущен
+	//TODO: переписать на sdk
+
 	localPath := filepath.Join(Env.GetString("PWD"), "production.sql.gz")
 	site := Env.GetString("APP_NAME")
 	siteDb := site + "_db"
-
-	//TODO: переписать на sdk
-	cmdDump := &exec.Cmd{
-		Path: bash,
-		Args: []string{bash, "-c", gunzip + " < " + localPath + " | " + docker + " exec -i " + siteDb + " /usr/bin/mysql --user=root --password=root db"},
-		Env:  CmdEnv(),
-		//Stdout: os.Stdout,
-		//Stderr: os.Stderr,
-	}
-
 	strSQL := "\"UPDATE b_option SET VALUE = 'Y' WHERE MODULE_ID = 'main' AND NAME = 'update_devsrv'; UPDATE b_lang SET SERVER_NAME='" + site + "' WHERE LID='s1';\""
-	cmdUpdateSite := &exec.Cmd{
-		Path: bash,
-		Args: []string{bash, "-c", "echo " + strSQL + " | " + docker + " exec -i " + siteDb + " /usr/bin/mysql --user=db --password=db --host=db db"},
-		Env:  CmdEnv(),
-	}
 
-	pterm.FgGreen.Println("Import database")
-	err := cmdDump.Run()
+	err = exec.Command("bash", "-c", gunzip+" < "+localPath+" | "+docker+" exec -i "+siteDb+" /usr/bin/mysql --user=root --password=root db").Run()
+	err = exec.Command("bash", "-c", "echo "+strSQL+" | "+docker+" exec -i "+siteDb+" /usr/bin/mysql --user=db --password=db --host=db db").Run()
+	err = exec.Command("rm", localPath).Run()
 
-	//pterm.FgGreen.Println("Update additional options")
-	err = cmdUpdateSite.Run()
-	if err != nil {
-		pterm.FgRed.Println(err)
-	}
-
-	cmdRm := &exec.Cmd{
-		Path:   rm,
-		Args:   []string{rm, localPath},
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	}
-
-	err = cmdRm.Run()
 	if err != nil {
 		pterm.FgRed.Println(err)
 	}

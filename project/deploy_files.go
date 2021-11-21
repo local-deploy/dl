@@ -82,37 +82,16 @@ func (c SshClient) downloadArchive() {
 }
 
 func extractArchive() {
-	tar, lookErr := exec.LookPath("tar")
-	rm, lookErr := exec.LookPath("rm")
-	if lookErr != nil {
-		pterm.FgRed.Println(lookErr)
-		return
-	}
+	var err error
+
+	pterm.FgBlue.Println("Extract files")
 
 	localPath := filepath.Join(Env.GetString("PWD"))
 	archive := filepath.Join(localPath, "production.tar.gz")
 
-	cmdExtract := &exec.Cmd{
-		Path:   tar,
-		Args:   []string{tar, "-xzf", archive, "-C", localPath},
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	}
+	err = exec.Command("tar", "-xzf", archive, "-C", localPath).Run()
+	err = exec.Command("rm", archive).Run()
 
-	pterm.FgBlue.Println("Extract files")
-	err := cmdExtract.Run()
-	if err != nil {
-		pterm.FgRed.Println(err)
-	}
-
-	cmdRm := &exec.Cmd{
-		Path:   rm,
-		Args:   []string{rm, archive},
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	}
-
-	err = cmdRm.Run()
 	if err != nil {
 		pterm.FgRed.Println(err)
 	}
