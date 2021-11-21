@@ -158,7 +158,9 @@ func importDb() {
 	localPath := filepath.Join(Env.GetString("PWD"), "production.sql.gz")
 	site := Env.GetString("APP_NAME")
 	siteDb := site + "_db"
-	strSQL := "\"UPDATE b_option SET VALUE = 'Y' WHERE MODULE_ID = 'main' AND NAME = 'update_devsrv'; UPDATE b_lang SET SERVER_NAME='" + site + "' WHERE LID='s1';\""
+	strSQL := `"UPDATE b_option SET VALUE = 'Y' WHERE MODULE_ID = 'main' AND NAME = 'update_devsrv'; 
+UPDATE b_lang SET SERVER_NAME='` + site + `' WHERE LID='s1'; 
+UPDATE b_lang SET b_lang.DOC_ROOT='' WHERE 1=(SELECT DOC_ROOT FROM (SELECT COUNT(LID) FROM b_lang) as cnt);"`
 
 	err = exec.Command("bash", "-c", gunzip+" < "+localPath+" | "+docker+" exec -i "+siteDb+" /usr/bin/mysql --user=root --password=root db").Run()
 	err = exec.Command("bash", "-c", "echo "+strSQL+" | "+docker+" exec -i "+siteDb+" /usr/bin/mysql --user=db --password=db --host=db db").Run()
