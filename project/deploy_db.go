@@ -126,14 +126,13 @@ func (c SshClient) downloadDump() {
 	serverPath := filepath.Join(c.Server.Catalog, "production.sql.gz")
 	localPath := filepath.Join(Env.GetString("PWD"), "production.sql.gz")
 
-	err := c.Download(serverPath, localPath)
+	err := c.download(serverPath, localPath)
 
 	if err != nil {
 		pterm.FgRed.Println("Download error: ", err)
 		os.Exit(1)
 	}
 
-	pterm.FgGreen.Println("Cleaning up temporary dump")
 	err = c.cleanRemote(serverPath)
 	if err != nil {
 		pterm.FgRed.Println("File deletion error: ", err)
@@ -145,6 +144,7 @@ func importDb() {
 	bash, lookErr := exec.LookPath("bash")
 	docker, lookErr := exec.LookPath("docker")
 	gunzip, lookErr := exec.LookPath("gunzip")
+	rm, lookErr := exec.LookPath("rm")
 	if lookErr != nil {
 		pterm.FgRed.Println(lookErr)
 		return
@@ -174,8 +174,20 @@ func importDb() {
 	pterm.FgGreen.Println("Import database")
 	err := cmdDump.Run()
 
-	pterm.FgGreen.Println("Update additional options")
+	//pterm.FgGreen.Println("Update additional options")
 	err = cmdUpdateSite.Run()
+	if err != nil {
+		pterm.FgRed.Println(err)
+	}
+
+	cmdRm := &exec.Cmd{
+		Path:   rm,
+		Args:   []string{rm, localPath},
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	}
+
+	err = cmdRm.Run()
 	if err != nil {
 		pterm.FgRed.Println(err)
 	}

@@ -5,8 +5,10 @@ import (
 	"github.com/melbahja/goph"
 	"github.com/pkg/sftp"
 	"github.com/pterm/pterm"
+	"github.com/schollz/progressbar/v3"
 	"github.com/varrcan/dl/helper"
 	"golang.org/x/crypto/ssh"
+	"io"
 	"net"
 	"os"
 	"path/filepath"
@@ -107,4 +109,43 @@ func (c SshClient) cleanRemote(remotePath string) (err error) {
 	err = ftp.Remove(remotePath)
 
 	return err
+}
+
+// Download file from remote server
+func (c SshClient) download(remotePath string, localPath string) (err error) {
+
+	local, err := os.Create(localPath)
+	if err != nil {
+		return
+	}
+	defer local.Close()
+
+	ftp, err := c.NewSftp()
+	if err != nil {
+		return
+	}
+	defer ftp.Close()
+
+	remote, err := ftp.Open(remotePath)
+	if err != nil {
+		return
+	}
+	defer remote.Close()
+
+	resp, _ := remote.Stat()
+
+	bar := progressbar.NewOptions64(resp.Size(),
+		progressbar.OptionEnableColorCodes(true),
+		progressbar.OptionShowBytes(true),
+		progressbar.OptionSetWidth(15),
+		progressbar.OptionSpinnerType(9),
+	)
+
+	if _, err = io.Copy(io.MultiWriter(local, bar), remote); err != nil {
+		return
+	}
+
+	_ = bar.RenderBlank()
+
+	return local.Sync()
 }
