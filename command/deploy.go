@@ -82,17 +82,17 @@ func detectFw() (string, error) {
 	}
 
 	if strings.Contains(string(out), "bitrix") {
-		pterm.FgGreen.Println("Bitrix CMS detected")
+		pterm.FgDefault.Println("Bitrix CMS detected")
 		return "bitrix", nil
 	}
 
 	if strings.Contains(string(out), "wp-config.php") {
-		pterm.FgGreen.Println("WordPress CMS detected")
+		pterm.FgDefault.Println("WordPress CMS detected")
 		return "wordpress", nil
 	}
 
 	if strings.Contains(string(out), "artisan") {
-		pterm.FgGreen.Println("Laravel FW detected")
+		pterm.FgDefault.Println("Laravel FW detected")
 		return "laravel", nil
 	}
 
