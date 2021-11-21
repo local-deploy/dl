@@ -9,7 +9,6 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/project"
-	"net"
 	"os"
 	"os/exec"
 )
@@ -74,24 +73,14 @@ func up() {
 
 //showProjectInfo Display project links
 func showProjectInfo() {
-	p := project.Env.GetString("APP_NAME")
-	h := getLocalIp()
+	l := project.Env.GetString("LOCAL_DOMAIN")
+	n := project.Env.GetString("NIP_DOMAIN")
+
 	pterm.FgCyan.Println()
 	panels := pterm.Panels{
 		{{Data: pterm.FgYellow.Sprintf("nip.io\nlocal")},
-			{Data: pterm.FgYellow.Sprintf("http://%s.%s.nip.io/\nhttp://%s.localhost/", p, h, p)}},
+			{Data: pterm.FgYellow.Sprintf("http://%s/\nhttp://%s/", n, l)}},
 	}
 
 	_ = pterm.DefaultPanel.WithPanels(panels).WithPadding(5).Render()
-}
-
-func getLocalIp() string {
-	//name, _ := os.Hostname()
-	address, err := net.LookupHost("localhost")
-	if err != nil {
-		fmt.Printf("%v\n", err)
-		return ""
-	}
-
-	return address[0]
 }
