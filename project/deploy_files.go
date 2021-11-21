@@ -99,7 +99,7 @@ func extractArchive() {
 		Stderr: os.Stderr,
 	}
 
-	pterm.FgGreen.Println("Extract files")
+	pterm.FgBlue.Println("Extract files")
 	err := cmdExtract.Run()
 	if err != nil {
 		pterm.FgRed.Println(err)
