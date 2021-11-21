@@ -27,7 +27,7 @@ func (c SshClient) CopyFiles() {
 	}
 
 	err = c.downloadArchive()
-	if err != nil {
+	if err == nil {
 		extractArchive()
 	}
 }
