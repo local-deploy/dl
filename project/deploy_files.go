@@ -94,7 +94,7 @@ func extractArchive() {
 	archive := filepath.Join(localPath, "production.tar.gz")
 
 	err = exec.Command("tar", "-xzf", archive, "-C", localPath).Run()
-	err = exec.Command("rm", archive).Run()
+	err = exec.Command("rm", "-f", archive).Run()
 
 	if err != nil {
 		pterm.FgRed.Println(err)
