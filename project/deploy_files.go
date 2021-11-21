@@ -15,8 +15,10 @@ func (c SshClient) CopyFiles() {
 	switch c.Server.FwType {
 	case "bitrix":
 		err = c.packFiles("bitrix")
-	case "laravel": //TODO
-	case "wordpress": //TODO
+	case "wordpress":
+		err = c.packFiles("wp-admin wp-includes")
+	default:
+		return
 	}
 
 	if err != nil {
@@ -24,8 +26,10 @@ func (c SshClient) CopyFiles() {
 		os.Exit(1)
 	}
 
-	c.downloadArchive()
-	extractArchive()
+	err = c.downloadArchive()
+	if err != nil {
+		extractArchive()
+	}
 }
 
 //packFiles Add files to archive
@@ -39,7 +43,7 @@ func (c SshClient) packFiles(path string) error {
 		"-zcf",
 		"production.tar.gz",
 		excludeTarString,
-		path + "/",
+		path,
 	}, " ")
 	_, err := c.Run(tarCmd)
 
@@ -63,7 +67,7 @@ func formatIgnoredPath() string {
 	return strings.Join(ignoredPath, " ")
 }
 
-func (c SshClient) downloadArchive() {
+func (c SshClient) downloadArchive() error {
 	pterm.FgBlue.Println("Download archive")
 	serverPath := filepath.Join(c.Server.Catalog, "production.tar.gz")
 	localPath := filepath.Join(Env.GetString("PWD"), "production.tar.gz")
@@ -72,13 +76,13 @@ func (c SshClient) downloadArchive() {
 
 	if err != nil {
 		pterm.FgRed.Println("Download error: ", err)
-		os.Exit(1)
 	}
 
 	err = c.cleanRemote(serverPath)
 	if err != nil {
 		pterm.FgRed.Println("File deletion error: ", err)
 	}
+	return err
 }
 
 func extractArchive() {
