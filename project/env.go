@@ -1,9 +1,11 @@
 package project
 
 import (
+	"fmt"
 	"github.com/pterm/pterm"
 	"github.com/spf13/viper"
 	"github.com/varrcan/dl/helper"
+	"net"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -50,6 +52,12 @@ func setDefaultEnv() {
 	Env.SetDefault("REDIS", false)
 	Env.SetDefault("REDIS_PASSWORD", "pass")
 	Env.SetDefault("MEMCACHED", false)
+
+	host := getLocalIp()
+
+	Env.SetDefault("LOCAL_IP", host)
+	Env.SetDefault("NIP_DOMAIN", fmt.Sprintf("%s.%s.nip.io", projectName, host))
+	Env.SetDefault("LOCAL_DOMAIN", fmt.Sprintf("%s.localhost", projectName))
 }
 
 //setComposeFile Set docker-compose files
@@ -130,4 +138,15 @@ func IsEnvExampleFileExists() bool {
 	}
 
 	return true
+}
+
+func getLocalIp() string {
+	//name, _ := os.Hostname()
+	address, err := net.LookupHost("localhost")
+	if err != nil {
+		fmt.Printf("%v\n", err)
+		return ""
+	}
+
+	return address[0]
 }
