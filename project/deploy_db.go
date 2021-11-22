@@ -152,7 +152,6 @@ func importDb() {
 		return
 	}
 
-	//TODO: проверить, что контейнер запущен
 	//TODO: переписать на sdk
 
 	localPath := filepath.Join(Env.GetString("PWD"), "production.sql.gz")

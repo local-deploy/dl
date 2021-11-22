@@ -1,10 +1,15 @@
 package command
 
 import (
+	"context"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/client"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/project"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 )
@@ -79,6 +84,11 @@ func deploy() {
 	}
 
 	if database == true {
+		err = upDbContainer()
+		if err != nil {
+			pterm.FgRed.Println("Import failed: ", err)
+			os.Exit(1)
+		}
 		pullWaitGroup.Add(1)
 		go startDump()
 	}
@@ -121,4 +131,43 @@ func detectFw() (string, error) {
 	}
 
 	return "", err
+}
+
+//upDbContainer Run db container before dump
+func upDbContainer() error {
+	ctx := context.Background()
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		pterm.Fatal.Printfln("Failed to connect to socket")
+		return nil
+	}
+
+	site := project.Env.GetString("APP_NAME")
+	siteDb := site + "_db"
+
+	containerFilter := filters.NewArgs(filters.Arg("name", siteDb))
+	containerExists, err := cli.ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter})
+
+	if len(containerExists) == 0 {
+		compose, lookErr := exec.LookPath("docker-compose")
+		if lookErr != nil {
+			return lookErr
+		}
+
+		pterm.FgGreen.Printfln("Starting db container")
+
+		cmdCompose := &exec.Cmd{
+			Path: compose,
+			Dir:  project.Env.GetString("PWD"),
+			Args: []string{compose, "-p", project.Env.GetString("NETWORK_NAME"), "up", "-d", "db"},
+			Env:  project.CmdEnv(),
+		}
+
+		err = cmdCompose.Run()
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	return nil
 }
