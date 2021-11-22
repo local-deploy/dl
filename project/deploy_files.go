@@ -29,6 +29,8 @@ func (c SshClient) CopyFiles() {
 	err = c.downloadArchive()
 	if err == nil {
 		extractArchive()
+		bitrixAccess()
+		//helper.CallMethod(&err, c.Server.FwType+"Access")
 	}
 }
 
@@ -95,6 +97,30 @@ func extractArchive() {
 
 	err = exec.Command("tar", "-xzf", archive, "-C", localPath).Run()
 	err = exec.Command("rm", "-f", archive).Run()
+
+	if err != nil {
+		pterm.FgRed.Println(err)
+	}
+}
+
+func bitrixAccess() {
+	var err error
+	localPath := filepath.Join(Env.GetString("PWD"))
+	settingsFile := filepath.Join(localPath, "bitrix", ".settings.php")
+	dbconnFile := filepath.Join(localPath, "bitrix", "php_interface", "dbconn.php")
+
+	err = exec.Command("sed", "-i", "-e", `/'debug' => /c 'debug' => 'false',`,
+		"-e", `/'host' => /c 'host' => 'db',`,
+		"-e", `/'database' => /c 'database' => 'db',`,
+		"-e", `/'login' => /c 'login' => 'db',`,
+		"-e", `/'password' => /c 'password' => 'db',`,
+		settingsFile).Run()
+
+	err = exec.Command("sed", "-i", "-e", `/$DBHost /c $DBHost = \"db\";`,
+		"-e", `/$DBLogin /c $DBLogin = \"db\";`,
+		"-e", `/$DBPassword /c $DBPassword = \"db\";`,
+		"-e", `/$DBName /c $DBName = \"db\";`,
+		dbconnFile).Run()
 
 	if err != nil {
 		pterm.FgRed.Println(err)
