@@ -141,12 +141,16 @@ func IsEnvExampleFileExists() bool {
 }
 
 func getLocalIp() string {
-	//name, _ := os.Hostname()
-	address, err := net.LookupHost("localhost")
+	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		fmt.Printf("%v\n", err)
 		return ""
 	}
-
-	return address[0]
+	for _, address := range addrs {
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+			}
+		}
+	}
+	return "127.0.0.1"
 }
