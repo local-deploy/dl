@@ -34,7 +34,7 @@ func LoadEnv() {
 
 //setNetworkName Set network name from project name
 func setDefaultEnv() {
-	projectName := Env.GetString("APP_NAME")
+	projectName := strings.ToLower(Env.GetString("APP_NAME"))
 
 	if len(projectName) == 0 {
 		pterm.FgRed.Printfln("The APP_NAME variable is not defined! Please initialize .env file.")

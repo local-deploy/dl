@@ -22,7 +22,8 @@ func (c SshClient) DumpDb() {
 	switch c.Server.FwType {
 	case "bitrix":
 		db, err = c.accessBitrixDb()
-	case "laravel": //TODO
+	case "laravel":
+		db, err = c.accessLaravelDb()
 	case "wordpress": //TODO
 	}
 
@@ -38,7 +39,7 @@ func (c SshClient) DumpDb() {
 	}
 
 	c.downloadDump()
-	importDb()
+	c.importDb()
 }
 
 //accessBitrixDb Attempt to determine database accesses
@@ -48,6 +49,32 @@ func (c SshClient) accessBitrixDb() (*dbSettings, error) {
 		`cat bitrix/.settings.php | grep "'database' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`, "&&",
 		`cat bitrix/.settings.php | grep "'login' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`, "&&",
 		`cat bitrix/.settings.php | grep "'password' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`,
+	}, " ")
+	cat, err := c.Run(catCmd)
+
+	dbArray := strings.Split(strings.TrimSpace(string(cat)), "\n")
+
+	if len(dbArray) != 4 {
+		return nil, errors.New("failed to define variables")
+	}
+
+	excludedTables := strings.Split(strings.TrimSpace(Env.GetString("EXCLUDED_TABLES")), ",")
+
+	return &dbSettings{
+		Host:           dbArray[0],
+		DataBase:       dbArray[1],
+		Login:          dbArray[2],
+		Password:       dbArray[3],
+		ExcludedTables: excludedTables,
+	}, err
+}
+
+func (c SshClient) accessLaravelDb() (*dbSettings, error) {
+	catCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&", "export $(grep -v '^#' .env | xargs)", "&&",
+		`echo $DB_HOST`, "&&",
+		`echo $DB_DATABASE`, "&&",
+		`echo $DB_USERNAME`, "&&",
+		`echo $DB_PASSWORD`,
 	}, " ")
 	cat, err := c.Run(catCmd)
 
@@ -140,7 +167,7 @@ func (c SshClient) downloadDump() {
 }
 
 //importDb Importing a database into a local container
-func importDb() {
+func (c SshClient) importDb() {
 	var err error
 
 	pterm.FgGreen.Println("Import database")
@@ -157,17 +184,28 @@ func importDb() {
 	localPath := filepath.Join(Env.GetString("PWD"), "production.sql.gz")
 	site := Env.GetString("APP_NAME")
 	siteDb := site + "_db"
-	local := Env.GetString("LOCAL_DOMAIN")
-	nip := Env.GetString("NIP_DOMAIN")
 
-	strSQL := `"UPDATE b_option SET VALUE = 'Y' WHERE MODULE_ID = 'main' AND NAME = 'update_devsrv'; 
+	err = exec.Command("bash", "-c", gunzip+" < "+localPath+" | "+docker+" exec -i "+siteDb+" /usr/bin/mysql --user=root --password=root db").Run()
+	if err != nil {
+		pterm.FgRed.Println(err)
+	}
+
+	if c.Server.FwType == "bitrix" {
+		local := Env.GetString("LOCAL_DOMAIN")
+		nip := Env.GetString("NIP_DOMAIN")
+
+		strSQL := `"UPDATE b_option SET VALUE = 'Y' WHERE MODULE_ID = 'main' AND NAME = 'update_devsrv'; 
 UPDATE b_lang SET SERVER_NAME='` + site + `.localhost' WHERE LID='s1'; 
 UPDATE b_lang SET b_lang.DOC_ROOT='' WHERE 1=(SELECT DOC_ROOT FROM (SELECT COUNT(LID) FROM b_lang) as cnt); 
 INSERT INTO b_lang_domain VALUES ('s1', '` + local + `'); 
 INSERT INTO b_lang_domain VALUES ('s1', '` + nip + `');"`
 
-	err = exec.Command("bash", "-c", gunzip+" < "+localPath+" | "+docker+" exec -i "+siteDb+" /usr/bin/mysql --user=root --password=root db").Run()
-	err = exec.Command("bash", "-c", "echo "+strSQL+" | "+docker+" exec -i "+siteDb+" /usr/bin/mysql --user=db --password=db --host=db db").Run()
+		err = exec.Command("bash", "-c", "echo "+strSQL+" | "+docker+" exec -i "+siteDb+" /usr/bin/mysql --user=db --password=db --host=db db").Run()
+		if err != nil {
+			pterm.FgRed.Println(err)
+		}
+	}
+
 	err = exec.Command("rm", localPath).Run()
 
 	if err != nil {
