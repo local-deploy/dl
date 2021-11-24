@@ -143,7 +143,7 @@ func IsEnvExampleFileExists() bool {
 func getLocalIp() string {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		return ""
+		return "127.0.0.1"
 	}
 	for _, address := range addrs {
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
