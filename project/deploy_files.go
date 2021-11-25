@@ -109,7 +109,7 @@ func bitrixAccess() {
 	settingsFile := filepath.Join(localPath, "bitrix", ".settings.php")
 	dbconnFile := filepath.Join(localPath, "bitrix", "php_interface", "dbconn.php")
 
-	err = exec.Command("sed", "-i", "-e", `/'debug' => /c 'debug' => 'false',`,
+	err = exec.Command("sed", "-i", "-e", `/'debug' => /c 'debug' => true,`,
 		"-e", `/'host' => /c 'host' => 'db',`,
 		"-e", `/'database' => /c 'database' => 'db',`,
 		"-e", `/'login' => /c 'login' => 'db',`,
