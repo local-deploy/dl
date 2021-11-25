@@ -5,7 +5,8 @@ services:
     container_name: ${HOST_NAME}_php
     image: quay.io/local-deploy/php${PHP_VERSION:-7.3-apache}
     environment:
-      - "APACHE_DOCUMENT_ROOT=${DOCUMENT_ROOT:-/var/www/html}"
+      - "DOCUMENT_ROOT=${DOCUMENT_ROOT:-/var/www/html}"
+      - "HOST_NAME=${HOST_NAME:-localhost}"
       - "LOCALTIME=${LOCALTIME:-Europe/Moscow}"
       - "PHP_MEMORY_LIMIT=${PHP_MEMORY_LIMIT:-256M}"
       - "PHP_POST_MAX_SIZE=${PHP_POST_MAX_SIZE:-100M}"
