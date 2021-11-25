@@ -7,6 +7,7 @@ set -e
 
 GITHUB_REPO=local-deploy/dl
 TMPDIR=/tmp
+CURRENT_DIR=${PWD}
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -15,13 +16,13 @@ RESET='\033[0m'
 OS=$(uname)
 
 if [[ $EUID -eq 0 ]]; then
-  echo "This script must NOT be run with sudo/root. Please re-run without sudo." 1>&2
+  echo "This script must NOT be run with sudo/root. Please re-run without sudo" 1>&2
   exit 1
 fi
 
 uname_arch=$(uname -m)
 if [ "$uname_arch" != "x86_64" ]; then
-  printf "${RED}Sorry, your machine architecture %s is not currently supported.${RESET}\n" "${uname_arch}" && exit 1
+  printf "${RED}Sorry, your machine architecture %s is not currently supported${RESET}\n" "${uname_arch}" && exit 1
 fi
 
 if [[ "$OS" == "Darwin" ]]; then
@@ -29,7 +30,7 @@ if [[ "$OS" == "Darwin" ]]; then
 elif [[ "$OS" == "Linux" ]]; then
   BIN="dl_linux_amd64"
 else
-  printf "${RED}Sorry, this installer does not support your platform at this time.${RESET}\n"
+  printf "${RED}Sorry, this installer does not support your platform at this time${RESET}\n"
   exit 1
 fi
 
@@ -48,17 +49,30 @@ LATEST_RELEASE=$(curl --silent "https://api.github.com/repos/$GITHUB_REPO/releas
 RELEASE_BASE_URL="https://github.com/${GITHUB_REPO}/releases/download/$LATEST_RELEASE"
 TARBALL="dl-$LATEST_RELEASE.tar.gz"
 
+printf "${GREEN}Downloading release %s${RESET}\n" "${LATEST_RELEASE}"
+
 curl -fsSL "$RELEASE_BASE_URL/$TARBALL" -o "${TMPDIR}/${TARBALL}" || (printf "${RED}Failed downloading %s/%s${RESET}\n" "${RELEASE_BASE_URL}" "${TARBALL}" && exit 1)
+
+printf "${GREEN}Extract archive${RESET}\n"
 
 cd $TMPDIR
 tar -xzf "$TARBALL"
+
+if [ -d "$HOME/.config/dl/config-files" ]; then
+  rm -rf "$HOME/.config/dl/config-files"
+fi
+if [ -f "$HOME/.local/bin/dl" ]; then
+  rm -f "$HOME/.local/bin/dl"
+fi
+if [ -f "$HOME/.config/dl/config.yaml" ]; then
+  sed -i "/version/c version: $LATEST_RELEASE" $HOME/.config/dl/config.yaml
+fi
 
 if [ ! -d "$HOME/.local/bin" ]; then
   mkdir -p "$HOME/.local/bin"
 fi
 if [ ! -d "$HOME/.config/dl" ]; then
-  mkdir -p "$HOME/.config/dl"
-  mkdir -p "$HOME/.config/config-files"
+  mkdir -p "$HOME/.config/dl/config-files"
 fi
 
 case ":$PATH:" in
@@ -66,17 +80,12 @@ case ":$PATH:" in
   *) printf "\nexport \"PATH=\$PATH:$HOME/.local/bin\"" >>"$HOME/.bashrc" && PATH="$PATH:$HOME/.local/bin" ;;
 esac
 
-if [ -d "$HOME/.config/dl" ]; then
-  rm -rf "$HOME/.config/dl"
-fi
-if [ -f "$HOME/.local/bin/dl" ]; then
-  rm -f "$HOME/.local/bin/dl"
-fi
-
 mv "bin/$BIN" "$HOME/.local/bin/dl"
-mv "config-files" "$HOME/.config/dl/"
+mv "config-files" "$HOME/.config/dl/config-files/"
 
 chmod +x "$HOME/.local/bin/dl"
+
+printf "${GREEN}Remove temp files${RESET}\n"
 
 rm -f ${TMPDIR}$TARBALL
 
@@ -86,3 +95,5 @@ rm -f ${TMPDIR}$TARBALL
 #fi
 
 printf "${GREEN}DL is now installed. Run \"dl\" and \"dl version\" to verify your installation and see usage.${RESET}\n"
+
+trap 'rm -f ${CURRENT_DIR}/install_dl.sh' EXIT

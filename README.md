@@ -16,7 +16,9 @@ Deep Alpha version
 
 ## Install
 
-TODO
+```bash
+wget --no-check-certificate https://raw.githubusercontent.com/local-deploy/dl/master/install_dl.sh && chmod +x ./install_dl.sh && ./install_dl.sh
+```
 
 ## Usage
 
