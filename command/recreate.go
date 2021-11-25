@@ -9,9 +9,10 @@ func init() {
 }
 
 var recreateCmd = &cobra.Command{
-	Use:   "recreate",
-	Short: "Recreate containers",
-	Long:  `Recreate containers.`,
+	Use:     "recreate",
+	Aliases: []string{"restart"},
+	Short:   "Recreate containers",
+	Long:    `Recreate containers.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		down()
 		up()
