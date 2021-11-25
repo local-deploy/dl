@@ -61,7 +61,7 @@ Available env:
 | PHP_MAX_EXECUTION_TIME  | 60                                                 |
 |                         |                                                    |
 | SSH_KEY                 | id_rsa (from ~/.ssh/id_rsa)                        |
-| NETWORK_NAME            | generated from APP_NAME without special characters |
+| NETWORK_NAME            | generated from HOST_NAME without special characters |
 |                         |                                                    |
 | XDEBUG                  | off                                                |
 | XDEBUG_HOST             | host.docker.internal                               |

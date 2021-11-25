@@ -182,7 +182,7 @@ func (c SshClient) importDb() {
 	//TODO: переписать на sdk
 
 	localPath := filepath.Join(Env.GetString("PWD"), "production.sql.gz")
-	site := Env.GetString("APP_NAME")
+	site := Env.GetString("HOST_NAME")
 	siteDb := site + "_db"
 
 	err = exec.Command("bash", "-c", gunzip+" < "+localPath+" | "+docker+" exec -i "+siteDb+" /usr/bin/mysql --user=root --password=root db").Run()

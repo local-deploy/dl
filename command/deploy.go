@@ -142,7 +142,7 @@ func upDbContainer() error {
 		return nil
 	}
 
-	site := project.Env.GetString("APP_NAME")
+	site := project.Env.GetString("HOST_NAME")
 	siteDb := site + "_db"
 
 	containerFilter := filters.NewArgs(filters.Arg("name", siteDb))

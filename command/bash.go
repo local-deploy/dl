@@ -34,7 +34,7 @@ func bash() {
 		return
 	}
 
-	site := project.Env.GetString("APP_NAME")
+	site := project.Env.GetString("HOST_NAME")
 	container := site + "_php"
 	var root string
 

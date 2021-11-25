@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   php:
-    container_name: ${APP_NAME}_php
+    container_name: ${HOST_NAME}_php
     image: quay.io/local-deploy/php${PHP_VERSION:-7.3-apache}
     environment:
       - "APACHE_DOCUMENT_ROOT=${DOCUMENT_ROOT:-/var/www/html}"
@@ -15,7 +15,7 @@ services:
       - "XDEBUG=${XDEBUG:-off}"
       - "XDEBUG_HOST=${XDEBUG_HOST:-host.docker.internal}"
       - "XDEBUG_PORT=${XDEBUG_PORT:-9003}"
-      - "VIRTUAL_HOST=${APP_NAME:-localhost}"
+      - "VIRTUAL_HOST=${HOST_NAME:-localhost}"
       - "PHP_MODULES=${PHP_MODULES:-opcache}"
       - "ENVIRONMENT=dl"
     volumes:
@@ -25,7 +25,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${NETWORK_NAME}.entrypoints=web, websecure"
-      - "traefik.http.routers.${NETWORK_NAME}.rule=Host(`${APP_NAME}.localhost`) || HostRegexp(`${APP_NAME}.{ip:.*}.nip.io`)"
+      - "traefik.http.routers.${NETWORK_NAME}.rule=Host(`${HOST_NAME}.localhost`) || HostRegexp(`${HOST_NAME}.{ip:.*}.nip.io`)"
       - "traefik.http.routers.${NETWORK_NAME}.middlewares=site-compress"
       - "traefik.docker.network=dl_default"
     networks:

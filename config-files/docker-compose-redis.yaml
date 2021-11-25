@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   redis:
-    container_name: ${APP_NAME}_redis
+    container_name: ${HOST_NAME}_redis
     image: redis:alpine
     command: [ "sh", "-c", "exec redis-server --requirepass \"${REDIS_PASSWORD}\"" ]
 #    ports:
