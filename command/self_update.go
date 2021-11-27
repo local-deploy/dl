@@ -8,6 +8,7 @@ import (
 	"github.com/google/go-github/v40/github"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/varrcan/dl/helper"
 	"io"
 	"io/ioutil"
@@ -87,6 +88,12 @@ func selfUpdate() {
 		return
 	}
 	spinnerTmp.Success()
+
+	viper.Set("version", *release.TagName)
+	err = viper.WriteConfig()
+	if err != nil {
+		pterm.FgRed.Println(err)
+	}
 
 	pterm.DefaultSection.Printfln("DL has been successfully updated to version %s", *release.TagName)
 }
