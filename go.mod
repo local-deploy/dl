@@ -7,6 +7,7 @@ require (
 	github.com/dixonwille/wmenu/v5 v5.1.0
 	github.com/docker/docker v20.10.11+incompatible
 	github.com/docker/go-connections v0.4.0
+	github.com/google/go-github/v40 v40.0.0 // indirect
 	github.com/melbahja/goph v1.3.0
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/pkg/sftp v1.13.4

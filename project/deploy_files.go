@@ -95,6 +95,7 @@ func extractArchive() {
 	localPath := filepath.Join(Env.GetString("PWD"))
 	archive := filepath.Join(localPath, "production.tar.gz")
 
+	//TODO: rewrite to Go
 	err = exec.Command("tar", "-xzf", archive, "-C", localPath).Run()
 	err = exec.Command("rm", "-f", archive).Run()
 

@@ -15,7 +15,21 @@ func HomeDir() (string, error) {
 func ConfigDir() (string, error) {
 	home, err := HomeDir()
 
-	return filepath.Join(home, ".config/dl"), err
+	return filepath.Join(home, ".config", "dl"), err
+}
+
+//BinDir path to local bin directory
+func BinDir() (string, error) {
+	home, err := HomeDir()
+
+	return filepath.Join(home, ".local", "bin"), err
+}
+
+//BinPath path to bin
+func BinPath() (string, error) {
+	binDir, err := BinDir()
+
+	return filepath.Join(binDir, "dl"), err
 }
 
 //IsConfigDirExists checking for the existence of a configuration directory
@@ -36,6 +50,20 @@ func IsConfigFileExists() bool {
 	config := filepath.Join(confDir, "config.yaml")
 
 	_, err := os.Stat(config)
+
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
+//IsBinFileExists checks the existence of a binary
+func IsBinFileExists() bool {
+	binDir, _ := BinDir()
+	bin := filepath.Join(binDir, "dl")
+
+	_, err := os.Stat(bin)
 
 	if err != nil {
 		return false
