@@ -14,7 +14,7 @@ services:
       - "PHP_MAX_FILE_UPLOADS=${PHP_MAX_FILE_UPLOADS:-50}"
       - "PHP_MAX_EXECUTION_TIME=${PHP_MAX_EXECUTION_TIME:-60}"
       - "XDEBUG=${XDEBUG:-off}"
-      - "XDEBUG_HOST=${XDEBUG_HOST:-host.docker.internal}"
+      - "XDEBUG_IDE_KEY=${XDEBUG_IDE_KEY:-PHPSTORM}"
       - "XDEBUG_PORT=${XDEBUG_PORT:-9003}"
       - "VIRTUAL_HOST=${HOST_NAME:-localhost}"
       - "PHP_MODULES=${PHP_MODULES:-opcache}"

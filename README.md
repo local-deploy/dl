@@ -52,26 +52,26 @@ https://doc.traefik.io/traefik/reference/dynamic-configuration/docker/
 
 Available env:
 
-| env                     | default value                                     |
-|-------------------------|---------------------------------------------------|
-| LOCALTIME               | Europe/Moscow                                      |
-| PHP_MODULES             | opcache                                            |
-| PHP_MEMORY_LIMIT        | 256M                                               |
-| PHP_POST_MAX_SIZE       | 100M                                               |
-| PHP_UPLOAD_MAX_FILESIZE | 100M                                               |
-| PHP_MAX_FILE_UPLOADS    | 50                                                 |
-| PHP_MAX_EXECUTION_TIME  | 60                                                 |
-|                         |                                                    |
-| SSH_KEY                 | id_rsa (from ~/.ssh/id_rsa)                        |
+| env                     | default value                                       |
+|-------------------------|---------------------------------------------------  |
+| LOCALTIME               | Europe/Moscow                                       |
+| PHP_MODULES             | opcache                                             |
+| PHP_MEMORY_LIMIT        | 256M                                                |
+| PHP_POST_MAX_SIZE       | 100M                                                |
+| PHP_UPLOAD_MAX_FILESIZE | 100M                                                |
+| PHP_MAX_FILE_UPLOADS    | 50                                                  |
+| PHP_MAX_EXECUTION_TIME  | 60                                                  |
+|                         |                                                     |
+| SSH_KEY                 | id_rsa (from ~/.ssh/id_rsa)                         |
 | NETWORK_NAME            | generated from HOST_NAME without special characters |
-|                         |                                                    |
-| XDEBUG                  | off                                                |
-| XDEBUG_HOST             | host.docker.internal                               |
-| XDEBUG_PORT             | 9003                                               |
-|                         |                                                    |
-| REDIS                   | false                                              |
-| REDIS_PASSWORD          | pass                                               |
-| MEMCACHED               | false                                              |
-|                         |                                                    |
+|                         |                                                     |
+| XDEBUG                  | off                                                 |
+| XDEBUG_IDE_KEY          | PHPSTORM                                            |
+| XDEBUG_PORT             | 9003                                                |
+|                         |                                                     |
+| REDIS                   | false                                               |
+| REDIS_PASSWORD          | pass                                                |
+| MEMCACHED               | false                                               |
+|                         |                                                     |
 
 Xdebug mode https://xdebug.org/docs/all_settings#mode
