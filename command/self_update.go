@@ -27,7 +27,7 @@ func init() {
 var selfUpdateCmd = &cobra.Command{
 	Use:     "self-update",
 	Aliases: []string{"upgrade"},
-	Short:   "Updating app version",
+	Short:   "Update dl",
 	Long:    `Downloading the latest version of the app.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		selfUpdate()
