@@ -1,0 +1,35 @@
+server {
+    listen 80;
+    listen 443;
+
+    server_name ${VIRTUAL_HOST};
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    charset utf-8;
+
+    set $root_path ${DOCUMENT_ROOT};
+    root $root_path;
+
+    location / {
+        root $root_path;
+        index index.php index.html;
+        try_files $uri $uri/ /index.php?$args /bitrix/urlrewrite.php?$args;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass php:9000;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include /etc/nginx/fastcgi_params;
+     }
+
+    location ~* ^.+\.(jpg|jpeg|gif|png|svg|js|css|mp3|ogg|mpeg|avi|zip|gz|bz2|rar|swf|ico|7z|doc|docx|map|ogg|otf|pdf|tff|tif|txt|wav|webp|woff|woff2|xls|xlsx|xml)$ {
+        expires 365d;
+        try_files $uri $uri/ @fallback;
+    }
+
+    location @fallback {
+        proxy_set_header Host ${HOST_NAME};
+        proxy_pass            https://${HOST_NAME};
+    }
+}

@@ -1,0 +1,60 @@
+version: "3.8"
+
+services:
+  php:
+    container_name: ${HOST_NAME}_php
+    image: quay.io/local-deploy/php${PHP_VERSION:-7.3-fpm}
+    environment:
+      - "DOCUMENT_ROOT=${DOCUMENT_ROOT:-/var/www/html}"
+      - "HOST_NAME=${HOST_NAME:-localhost}"
+      - "LOCALTIME=${LOCALTIME:-Europe/Moscow}"
+      - "PHP_MEMORY_LIMIT=${PHP_MEMORY_LIMIT:-256M}"
+      - "PHP_POST_MAX_SIZE=${PHP_POST_MAX_SIZE:-100M}"
+      - "PHP_UPLOAD_MAX_FILESIZE=${PHP_UPLOAD_MAX_FILESIZE:-100M}"
+      - "PHP_MAX_FILE_UPLOADS=${PHP_MAX_FILE_UPLOADS:-50}"
+      - "PHP_MAX_EXECUTION_TIME=${PHP_MAX_EXECUTION_TIME:-60}"
+      - "XDEBUG=${XDEBUG:-off}"
+      - "XDEBUG_IDE_KEY=${XDEBUG_IDE_KEY:-PHPSTORM}"
+      - "XDEBUG_PORT=${XDEBUG_PORT:-9003}"
+      - "VIRTUAL_HOST=${HOST_NAME:-localhost}"
+      - "PHP_MODULES=${PHP_MODULES:-opcache}"
+      - "ENVIRONMENT=dl"
+    volumes:
+      - "${PWD}/:/var/www/html/"
+      - "~/.ssh/${SSH_KEY:-id_rsa}:/var/www/.ssh/id_rsa:ro"
+      - "~/.ssh/known_hosts:/var/www/.ssh/known_hosts"
+    networks:
+      default:
+        aliases:
+          - ${NETWORK_NAME}
+
+  nginx:
+    container_name: ${HOST_NAME}_nginx
+    image: nginx:alpine
+    working_dir: ${DOCUMENT_ROOT:-/var/www/html}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${NETWORK_NAME}.entrypoints=web"
+      - "traefik.http.routers.${NETWORK_NAME}.rule=Host(`${HOST_NAME}.localhost`) || HostRegexp(`${HOST_NAME}.{ip:.*}.nip.io`)"
+      - "traefik.http.routers.${NETWORK_NAME}_ssl.entrypoints=websecure"
+      - "traefik.http.routers.${NETWORK_NAME}_ssl.rule=Host(`${HOST_NAME}.localhost`) || HostRegexp(`${HOST_NAME}.{ip:.*}.nip.io`)"
+      - "traefik.http.routers.${NETWORK_NAME}_ssl.tls=true"
+      - "traefik.docker.network=dl_default"
+    environment:
+      - "VIRTUAL_HOST=\"${NIP_DOMAIN} ${LOCAL_DOMAIN}\""
+      - "HOST_NAME=${HOST_NAME}"
+      - "DOCUMENT_ROOT=${DOCUMENT_ROOT:-/var/www/html}"
+    volumes:
+      - "${PWD}/:/var/www/html/"
+      - "${NGINX_CONF}:/etc/nginx/templates/default.conf.template"
+    depends_on:
+      - php
+    networks:
+      dl_default: { }
+      default:
+        aliases:
+          - ${NETWORK_NAME}
+
+networks:
+  dl_default:
+    external: true

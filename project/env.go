@@ -49,6 +49,10 @@ func setDefaultEnv() {
 	Env.SetDefault("PWD", dir)
 	Env.SetDefault("SSH_KEY", "id_rsa")
 
+	confDir, _ := helper.ConfigDir()
+	configNginxFile := filepath.Join(confDir, "config-files", "default.conf.template")
+	Env.SetDefault("NGINX_CONF", configNginxFile)
+
 	Env.SetDefault("REDIS", false)
 	Env.SetDefault("REDIS_PASSWORD", "pass")
 	Env.SetDefault("MEMCACHED", false)
