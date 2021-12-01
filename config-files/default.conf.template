@@ -25,11 +25,10 @@ server {
 
     location ~* ^.+\.(jpg|jpeg|gif|png|svg|js|css|mp3|ogg|mpeg|avi|zip|gz|bz2|rar|swf|ico|7z|doc|docx|map|ogg|otf|pdf|tff|tif|txt|wav|webp|woff|woff2|xls|xlsx|xml)$ {
         expires 365d;
-        try_files $uri $uri/ @fallback;
+        try_files $uri $uri/ 404 = @fallback;
     }
 
     location @fallback {
-        proxy_set_header Host ${HOST_NAME};
-        proxy_pass            https://${HOST_NAME};
+        return 302 https://${HOST_NAME}/$uri;
     }
 }
