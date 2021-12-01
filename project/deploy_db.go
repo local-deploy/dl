@@ -185,9 +185,11 @@ func (c SshClient) importDb() {
 	site := Env.GetString("HOST_NAME")
 	siteDb := site + "_db"
 
-	err = exec.Command("bash", "-c", gunzip+" < "+localPath+" | "+docker+" exec -i "+siteDb+" /usr/bin/mysql --user=root --password=root db").Run()
+	outImport, err := exec.Command("bash", "-c", gunzip+" < "+localPath+" | "+docker+" exec -i "+siteDb+" /usr/bin/mysql --user=root --password=root db").CombinedOutput()
 	if err != nil {
+		pterm.FgRed.Println(string(outImport))
 		pterm.FgRed.Println(err)
+		return
 	}
 
 	if c.Server.FwType == "bitrix" {
@@ -200,9 +202,11 @@ UPDATE b_lang SET b_lang.DOC_ROOT='' WHERE 1=(SELECT DOC_ROOT FROM (SELECT COUNT
 INSERT INTO b_lang_domain VALUES ('s1', '` + local + `'); 
 INSERT INTO b_lang_domain VALUES ('s1', '` + nip + `');"`
 
-		err = exec.Command("bash", "-c", "echo "+strSQL+" | "+docker+" exec -i "+siteDb+" /usr/bin/mysql --user=db --password=db --host=db db").Run()
+		outUpdate, err := exec.Command("bash", "-c", "echo "+strSQL+" | "+docker+" exec -i "+siteDb+" /usr/bin/mysql --user=db --password=db --host=db db").CombinedOutput()
 		if err != nil {
+			pterm.FgRed.Println(string(outUpdate))
 			pterm.FgRed.Println(err)
+			return
 		}
 	}
 

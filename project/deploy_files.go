@@ -96,10 +96,12 @@ func extractArchive() {
 	archive := filepath.Join(localPath, "production.tar.gz")
 
 	//TODO: rewrite to Go
-	err = exec.Command("tar", "-xzf", archive, "-C", localPath).Run()
-	err = exec.Command("rm", "-f", archive).Run()
+	outTar, err := exec.Command("tar", "-xzf", archive, "-C", localPath).CombinedOutput()
+	outRm, err := exec.Command("rm", "-f", archive).CombinedOutput()
 
 	if err != nil {
+		pterm.FgRed.Println(string(outTar))
+		pterm.FgRed.Println(string(outRm))
 		pterm.FgRed.Println(err)
 	}
 }
