@@ -24,6 +24,7 @@ services:
       - "~/.ssh/${SSH_KEY:-id_rsa}:/var/www/.ssh/id_rsa:ro"
       - "~/.ssh/known_hosts:/var/www/.ssh/known_hosts"
     networks:
+      dl_default: { }
       default:
         aliases:
           - ${NETWORK_NAME}
