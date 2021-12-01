@@ -12,7 +12,7 @@ Dependencies:
 
 ## Development status
 
-Deep Alpha version
+Alpha version
 
 ## Install
 
@@ -73,5 +73,7 @@ Available env:
 | REDIS_PASSWORD          | pass                                                |
 | MEMCACHED               | false                                               |
 |                         |                                                     |
+| LOCAL_IP                | external local IP (e.g. 192.168.0.5)                |
+| NGINX_CONF              | ~/.config/dl/config-files/default.conf.template     |
 
 Xdebug mode https://xdebug.org/docs/all_settings#mode
