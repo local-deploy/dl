@@ -44,15 +44,12 @@ func getServicesContainer() []localServicesContainer {
 			Cmd: []string{
 				"--api.insecure=true",
 				"--providers.docker",
-				//"--providers.docker.network=dl_default",
+				"--providers.docker.network=dl_default",
 				"--providers.docker.exposedbydefault=false",
 				"--entrypoints.web.address=:80",
 				"--entrypoints.websecure.address=:443",
 				//"--entrypoints.mysql.address=:3306",
 				"--serversTransport.insecureSkipVerify=true",
-				"--experimental.http3=true",
-				"--entrypoints.web.enablehttp3=true",
-				"--entrypoints.websecure.enablehttp3=true",
 			},
 			Volumes: map[string]struct{}{"/var/run/docker.sock": {}},
 			Labels: map[string]string{
