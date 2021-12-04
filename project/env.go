@@ -15,6 +15,15 @@ import (
 //Env Project variables
 var Env *viper.Viper
 
+var phpImagesVersion = map[string]string{
+	"7.3-apache": "1.1.0",
+	"7.3-fpm":    "1.0.0",
+	"7.4-apache": "1.0.1",
+	"7.4-fpm":    "1.0.0",
+	"8.0-apache": "1.0.2",
+	"8.0-fpm":    "1.0.1",
+}
+
 //LoadEnv Get variables from .env file
 func LoadEnv() {
 	Env = viper.New()
@@ -74,6 +83,8 @@ func setComposeFiles() {
 		pterm.FgRed.Printfln("The PHP_VERSION variable is not defined! Please initialize .env file.")
 		os.Exit(1)
 	}
+
+	Env.SetDefault("PHP_IMAGE_VERSION", phpImagesVersion[phpVersion])
 
 	images := map[string]string{
 		"mysql":     confDir + "/config-files/docker-compose-mysql.yaml",
