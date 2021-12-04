@@ -26,10 +26,10 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${NETWORK_NAME}.entrypoints=web"
-      - "traefik.http.routers.${NETWORK_NAME}.rule=Host(`${HOST_NAME}.localhost`) || HostRegexp(`${HOST_NAME}.{ip:.*}.nip.io`)"
+      - "traefik.http.routers.${NETWORK_NAME}.rule=Host(`${HOST_NAME}.localhost`) || HostRegexp(`{subdomain:.*}.${HOST_NAME}.localhost`) || HostRegexp(`${HOST_NAME}.{ip:.*}.nip.io`) || HostRegexp(`{subdomain:.*}.${HOST_NAME}.{ip:.*}.nip.io`)"
       - "traefik.http.routers.${NETWORK_NAME}.middlewares=site-compress"
       - "traefik.http.routers.${NETWORK_NAME}_ssl.entrypoints=websecure"
-      - "traefik.http.routers.${NETWORK_NAME}_ssl.rule=Host(`${HOST_NAME}.localhost`) || HostRegexp(`${HOST_NAME}.{ip:.*}.nip.io`)"
+      - "traefik.http.routers.${NETWORK_NAME}_ssl.rule=Host(`${HOST_NAME}.localhost`) || HostRegexp(`{subdomain:.*}.${HOST_NAME}.localhost`) || HostRegexp(`${HOST_NAME}.{ip:.*}.nip.io`) || HostRegexp(`{subdomain:.*}.${HOST_NAME}.{ip:.*}.nip.io`)"
       - "traefik.http.routers.${NETWORK_NAME}_ssl.middlewares=site-compress"
       - "traefik.http.routers.${NETWORK_NAME}_ssl.tls=true"
       - "traefik.docker.network=dl_default"
