@@ -9,7 +9,7 @@ import (
 	"log"
 )
 
-var version = "0.1.9"
+var version = "0.2.0"
 
 func handleError(err error) {
 	if err != nil {
