@@ -72,6 +72,17 @@ func IsBinFileExists() bool {
 	return true
 }
 
+//ChmodR change file permissions recursively
+func ChmodR(path string, mode os.FileMode) error {
+	return filepath.Walk(path, func(name string, info os.FileInfo, err error) error {
+		if err == nil {
+			err = os.Chmod(name, mode)
+		}
+
+		return err
+	})
+}
+
 // CallMethod is necessary to avoid map of functions
 func CallMethod(i interface{}, methodName string) interface{} {
 	var ptr reflect.Value

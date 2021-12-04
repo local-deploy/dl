@@ -2,6 +2,7 @@ package project
 
 import (
 	"github.com/pterm/pterm"
+	"github.com/varrcan/dl/helper"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -28,7 +29,7 @@ func (c SshClient) CopyFiles() {
 
 	err = c.downloadArchive()
 	if err == nil {
-		extractArchive()
+		extractArchive(c.Server.FwType)
 		bitrixAccess()
 		//helper.CallMethod(&err, c.Server.FwType+"Access")
 	}
@@ -87,7 +88,7 @@ func (c SshClient) downloadArchive() error {
 	return err
 }
 
-func extractArchive() {
+func extractArchive(path string) {
 	var err error
 
 	pterm.FgBlue.Println("Extract files")
@@ -98,6 +99,8 @@ func extractArchive() {
 	//TODO: rewrite to Go
 	outTar, err := exec.Command("tar", "-xzf", archive, "-C", localPath).CombinedOutput()
 	outRm, err := exec.Command("rm", "-f", archive).CombinedOutput()
+
+	err = helper.ChmodR(path, 0775)
 
 	if err != nil {
 		pterm.FgRed.Println(string(outTar))
