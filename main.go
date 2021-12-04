@@ -6,16 +6,9 @@ import (
 	"github.com/spf13/viper"
 	"github.com/varrcan/dl/command"
 	"github.com/varrcan/dl/helper"
-	"log"
 )
 
 var version = "0.2.0"
-
-func handleError(err error) {
-	if err != nil {
-		log.Fatalln(err)
-	}
-}
 
 func main() {
 	if !helper.IsConfigDirExists() {
