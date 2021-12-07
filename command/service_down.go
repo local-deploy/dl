@@ -19,7 +19,9 @@ func init() {
 var downServiceCmd = &cobra.Command{
 	Use:   "down",
 	Short: "Stop and remove services",
-	Long:  `Stop and remove services.`,
+	Long: `Stops and removes portainer, mailcatcher and traefik containers.  
+Valid parameters for the "--service" flag: portainer, mail, traefik`,
+	Example: "dl down\ndl down -s portainer",
 	Run: func(cmd *cobra.Command, args []string) {
 		downService()
 	},

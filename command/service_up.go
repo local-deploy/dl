@@ -26,7 +26,7 @@ var restart bool
 var upServiceCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Start local services",
-	Long:  `Start local services.`,
+	Long:  `Start portainer, mailcatcher and traefik containers.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		upService()
 	},

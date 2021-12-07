@@ -16,7 +16,7 @@ func init() {
 var bashCmd = &cobra.Command{
 	Use:   "bash",
 	Short: "Login to PHP container",
-	Long:  `Login to PHP container as www-data user and start bash shell.`,
+	Long:  `Login to PHP container as www-data or root user and start bash shell.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		bash()
 	},

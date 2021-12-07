@@ -20,7 +20,8 @@ func init() {
 var upCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Up project",
-	Long:  `Up project.`,
+	Long: `Start project containers. On completion, displays the local links to the project.  
+Analogue of the "docker-compose up -d" command.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		up()
 	},

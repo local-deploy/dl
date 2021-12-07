@@ -24,13 +24,13 @@ func init() {
 var pullCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Downloading db and files from the production server",
-	Long: `Downloading database and kernel files from the production server.
-Without specifying the flag, files and the database are downloaded by default.
+	Long: `Downloading database and kernel files from the production server.  
+Without specifying the flag, files and the database are downloaded by default.  
 If you specify a flag, for example -d, only the database will be downloaded.
 
-Directories that are downloaded by default
-Bitrix CMS: "bitrix"
-WordPress: "wp-admin" and "wp-includes"
+Directories that are downloaded by default  
+Bitrix CMS: "bitrix"  
+WordPress: "wp-admin" and "wp-includes"  
 Laravel: only the database is downloaded`,
 	Run: func(cmd *cobra.Command, args []string) {
 		deploy()

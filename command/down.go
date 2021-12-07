@@ -16,7 +16,8 @@ func init() {
 var downCmd = &cobra.Command{
 	Use:   "down",
 	Short: "Down project",
-	Long:  `Down project.`,
+	Long: `Stop and remove running project containers and network.  
+Analogue of the "docker-compose down" command.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		down()
 	},

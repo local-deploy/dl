@@ -12,7 +12,7 @@ func init() {
 var recreateServiceCmd = &cobra.Command{
 	Use:   "recreate",
 	Short: "Recreate containers",
-	Long:  `Recreate containers.`,
+	Long:  `Stop services containers and restart.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		downService()
 		upService()
