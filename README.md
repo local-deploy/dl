@@ -22,7 +22,7 @@ wget --no-check-certificate https://raw.githubusercontent.com/local-deploy/dl/ma
 
 ## Usage
 
-1. Start the service containers (traefik, mailhog and portainer) with the `dl service up` command (only at the first start)
+1. Start service containers (traefik, mailhog, portainer) with the `dl service up` command (at the first start)
 2. Create `.env` file in the root directory of your project with the `dl env` command
 3. Set the required variables in the `.env` file
 4. Run the `dl deploy` command if you need to download the database and/or files from the production-server
