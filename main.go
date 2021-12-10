@@ -1,6 +1,11 @@
 package main
 
 import (
+	"context"
+
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/client"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -13,7 +18,10 @@ var version = "0.2.1"
 func main() {
 	if !helper.IsConfigDirExists() {
 		pterm.FgRed.Printfln("The application has not been initialized. Please run the command:\nwget --no-check-certificate https://raw.githubusercontent.com/local-deploy/dl/master/install_dl.sh && chmod +x ./install_dl.sh && ./install_dl.sh")
+		return
+	}
 
+	if !wpdeployCheck() {
 		return
 	}
 
@@ -66,4 +74,25 @@ func createConfigFile() error {
 	}
 
 	return errWrite
+}
+
+func wpdeployCheck() bool {
+	ctx := context.Background()
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		pterm.Fatal.Println("Failed to connect to socket")
+		return false
+	}
+
+	containerFilter := filters.NewArgs(filters.Arg("label", "com.docker.compose.project=local-services"))
+	isExists, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerFilter})
+	if err != nil {
+		pterm.Fatal.Println(err)
+		return false
+	}
+	if len(isExists) > 0 {
+		pterm.Error.Println("An old version of wpdeploy is running. Please stop wpdeploy with the command: wpdeploy local-services down")
+		return false
+	}
+	return true
 }
