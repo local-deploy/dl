@@ -4,11 +4,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/pterm/pterm"
 	"github.com/varrcan/dl/helper"
 )
+
+type callMethod struct{}
 
 // CopyFiles Copying files from the server
 func (c SshClient) CopyFiles() {
@@ -31,8 +34,9 @@ func (c SshClient) CopyFiles() {
 	err = c.downloadArchive()
 	if err == nil {
 		extractArchive(c.Server.FwType)
-		bitrixAccess()
-		// helper.CallMethod(&err, c.Server.FwType+"Access")
+
+		var a callMethod
+		reflect.ValueOf(&a).MethodByName(strings.Title(c.Server.FwType + "Access")).Call([]reflect.Value{})
 	}
 }
 
@@ -110,7 +114,8 @@ func extractArchive(path string) {
 	}
 }
 
-func bitrixAccess() {
+// BitrixAccess Change bitrix database accesses
+func (a *callMethod) BitrixAccess() {
 	var err error
 	localPath := Env.GetString("PWD")
 	settingsFile := filepath.Join(localPath, "bitrix", ".settings.php")
@@ -128,6 +133,24 @@ func bitrixAccess() {
 		"-e", `/$DBPassword /c $DBPassword = \"db\";`,
 		"-e", `/$DBName /c $DBName = \"db\";`,
 		dbconnFile).Run()
+
+	if err != nil {
+		pterm.FgRed.Println(err)
+	}
+}
+
+// WordpressAccess Change WordPress database accesses
+func (a *callMethod) WordpressAccess() {
+	var err error
+	localPath := Env.GetString("PWD")
+	settingsFile := filepath.Join(localPath, "wp-config.php")
+
+	err = exec.Command("sed", "-i",
+		"-e", `/'DB_HOST' => /c define('DB_HOST', 'db');`,
+		"-e", `/'DB_NAME' => /c define('DB_NAME', 'db');`,
+		"-e", `/'DB_USER' => /c define('DB_USER', 'db');`,
+		"-e", `/'DB_PASSWORD' => /c define('DB_PASSWORD', 'db');`,
+		settingsFile).Run()
 
 	if err != nil {
 		pterm.FgRed.Println(err)
