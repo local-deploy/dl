@@ -5,7 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"errors"
-	"github.com/google/go-github/v40/github"
+	"github.com/google/go-github/v41/github"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
