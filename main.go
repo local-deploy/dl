@@ -35,7 +35,7 @@ func initConfig() {
 
 	err := viper.ReadInConfig()
 	if err != nil {
-		pterm.FgRed.Printfln("Error config file: %w \n", err)
+		pterm.FgRed.Printfln("Error config file: %s \n", err)
 	}
 
 	viper.AutomaticEnv()
@@ -45,7 +45,7 @@ func firstStart() {
 	err := createConfigFile()
 
 	if err != nil {
-		pterm.FgRed.Printfln("Unable to create config file: %w \n", err)
+		pterm.FgRed.Printfln("Unable to create config file: %s \n", err)
 	}
 }
 

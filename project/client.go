@@ -2,17 +2,18 @@ package project
 
 import (
 	"bufio"
+	"io"
+	"net"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/melbahja/goph"
 	"github.com/pkg/sftp"
 	"github.com/pterm/pterm"
 	"github.com/schollz/progressbar/v3"
 	"github.com/varrcan/dl/helper"
 	"golang.org/x/crypto/ssh"
-	"io"
-	"net"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 // SshClient represents ssh client
@@ -27,7 +28,7 @@ type Server struct {
 	Port                               uint
 }
 
-//NewClient returns new client and error if any
+// NewClient returns new client and error if any
 func NewClient(server *Server) (c *SshClient, err error) {
 	home, _ := helper.HomeDir()
 
@@ -52,14 +53,13 @@ func NewClient(server *Server) (c *SshClient, err error) {
 }
 
 func verifyHost(host string, remote net.Addr, key ssh.PublicKey) error {
-
 	hostFound, err := goph.CheckKnownHost(host, remote, key, "")
 
 	if hostFound && err == nil {
 		return nil
 	}
 
-	if askIsHostTrusted(host, key) == false {
+	if !askIsHostTrusted(host, key) {
 		pterm.FgRed.Println("Connection aborted")
 		return nil
 	}
@@ -68,7 +68,6 @@ func verifyHost(host string, remote net.Addr, key ssh.PublicKey) error {
 }
 
 func askIsHostTrusted(host string, key ssh.PublicKey) bool {
-
 	reader := bufio.NewReader(os.Stdin)
 
 	pterm.FgYellow.Printf("The authenticity of host %s can't be established \nFingerprint key: %s \n", host, ssh.FingerprintSHA256(key))
@@ -92,7 +91,7 @@ func askIsHostTrusted(host string, key ssh.PublicKey) bool {
 	return true
 }
 
-//cleanRemote Deleting file on the server
+// cleanRemote Deleting file on the server
 func (c SshClient) cleanRemote(remotePath string) (err error) {
 	ftp, err := c.NewSftp()
 	if err != nil {
@@ -112,8 +111,7 @@ func (c SshClient) cleanRemote(remotePath string) (err error) {
 }
 
 // Download file from remote server
-func (c SshClient) download(remotePath string, localPath string) (err error) {
-
+func (c SshClient) download(remotePath, localPath string) (err error) {
 	local, err := os.Create(localPath)
 	if err != nil {
 		return

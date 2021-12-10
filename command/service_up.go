@@ -2,6 +2,11 @@ package command
 
 import (
 	"context"
+	"io/ioutil"
+	"net"
+	"strings"
+	"time"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
@@ -10,10 +15,6 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
-	"io/ioutil"
-	"net"
-	"strings"
-	"time"
 )
 
 func init() {

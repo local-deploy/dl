@@ -2,10 +2,11 @@ package command
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/dixonwille/wmenu/v5"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"log"
 )
 
 func init() {

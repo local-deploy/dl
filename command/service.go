@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//localServicesContainer list of container names of the local stack
+// localServicesContainer list of container names of the local stack
 type localServicesContainer struct {
 	Name       string
 	Image      string
@@ -34,7 +34,7 @@ var serviceCmd = &cobra.Command{
 	Long:  `Local services configuration (portainer, mailcatcher, traefik).`,
 }
 
-//getServicesContainer local services containers
+// getServicesContainer local services containers
 func getServicesContainer() []localServicesContainer {
 	containers := []localServicesContainer{
 		{
@@ -48,7 +48,7 @@ func getServicesContainer() []localServicesContainer {
 				"--providers.docker.exposedbydefault=false",
 				"--entrypoints.web.address=:80",
 				"--entrypoints.websecure.address=:443",
-				//"--entrypoints.mysql.address=:3306",
+				// "--entrypoints.mysql.address=:3306",
 				"--serversTransport.insecureSkipVerify=true",
 			},
 			Volumes: map[string]struct{}{"/var/run/docker.sock": {}},
@@ -103,7 +103,7 @@ func getServicesContainer() []localServicesContainer {
 				"traefik.http.routers.portainer.rule":                      "Host(`portainer.localhost`) || HostRegexp(`portainer.{ip:.*}.nip.io`)",
 				"traefik.http.services.portainer.loadbalancer.server.port": "9000",
 			},
-			//Ports: []string{"0.0.0.0:9000:9000"},
+			// Ports: []string{"0.0.0.0:9000:9000"},
 			Mounts: []mount.Mount{
 				{
 					Type:     mount.TypeBind,
@@ -124,13 +124,13 @@ func getServicesContainer() []localServicesContainer {
 	return containers
 }
 
-func isNet(cli *client.Client) bool {
+func isNet(cli client.NetworkAPIClient) bool {
 	net := network.IsNetworkAvailable(cli, localNetworkName)
 
 	return net().Success()
 }
 
-func isNotNet(cli *client.Client) bool {
+func isNotNet(cli client.NetworkAPIClient) bool {
 	net := network.IsNetworkNotAvailable(cli, localNetworkName)
 
 	return net().Success()

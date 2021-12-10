@@ -1,11 +1,12 @@
 package command
 
 import (
+	"os"
+	"os/exec"
+
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/project"
-	"os"
-	"os/exec"
 )
 
 func init() {
@@ -38,7 +39,7 @@ func bash() {
 	container := site + "_php"
 	var root string
 
-	if bashRoot == true {
+	if bashRoot {
 		root = "--user root "
 	}
 

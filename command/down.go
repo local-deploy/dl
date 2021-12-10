@@ -2,11 +2,12 @@ package command
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/project"
-	"os"
-	"os/exec"
 )
 
 func init() {

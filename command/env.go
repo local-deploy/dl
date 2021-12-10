@@ -2,14 +2,15 @@ package command
 
 import (
 	"bufio"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
 	"github.com/dixonwille/wmenu/v5"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/helper"
 	"github.com/varrcan/dl/project"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 )
 
 func init() {
@@ -46,10 +47,10 @@ func showEnvMenu() {
 		pterm.FgGreen.Println("File replaced successfully.")
 		return nil
 	})
-	//menu.Option("Merge (dangerous)", "merge", false, func(opt wmenu.Opt) error {
+	// menu.Option("Merge (dangerous)", "merge", false, func(opt wmenu.Opt) error {
 	//	mergeEnv()
 	//	return nil
-	//})
+	// })
 	menu.Option("Just show", "show", false, func(opt wmenu.Opt) error {
 		printEnvConfig()
 		return nil

@@ -6,59 +6,51 @@ import (
 	"reflect"
 )
 
-//HomeDir user home directory
+// HomeDir user home directory
 func HomeDir() (string, error) {
 	return os.UserHomeDir()
 }
 
-//ConfigDir config directory (~/.config/dl)
+// ConfigDir config directory (~/.config/dl)
 func ConfigDir() (string, error) {
 	home, err := HomeDir()
 
 	return filepath.Join(home, ".config", "dl"), err
 }
 
-//BinDir path to local bin directory
+// BinDir path to local bin directory
 func BinDir() (string, error) {
 	home, err := HomeDir()
 
 	return filepath.Join(home, ".local", "bin"), err
 }
 
-//BinPath path to bin
+// BinPath path to bin
 func BinPath() (string, error) {
 	binDir, err := BinDir()
 
 	return filepath.Join(binDir, "dl"), err
 }
 
-//IsConfigDirExists checking for the existence of a configuration directory
+// IsConfigDirExists checking for the existence of a configuration directory
 func IsConfigDirExists() bool {
 	confDir, _ := ConfigDir()
 	_, err := os.Stat(confDir)
 
-	if err != nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }
 
-//IsConfigFileExists checking for the existence of a configuration file
+// IsConfigFileExists checking for the existence of a configuration file
 func IsConfigFileExists() bool {
 	confDir, _ := ConfigDir()
 	config := filepath.Join(confDir, "config.yaml")
 
 	_, err := os.Stat(config)
 
-	if err != nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }
 
-//IsBinFileExists checks the existence of a binary
+// IsBinFileExists checks the existence of a binary
 func IsBinFileExists() bool {
 	binDir, _ := BinDir()
 	bin := filepath.Join(binDir, "dl")
@@ -72,7 +64,7 @@ func IsBinFileExists() bool {
 	return true
 }
 
-//ChmodR change file permissions recursively
+// ChmodR change file permissions recursively
 func ChmodR(path string, mode os.FileMode) error {
 	return filepath.Walk(path, func(name string, info os.FileInfo, err error) error {
 		if err == nil {

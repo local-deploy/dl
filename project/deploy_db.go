@@ -2,11 +2,12 @@ package project
 
 import (
 	"errors"
-	"github.com/pterm/pterm"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/pterm/pterm"
 )
 
 type dbSettings struct {
@@ -14,7 +15,7 @@ type dbSettings struct {
 	ExcludedTables                  []string
 }
 
-//DumpDb Database import from server
+// DumpDb Database import from server
 func (c SshClient) DumpDb() {
 	var db *dbSettings
 	var err error
@@ -24,17 +25,17 @@ func (c SshClient) DumpDb() {
 		db, err = c.accessBitrixDb()
 	case "laravel":
 		db, err = c.accessLaravelDb()
-	case "wordpress": //TODO
+	case "wordpress": // TODO
 	}
 
 	if err != nil {
-		pterm.FgRed.Printfln("Database access error: %w \n", err)
+		pterm.FgRed.Printfln("Database access error: %s \n", err)
 		os.Exit(1)
 	}
 
 	err = c.mysqlDump(db)
 	if err != nil {
-		pterm.FgRed.Printfln("Failed to create database dump: %w \n", err)
+		pterm.FgRed.Printfln("Failed to create database dump: %s \n", err)
 		os.Exit(1)
 	}
 
@@ -42,7 +43,7 @@ func (c SshClient) DumpDb() {
 	c.importDb()
 }
 
-//accessBitrixDb Attempt to determine database accesses
+// accessBitrixDb Attempt to determine database accesses
 func (c SshClient) accessBitrixDb() (*dbSettings, error) {
 	catCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&",
 		`cat bitrix/.settings.php | grep "'host' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`, "&&",
@@ -95,7 +96,7 @@ func (c SshClient) accessLaravelDb() (*dbSettings, error) {
 	}, err
 }
 
-//mysqlDump Create database dump
+// mysqlDump Create database dump
 func (c SshClient) mysqlDump(db *dbSettings) error {
 	pterm.FgGreen.Println("Create database dump")
 
@@ -132,7 +133,7 @@ func (c SshClient) mysqlDump(db *dbSettings) error {
 	return err
 }
 
-//formatIgnoredTables Exclude tables from dump
+// formatIgnoredTables Exclude tables from dump
 func (d dbSettings) formatIgnoredTables() string {
 	var ignoredTables []string
 
@@ -147,7 +148,7 @@ func (d dbSettings) formatIgnoredTables() string {
 	return strings.Join(ignoredTables, " ")
 }
 
-//downloadDump Downloading a dump and deleting an archive from the server
+// downloadDump Downloading a dump and deleting an archive from the server
 func (c SshClient) downloadDump() {
 	pterm.FgGreen.Println("Download database dump")
 	serverPath := filepath.Join(c.Server.Catalog, "production.sql.gz")
@@ -166,7 +167,7 @@ func (c SshClient) downloadDump() {
 	}
 }
 
-//importDb Importing a database into a local container
+// importDb Importing a database into a local container
 func (c SshClient) importDb() {
 	var err error
 
@@ -179,7 +180,7 @@ func (c SshClient) importDb() {
 		return
 	}
 
-	//TODO: переписать на sdk
+	// TODO: переписать на sdk
 
 	localPath := filepath.Join(Env.GetString("PWD"), "production.sql.gz")
 	site := Env.GetString("HOST_NAME")

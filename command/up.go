@@ -3,14 +3,15 @@ package command
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/project"
-	"os"
-	"os/exec"
 )
 
 func init() {
@@ -72,7 +73,7 @@ func up() {
 	showProjectInfo()
 }
 
-//showProjectInfo Display project links
+// showProjectInfo Display project links
 func showProjectInfo() {
 	l := project.Env.GetString("LOCAL_DOMAIN")
 	n := project.Env.GetString("NIP_DOMAIN")

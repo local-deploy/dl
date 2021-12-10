@@ -2,17 +2,18 @@ package project
 
 import (
 	"fmt"
-	"github.com/pterm/pterm"
-	"github.com/spf13/viper"
-	"github.com/varrcan/dl/helper"
 	"net"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/pterm/pterm"
+	"github.com/spf13/viper"
+	"github.com/varrcan/dl/helper"
 )
 
-//Env Project variables
+// Env Project variables
 var Env *viper.Viper
 
 var phpImagesVersion = map[string]string{
@@ -24,7 +25,7 @@ var phpImagesVersion = map[string]string{
 	"8.0-fpm":    "1.0.1",
 }
 
-//LoadEnv Get variables from .env file
+// LoadEnv Get variables from .env file
 func LoadEnv() {
 	Env = viper.New()
 
@@ -41,7 +42,7 @@ func LoadEnv() {
 	setComposeFiles()
 }
 
-//setNetworkName Set network name from project name
+// setNetworkName Set network name from project name
 func setDefaultEnv() {
 	projectName := strings.ToLower(Env.GetString("HOST_NAME"))
 
@@ -73,7 +74,7 @@ func setDefaultEnv() {
 	Env.SetDefault("LOCAL_DOMAIN", fmt.Sprintf("%s.localhost", projectName))
 }
 
-//setComposeFile Set docker-compose files
+// setComposeFile Set docker-compose files
 func setComposeFiles() {
 	var files []string
 	confDir, _ := helper.ConfigDir()
@@ -103,10 +104,10 @@ func setComposeFiles() {
 	if Env.GetFloat64("MYSQL_VERSION") > 0 {
 		files = append(files, images["mysql"])
 	}
-	if Env.GetBool("REDIS") == true {
+	if Env.GetBool("REDIS") {
 		files = append(files, images["redis"])
 	}
-	if Env.GetBool("MEMCACHED") == true {
+	if Env.GetBool("MEMCACHED") {
 		files = append(files, images["memcached"])
 	}
 
@@ -114,7 +115,7 @@ func setComposeFiles() {
 	Env.SetDefault("COMPOSE_FILE", containers)
 }
 
-//CmdEnv Getting variables in the "key=value" format
+// CmdEnv Getting variables in the "key=value" format
 func CmdEnv() []string {
 	keys := Env.AllKeys()
 	var env []string
@@ -127,7 +128,7 @@ func CmdEnv() []string {
 	return env
 }
 
-//IsEnvFileExists checking for the existence of .env file
+// IsEnvFileExists checking for the existence of .env file
 func IsEnvFileExists() bool {
 	dir, _ := os.Getwd()
 	env := filepath.Join(dir, ".env")
@@ -141,7 +142,7 @@ func IsEnvFileExists() bool {
 	return true
 }
 
-//IsEnvExampleFileExists checking for the existence of .env.example file
+// IsEnvExampleFileExists checking for the existence of .env.example file
 func IsEnvExampleFileExists() bool {
 	dir, _ := os.Getwd()
 	env := filepath.Join(dir, ".env.example")

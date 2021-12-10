@@ -1,8 +1,9 @@
 package command
 
 import (
-	"github.com/spf13/cobra"
 	"log"
+
+	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{
@@ -18,20 +19,20 @@ func handleError(err error) {
 	}
 }
 
-//Execute root command
+// Execute root command
 func Execute() {
-	//pterm.Info.Prefix = pterm.Prefix{
+	// pterm.Info.Prefix = pterm.Prefix{
 	//	Text: "",
-	//}
-	//pterm.Success.Prefix = pterm.Prefix{
+	// }
+	// pterm.Success.Prefix = pterm.Prefix{
 	//	Text: "",
-	//}
-	//pterm.Error.Prefix = pterm.Prefix{
+	// }
+	// pterm.Error.Prefix = pterm.Prefix{
 	//	Text: "",
-	//}
-	//pterm.Warning.Prefix = pterm.Prefix{
+	// }
+	// pterm.Warning.Prefix = pterm.Prefix{
 	//	Text: "",
-	//}
+	// }
 
 	usageTemplate := usageTemplate()
 

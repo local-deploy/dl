@@ -2,16 +2,17 @@ package command
 
 import (
 	"context"
+	"os"
+	"os/exec"
+	"strings"
+	"sync"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/project"
-	"os"
-	"os/exec"
-	"strings"
-	"sync"
 )
 
 func init() {
@@ -133,7 +134,7 @@ func detectFw() (string, error) {
 	return "", err
 }
 
-//upDbContainer Run db container before dump
+// upDbContainer Run db container before dump
 func upDbContainer() error {
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
@@ -143,8 +144,7 @@ func upDbContainer() error {
 	}
 
 	site := project.Env.GetString("HOST_NAME")
-	siteDb := site + "_db"
-
+	var siteDb = site + "_db"
 	containerFilter := filters.NewArgs(filters.Arg("name", siteDb))
 	containerExists, err := cli.ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter})
 

@@ -5,11 +5,6 @@ import (
 	"compress/gzip"
 	"context"
 	"errors"
-	"github.com/google/go-github/v41/github"
-	"github.com/pterm/pterm"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"github.com/varrcan/dl/helper"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -17,6 +12,12 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/google/go-github/v41/github"
+	"github.com/pterm/pterm"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"github.com/varrcan/dl/helper"
 )
 
 func init() {
@@ -72,7 +73,7 @@ func selfUpdate() {
 		return
 	}
 
-	if noConfig == false {
+	if !noConfig {
 		err = copyConfigFiles()
 		if err != nil {
 			spinnerFiles.Fail("Failed: %v", err)
@@ -194,7 +195,7 @@ func copyBin() error {
 	var err error
 
 	binPath, _ := helper.BinPath()
-	//TODO: Darwin
+	// TODO: Darwin
 	tmpLinuxBin := filepath.Join(os.TempDir(), "dl", "bin", "dl_linux_amd64")
 
 	if helper.IsBinFileExists() {

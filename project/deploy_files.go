@@ -1,15 +1,16 @@
 package project
 
 import (
-	"github.com/pterm/pterm"
-	"github.com/varrcan/dl/helper"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/pterm/pterm"
+	"github.com/varrcan/dl/helper"
 )
 
-//CopyFiles Copying files from the server
+// CopyFiles Copying files from the server
 func (c SshClient) CopyFiles() {
 	var err error
 
@@ -23,7 +24,7 @@ func (c SshClient) CopyFiles() {
 	}
 
 	if err != nil {
-		pterm.FgRed.Printfln("Error: %w \n", err)
+		pterm.FgRed.Printfln("Error: %s \n", err)
 		os.Exit(1)
 	}
 
@@ -31,11 +32,11 @@ func (c SshClient) CopyFiles() {
 	if err == nil {
 		extractArchive(c.Server.FwType)
 		bitrixAccess()
-		//helper.CallMethod(&err, c.Server.FwType+"Access")
+		// helper.CallMethod(&err, c.Server.FwType+"Access")
 	}
 }
 
-//packFiles Add files to archive
+// packFiles Add files to archive
 func (c SshClient) packFiles(path string) error {
 	pterm.FgBlue.Println("Create files archive")
 
@@ -53,7 +54,7 @@ func (c SshClient) packFiles(path string) error {
 	return err
 }
 
-//formatIgnoredPath Exclude path from tar
+// formatIgnoredPath Exclude path from tar
 func formatIgnoredPath() string {
 	var ignoredPath []string
 
@@ -93,10 +94,10 @@ func extractArchive(path string) {
 
 	pterm.FgBlue.Println("Extract files")
 
-	localPath := filepath.Join(Env.GetString("PWD"))
+	localPath := Env.GetString("PWD")
 	archive := filepath.Join(localPath, "production.tar.gz")
 
-	//TODO: rewrite to Go
+	// TODO: rewrite to Go
 	outTar, err := exec.Command("tar", "-xzf", archive, "-C", localPath).CombinedOutput()
 	outRm, err := exec.Command("rm", "-f", archive).CombinedOutput()
 
@@ -111,7 +112,7 @@ func extractArchive(path string) {
 
 func bitrixAccess() {
 	var err error
-	localPath := filepath.Join(Env.GetString("PWD"))
+	localPath := Env.GetString("PWD")
 	settingsFile := filepath.Join(localPath, "bitrix", ".settings.php")
 	dbconnFile := filepath.Join(localPath, "bitrix", "php_interface", "dbconn.php")
 

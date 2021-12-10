@@ -3,12 +3,13 @@ package command
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 func init() {
@@ -58,7 +59,7 @@ func downService() {
 
 		spinnerStopping.UpdateText("Removing container " + containerName)
 		err = cli.ContainerRemove(ctx, container.ID, types.ContainerRemoveOptions{
-			//RemoveVolumes: true,
+			// RemoveVolumes: true,
 			Force: true,
 		})
 
