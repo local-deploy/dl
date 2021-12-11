@@ -36,7 +36,8 @@ Laravel: only the database is downloaded`,
 	Run: func(cmd *cobra.Command, args []string) {
 		deploy()
 	},
-	Example: "dl deploy\ndl deploy -d\ndl deploy -f -o bitrix,upload",
+	Example:   "dl deploy\ndl deploy -d\ndl deploy -f -o bitrix,upload",
+	ValidArgs: []string{"--database", "--files", "--override"},
 }
 
 var (

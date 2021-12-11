@@ -38,7 +38,7 @@ func Execute() {
 
 	rootCmd.SetUsageTemplate(usageTemplate)
 	rootCmd.DisableAutoGenTag = true
-	rootCmd.CompletionOptions.DisableDefaultCmd = true
+	// rootCmd.CompletionOptions.DisableDefaultCmd = true
 
 	cobra.CheckErr(rootCmd.Execute())
 }

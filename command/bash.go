@@ -21,6 +21,7 @@ var bashCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		bash()
 	},
+	ValidArgs: []string{"--root"},
 }
 
 var bashRoot bool
