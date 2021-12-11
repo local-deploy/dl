@@ -41,9 +41,9 @@ var completionCmd = &cobra.Command{
 		if len(args) > 0 {
 			switch args[0] {
 			case "bash":
-				cmd.Root().GenBashCompletion(os.Stdout)
+				_ = cmd.Root().GenBashCompletion(os.Stdout)
 			case "zsh":
-				cmd.Root().GenZshCompletion(os.Stdout)
+				_ = cmd.Root().GenZshCompletion(os.Stdout)
 			}
 		} else {
 			fmt.Printf(completionDesc, rootCmd.Root().Name())
