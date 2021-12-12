@@ -29,9 +29,10 @@ var source string
 var localNetworkName = "dl_default"
 
 var serviceCmd = &cobra.Command{
-	Use:   "service",
-	Short: "Local services configuration",
-	Long:  `Local services configuration (portainer, mailcatcher, traefik).`,
+	Use:       "service",
+	Short:     "Local services configuration",
+	Long:      `Local services configuration (portainer, mailcatcher, traefik).`,
+	ValidArgs: []string{"up", "down", "recreate", "restart"},
 }
 
 // getServicesContainer local services containers

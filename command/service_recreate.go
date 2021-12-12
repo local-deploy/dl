@@ -17,4 +17,5 @@ var recreateServiceCmd = &cobra.Command{
 		downService()
 		upService()
 	},
+	ValidArgs: []string{"--service"},
 }

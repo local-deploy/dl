@@ -31,6 +31,7 @@ var upServiceCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		upService()
 	},
+	ValidArgs: []string{"--service", "--restart"},
 }
 
 func upService() {

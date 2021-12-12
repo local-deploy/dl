@@ -26,6 +26,7 @@ Valid parameters for the "--service" flag: portainer, mail, traefik`,
 	Run: func(cmd *cobra.Command, args []string) {
 		downService()
 	},
+	ValidArgs: []string{"--service"},
 }
 
 func downService() {
