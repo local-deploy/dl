@@ -142,6 +142,15 @@ func extractArchive(archivePath string) error {
 	tarReader := tar.NewReader(uncompressedStream)
 
 	tmpPath := filepath.Join(os.TempDir(), "dl")
+
+	_, err = os.Stat(tmpPath)
+	if err == nil {
+		err = os.RemoveAll(tmpPath)
+		if err != nil {
+			return err
+		}
+	}
+
 	if err := os.Mkdir(tmpPath, 0755); err != nil {
 		return err
 	}
