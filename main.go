@@ -17,7 +17,7 @@ var version = "0.2.4"
 
 func main() {
 	if !helper.IsConfigDirExists() {
-		pterm.FgRed.Printfln("The application has not been initialized. Please run the command:\nwget --no-check-certificate https://raw.githubusercontent.com/local-deploy/dl/master/install_dl.sh && chmod +x ./install_dl.sh && ./install_dl.sh")
+		pterm.FgRed.Printfln("The application has not been initialized. Please run the command:\ncurl -s https://raw.githubusercontent.com/local-deploy/dl/master/install_dl.sh | bash")
 		return
 	}
 
