@@ -10,7 +10,7 @@ var rootCmd = &cobra.Command{
 	Use:   "dl",
 	Short: "Deploy Local",
 	Long: `Deploy Local — site deployment assistant locally.
-Complete documentation is available at https://dl.varme.pw/`,
+Complete documentation is available at https://local-deploy.github.io/`,
 }
 
 func handleError(err error) {

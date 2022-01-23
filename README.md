@@ -10,9 +10,11 @@ Dependencies:
 - docker
 - docker-compose
 
+### Documentation [local-deploy.github.io](https://local-deploy.github.io/)
+
 ## Development status
 
-Alpha version
+Beta version
 
 ## Install
 
@@ -35,33 +37,3 @@ wget --no-check-certificate https://raw.githubusercontent.com/local-deploy/dl/ma
 http://portainer.localhost  
 http://traefik.localhost  
 http://mail.localhost
-
-## Move to doc
-
-Available env:
-
-| env                     | default value                                       |
-|-------------------------|---------------------------------------------------  |
-| LOCALTIME               | Europe/Moscow                                       |
-| PHP_MODULES             | opcache                                             |
-| PHP_MEMORY_LIMIT        | 256M                                                |
-| PHP_POST_MAX_SIZE       | 100M                                                |
-| PHP_UPLOAD_MAX_FILESIZE | 100M                                                |
-| PHP_MAX_FILE_UPLOADS    | 50                                                  |
-| PHP_MAX_EXECUTION_TIME  | 60                                                  |
-|                         |                                                     |
-| SSH_KEY                 | id_rsa (from ~/.ssh/id_rsa)                         |
-| NETWORK_NAME            | generated from HOST_NAME without special characters |
-|                         |                                                     |
-| XDEBUG                  | off                                                 |
-| XDEBUG_IDE_KEY          | PHPSTORM                                            |
-| XDEBUG_PORT             | 9003                                                |
-|                         |                                                     |
-| REDIS                   | false                                               |
-| REDIS_PASSWORD          | pass                                                |
-| MEMCACHED               | false                                               |
-|                         |                                                     |
-| LOCAL_IP                | external local IP (e.g. 192.168.0.5)                |
-| NGINX_CONF              | ~/.config/dl/config-files/default.conf.template     |
-
-Xdebug mode https://xdebug.org/docs/all_settings#mode
