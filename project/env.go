@@ -44,8 +44,11 @@ func LoadEnv() {
 
 // setNetworkName Set network name from project name
 func setDefaultEnv() {
-	projectName := strings.ToLower(Env.GetString("HOST_NAME"))
+	dir, _ := os.Getwd()
+	Env.SetDefault("PWD", dir)
+	Env.SetDefault("SSH_KEY", "id_rsa")
 
+	projectName := strings.ToLower(Env.GetString("HOST_NAME"))
 	if len(projectName) == 0 {
 		pterm.FgRed.Printfln("The HOST_NAME variable is not defined! Please initialize .env file.")
 		os.Exit(1)
@@ -54,10 +57,6 @@ func setDefaultEnv() {
 	var re = regexp.MustCompile(`[[:punct:]]`)
 	res := re.ReplaceAllString(projectName, "")
 	Env.SetDefault("NETWORK_NAME", res)
-
-	dir, _ := os.Getwd()
-	Env.SetDefault("PWD", dir)
-	Env.SetDefault("SSH_KEY", "id_rsa")
 
 	confDir, _ := helper.ConfigDir()
 	configNginxFile := filepath.Join(confDir, "config-files", "default.conf.template")
