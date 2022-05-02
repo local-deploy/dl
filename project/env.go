@@ -45,7 +45,10 @@ func LoadEnv() {
 // setNetworkName Set network name from project name
 func setDefaultEnv() {
 	dir, _ := os.Getwd()
+	home, _ := helper.HomeDir()
+	Env.SetDefault("HOST_NAME", filepath.Base(dir))
 	Env.SetDefault("PWD", dir)
+	Env.SetDefault("HOME", home)
 	Env.SetDefault("SSH_KEY", "id_rsa")
 
 	projectName := strings.ToLower(Env.GetString("HOST_NAME"))
