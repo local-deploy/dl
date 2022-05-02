@@ -44,6 +44,19 @@ if ! docker-compose --version >/dev/null 2>&1; then
   exit 1
 fi
 
+case $SHELL in
+*/zsh)
+  SHELL_RC=".zshrc"
+  ;;
+*/bash)
+  SHELL_RC=".bashrc"
+  ;;
+*)
+  printf "${RED}Sorry, your shell is not currently supported${RESET}\n"
+  exit 1
+  ;;
+esac
+
 LATEST_RELEASE=$(curl --silent "https://api.github.com/repos/$GITHUB_REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
 
 RELEASE_BASE_URL="https://github.com/${GITHUB_REPO}/releases/download/$LATEST_RELEASE"
@@ -76,8 +89,8 @@ if [ ! -d "$HOME/.config/dl" ]; then
 fi
 
 case ":$PATH:" in
-  *:$HOME/.local/bin:*) ;;
-  *) printf "\nexport \"PATH=\$PATH:$HOME/.local/bin\"" >>"$HOME/.bashrc" && PATH="$PATH:$HOME/.local/bin" ;;
+*:$HOME/.local/bin:*) ;;
+*) printf "\nexport \"PATH=\$PATH:$HOME/.local/bin\"" >>"$HOME/$SHELL_RC" && PATH="$PATH:$HOME/.local/bin" ;;
 esac
 
 mv "bin/$BIN" "$HOME/.local/bin/dl"
