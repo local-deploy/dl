@@ -13,7 +13,7 @@ import (
 	"github.com/varrcan/dl/helper"
 )
 
-var version = "0.2.5"
+var version = "0.2.6"
 
 func main() {
 	if !helper.IsConfigDirExists() {
@@ -66,6 +66,7 @@ func createConfigFile() error {
 
 	viper.Set("version", version)
 	viper.Set("locale", "en")
+	viper.Set("repo", "ghcr.io")
 
 	errWrite := viper.SafeWriteConfig()
 

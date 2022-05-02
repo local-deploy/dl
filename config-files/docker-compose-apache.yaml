@@ -3,7 +3,7 @@ version: "3.8"
 services:
   php:
     container_name: ${HOST_NAME}_php
-    image: quay.io/local-deploy/php${PHP_VERSION:-7.3-apache}:${PHP_IMAGE_VERSION:-latest}
+    image: ${REPO}/local-deploy/php${PHP_VERSION:-7.4-apache}:${PHP_IMAGE_VERSION:-latest}
     environment:
       - "DOCUMENT_ROOT=${DOCUMENT_ROOT:-/var/www/html}"
       - "HOST_NAME=${HOST_NAME:-localhost}"

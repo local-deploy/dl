@@ -12,5 +12,5 @@ var configCmd = &cobra.Command{
 	Use:    "config",
 	Short:  "Application configuration",
 	Long:   `Menu for setting up the application.`,
-	Hidden: true,
+	Hidden: false,
 }

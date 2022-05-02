@@ -91,6 +91,12 @@ func selfUpdate() {
 	spinnerTmp.Success()
 
 	viper.Set("version", *release.TagName)
+
+	repo := viper.GetString("repo")
+	if len(repo) == 0 {
+		viper.Set("repo", "ghcr.io")
+	}
+
 	err = viper.WriteConfig()
 	if err != nil {
 		pterm.FgRed.Println(err)

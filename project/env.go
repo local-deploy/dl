@@ -17,12 +17,12 @@ import (
 var Env *viper.Viper
 
 var phpImagesVersion = map[string]string{
-	"7.3-apache": "1.1.0",
-	"7.3-fpm":    "1.0.0",
-	"7.4-apache": "1.0.1",
-	"7.4-fpm":    "1.0.0",
-	"8.0-apache": "1.0.2",
-	"8.0-fpm":    "1.0.1",
+	"7.3-apache": "1.1.1",
+	"7.3-fpm":    "1.0.1",
+	"7.4-apache": "1.0.3",
+	"7.4-fpm":    "1.0.1",
+	"8.0-apache": "1.0.3",
+	"8.0-fpm":    "1.0.2",
 }
 
 // LoadEnv Get variables from .env file
@@ -74,6 +74,8 @@ func setDefaultEnv() {
 	Env.SetDefault("LOCAL_IP", host)
 	Env.SetDefault("NIP_DOMAIN", fmt.Sprintf("%s.%s.nip.io", projectName, host))
 	Env.SetDefault("LOCAL_DOMAIN", fmt.Sprintf("%s.localhost", projectName))
+
+	Env.SetDefault("REPO", viper.GetString("repo"))
 }
 
 // setComposeFile Set docker-compose files
