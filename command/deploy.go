@@ -60,6 +60,11 @@ func deploy() {
 		Catalog: project.Env.GetString("CATALOG_SRV"),
 	})
 
+	if err != nil {
+		pterm.FgRed.Println(err)
+		os.Exit(1)
+	}
+
 	// Defer closing the network connection.
 	defer func(client *project.SshClient) {
 		err = client.Close()
