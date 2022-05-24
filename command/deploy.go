@@ -2,6 +2,8 @@ package command
 
 import (
 	"context"
+	"fmt"
+	"golang.org/x/crypto/ssh/terminal"
 	"os"
 	"os/exec"
 	"strings"
@@ -50,14 +52,22 @@ var (
 
 func deploy() {
 	project.LoadEnv()
+	var sshPassword string
+
+	if project.Env.GetString("AUTH_MODE") == "passwd" {
+		fmt.Println("Enter ssh password")
+		passwd, _ := terminal.ReadPassword(int(os.Stdin.Fd()))
+		sshPassword = string(passwd)
+	}
 
 	var err error
 	sshClient, err = project.NewClient(&project.Server{
-		Server:  project.Env.GetString("SERVER"),
-		Key:     project.Env.GetString("SSH_KEY"),
-		User:    project.Env.GetString("USER_SRV"),
-		Port:    project.Env.GetUint("PORT_SRV"),
-		Catalog: project.Env.GetString("CATALOG_SRV"),
+		Server:   project.Env.GetString("SERVER"),
+		Key:      project.Env.GetString("SSH_KEY"),
+		Password: sshPassword,
+		User:     project.Env.GetString("USER_SRV"),
+		Port:     project.Env.GetUint("PORT_SRV"),
+		Catalog:  project.Env.GetString("CATALOG_SRV"),
 	})
 
 	if err != nil {

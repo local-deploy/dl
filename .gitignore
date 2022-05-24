@@ -1,1 +1,4 @@
 /dl
+.idea
+.docker
+.env

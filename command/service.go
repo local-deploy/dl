@@ -90,6 +90,20 @@ func getServicesContainer() []localServicesContainer {
 			Ports: []string{"0.0.0.0:1025:1025"},
 		},
 		{
+			Name:       "adminer",
+			Image:      "dockette/adminer",
+			Version:    "latest",
+			Cmd:        nil,
+			Volumes:    nil,
+			Entrypoint: nil,
+			Labels: map[string]string{
+				"com.docker.compose.project":               "dl-services",
+				"traefik.enable":                           "true",
+				"traefik.http.routers.adminer.entrypoints": "web, websecure",
+				"traefik.http.routers.adminer.rule":        "Host(`adminer.localhost`) || HostRegexp(`adminer.{ip:.*}.nip.io`)",
+			},
+		},
+		{
 			Name:    "portainer",
 			Image:   "portainer/portainer",
 			Version: "latest",

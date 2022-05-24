@@ -2,6 +2,7 @@ package project
 
 import (
 	"errors"
+	"github.com/varrcan/dl/helper"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +14,8 @@ import (
 type dbSettings struct {
 	Host, DataBase, Login, Password string
 	ExcludedTables                  []string
+	ExcludedModuleTables            []string
+	IncludedTables                  []string
 }
 
 // DumpDb Database import from server
@@ -39,7 +42,6 @@ func (c SshClient) DumpDb() {
 		os.Exit(1)
 	}
 
-	c.downloadDump()
 	c.importDb()
 }
 
@@ -60,13 +62,17 @@ func (c SshClient) accessBitrixDb() (*dbSettings, error) {
 	}
 
 	excludedTables := strings.Split(strings.TrimSpace(Env.GetString("EXCLUDED_TABLES")), ",")
+	excludedModuleTables := strings.Split(strings.TrimSpace(Env.GetString("EXCLUDED_MODULE_TABLES")), ",")
+	includedTables := strings.Split(strings.TrimSpace(Env.GetString("INCLUDED_TABLES")), ",")
 
 	return &dbSettings{
-		Host:           dbArray[0],
-		DataBase:       dbArray[1],
-		Login:          dbArray[2],
-		Password:       dbArray[3],
-		ExcludedTables: excludedTables,
+		Host:                 dbArray[0],
+		DataBase:             dbArray[1],
+		Login:                dbArray[2],
+		Password:             dbArray[3],
+		ExcludedTables:       excludedTables,
+		ExcludedModuleTables: excludedModuleTables,
+		IncludedTables:       includedTables,
 	}, err
 }
 
@@ -100,7 +106,30 @@ func (c SshClient) accessLaravelDb() (*dbSettings, error) {
 func (c SshClient) mysqlDump(db *dbSettings) error {
 	pterm.FgGreen.Println("Create database dump")
 
+	if c.Server.FwType == "bitrix" {
+		dumpCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&",
+			"mysql",
+			"--host=" + db.Host,
+			"--user=" + db.Login,
+			"--password=" + db.Password,
+			db.DataBase,
+			"-e \"show tables\"",
+		}, " ")
+		showTablesLine, _ := c.Run(dumpCmd)
+
+		tables := strings.Split(string(showTablesLine), "\n")
+		for i := range tables {
+			if i == 0 {
+				continue
+			}
+			if helper.ContainsHasPrefix(db.ExcludedModuleTables, tables[i]) {
+				db.ExcludedTables = append(db.ExcludedTables, tables[i])
+			}
+		}
+	}
+
 	ignoredTablesString := db.formatIgnoredTables()
+
 	dumpCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&",
 		"mysqldump",
 		"--host=" + db.Host,
@@ -128,7 +157,33 @@ func (c SshClient) mysqlDump(db *dbSettings) error {
 		"|",
 		"gzip >> " + c.Server.Catalog + "/production.sql.gz",
 	}, " ")
+
 	_, err := c.Run(dumpCmd)
+
+	c.downloadDump("production")
+
+	if c.Server.FwType == "bitrix" {
+		for _, includeTable := range db.IncludedTables {
+			pterm.FgGreen.Println("Dump database table:" + includeTable)
+			dumpCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&",
+				"mysqldump",
+				"--host=" + db.Host,
+				"--user=" + db.Login,
+				"--password=" + db.Password,
+				"--single-transaction=1",
+				"--force",
+				"--lock-tables=false",
+				"--no-tablespaces",
+				"--no-create-info",
+				db.DataBase,
+				includeTable,
+				"|",
+				"gzip >> " + c.Server.Catalog + "/" + includeTable + ".sql.gz",
+			}, " ")
+			_, _ = c.Run(dumpCmd)
+			c.downloadDump(includeTable)
+		}
+	}
 
 	return err
 }
@@ -148,11 +203,11 @@ func (d dbSettings) formatIgnoredTables() string {
 	return strings.Join(ignoredTables, " ")
 }
 
-// downloadDump Downloading a dump and deleting an archive from the server
-func (c SshClient) downloadDump() {
-	pterm.FgGreen.Println("Download database dump")
-	serverPath := filepath.Join(c.Server.Catalog, "production.sql.gz")
-	localPath := filepath.Join(Env.GetString("PWD"), "production.sql.gz")
+// downloadDumpFile Downloading a dump file and deleting an archive from the server
+func (c SshClient) downloadDump(fileName string) {
+	pterm.FgGreen.Println("Download database dump:" + fileName)
+	serverPath := filepath.Join(c.Server.Catalog, fileName+".sql.gz")
+	localPath := filepath.Join(Env.GetString("PWD"), fileName+".sql.gz")
 
 	err := c.download(serverPath, localPath)
 
@@ -169,8 +224,6 @@ func (c SshClient) downloadDump() {
 
 // importDb Importing a database into a local container
 func (c SshClient) importDb() {
-	var err error
-
 	pterm.FgGreen.Println("Import database")
 
 	docker, lookErr := exec.LookPath("docker")
@@ -182,15 +235,38 @@ func (c SshClient) importDb() {
 
 	// TODO: переписать на sdk
 
-	localPath := filepath.Join(Env.GetString("PWD"), "production.sql.gz")
+	var sqlFiles []string
+	sqlFiles = append(sqlFiles, filepath.Join(Env.GetString("PWD"), "production.sql.gz"))
+	err := filepath.Walk(Env.GetString("PWD"), func(path string, info os.FileInfo, err error) error {
+		if filepath.Base(path) == "production.sql.gz" {
+			return nil
+		}
+
+		if filepath.Ext(path) == ".gz" {
+			sqlFiles = append(sqlFiles, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return
+	}
+
 	site := Env.GetString("HOST_NAME")
 	siteDb := site + "_db"
 
-	outImport, err := exec.Command("bash", "-c", gunzip+" < "+localPath+" | "+docker+" exec -i "+siteDb+" /usr/bin/mysql --user=root --password=root db").CombinedOutput()
-	if err != nil {
-		pterm.FgRed.Println(string(outImport))
-		pterm.FgRed.Println(err)
-		return
+	for _, sqlDumpFile := range sqlFiles {
+		pterm.FgGreen.Println("Import file:" + filepath.Base(sqlDumpFile))
+		outImport, err := exec.Command("bash", "-c", gunzip+" < "+sqlDumpFile+" | "+docker+" exec -i "+siteDb+" /usr/bin/mysql --user=root --password=root db").CombinedOutput()
+		if err != nil {
+			pterm.FgRed.Println(string(outImport))
+			pterm.FgRed.Println(err)
+			return
+		}
+		err = exec.Command("rm", sqlDumpFile).Run()
+
+		if err != nil {
+			pterm.FgRed.Println(err)
+		}
 	}
 
 	if c.Server.FwType == "bitrix" {
@@ -211,9 +287,4 @@ INSERT INTO b_lang_domain VALUES ('s1', '` + nip + `');"`
 		}
 	}
 
-	err = exec.Command("rm", localPath).Run()
-
-	if err != nil {
-		pterm.FgRed.Println(err)
-	}
 }

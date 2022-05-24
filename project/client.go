@@ -24,8 +24,8 @@ type SshClient struct {
 
 // Server config
 type Server struct {
-	Server, Key, User, Catalog, FwType string
-	Port                               uint
+	Server, Key, Password, User, Catalog, FwType string
+	Port                                         uint
 }
 
 // NewClient returns new client and error if any
@@ -33,6 +33,11 @@ func NewClient(server *Server) (c *SshClient, err error) {
 	home, _ := helper.HomeDir()
 
 	auth, err := goph.Key(filepath.Join(home, ".ssh", server.Key), "")
+
+	if len(server.Password) > 0 {
+		auth = goph.Password(server.Password)
+	}
+
 	if err != nil {
 		pterm.FgRed.Println(err)
 		return
