@@ -3,6 +3,7 @@ package project
 import (
 	"errors"
 	"github.com/varrcan/dl/helper"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -237,16 +238,21 @@ func (c SshClient) importDb() {
 
 	var sqlFiles []string
 	sqlFiles = append(sqlFiles, filepath.Join(Env.GetString("PWD"), "production.sql.gz"))
-	err := filepath.Walk(Env.GetString("PWD"), func(path string, info os.FileInfo, err error) error {
-		if filepath.Base(path) == "production.sql.gz" {
-			return nil
-		}
 
-		if filepath.Ext(path) == ".gz" {
-			sqlFiles = append(sqlFiles, path)
+	files, err := ioutil.ReadDir(Env.GetString("PWD"))
+	if err != nil {
+		pterm.FgRed.Println(err)
+	}
+
+	for _, f := range files {
+		if f.Name() == "production.sql.gz" {
+			continue
 		}
-		return nil
-	})
+		if filepath.Ext(f.Name()) == ".gz" {
+			sqlFiles = append(sqlFiles, f.Name())
+		}
+	}
+
 	if err != nil {
 		return
 	}
