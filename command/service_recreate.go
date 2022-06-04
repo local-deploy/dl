@@ -1,6 +1,8 @@
 package command
 
 import (
+	"context"
+
 	"github.com/spf13/cobra"
 )
 
@@ -13,9 +15,20 @@ var recreateServiceCmd = &cobra.Command{
 	Use:   "recreate",
 	Short: "Recreate containers",
 	Long:  `Stop services containers and restart.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		downService()
-		upService()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+
+		err := downService(ctx)
+		if err != nil {
+			return err
+		}
+
+		err = upService(ctx)
+		if err != nil {
+			return err
+		}
+
+		return nil
 	},
 	ValidArgs: []string{"--service"},
 }
