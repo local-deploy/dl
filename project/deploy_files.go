@@ -16,8 +16,12 @@ import (
 type callMethod struct{}
 
 // CopyFiles Copying files from the server
-func (c SshClient) CopyFiles(ctx context.Context) {
-	var err error
+func (c SshClient) CopyFiles(ctx context.Context, override []string) {
+	var (
+		err  error
+		path string
+	)
+
 	w := progress.ContextWriter(ctx)
 
 	w.Event(progress.Event{
@@ -27,12 +31,18 @@ func (c SshClient) CopyFiles(ctx context.Context) {
 
 	switch c.Server.FwType {
 	case "bitrix":
-		err = c.packFiles(ctx, "local")
+		path = "bitrix"
 	case "wordpress":
-		err = c.packFiles(ctx, "wp-admin wp-includes")
+		path = "wp-admin wp-includes"
 	default:
 		return
 	}
+
+	if len(override) > 0 {
+		path = strings.Join(override, " ")
+	}
+
+	err = c.packFiles(ctx, path)
 
 	if err != nil {
 		fmt.Printf("Error: %s \n", err)

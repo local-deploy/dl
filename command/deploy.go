@@ -35,15 +35,7 @@ Bitrix CMS: "bitrix"
 WordPress: "wp-admin" and "wp-includes"
 Laravel: only the database is downloaded`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		err := progress.Run(ctx, func(ctx context.Context) error {
-			return deploy(ctx)
-		})
-		if err != nil {
-			return err
-		}
-
-		return nil
+		return deploy()
 	},
 	Example:   "dl deploy\ndl deploy -d\ndl deploy -f -o bitrix,upload",
 	ValidArgs: []string{"--database", "--files", "--override"},
@@ -57,7 +49,21 @@ var (
 	sshClient     *project.SshClient
 )
 
-func deploy(ctx context.Context) error {
+func deploy() error {
+	ctx := context.Background()
+	err := progress.Run(ctx, func(ctx context.Context) error {
+		return deployService(ctx)
+	})
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("All done")
+
+	return nil
+}
+
+func deployService(ctx context.Context) error {
 	w := progress.ContextWriter(ctx)
 
 	project.LoadEnv()
@@ -118,7 +124,7 @@ func deploy(ctx context.Context) error {
 
 func startFiles(ctx context.Context) {
 	defer pullWaitGroup.Done()
-	sshClient.CopyFiles(ctx)
+	sshClient.CopyFiles(ctx, override)
 }
 
 func startDump(ctx context.Context) {
