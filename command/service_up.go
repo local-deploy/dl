@@ -49,7 +49,7 @@ func upService(ctx context.Context) error {
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		w.Event(progress.ErrorMessageEvent("Docker", "Failed to connect to socket"))
+		w.Event(progress.ErrorMessageEvent("Docker", "Failed connect to socket"))
 		return err
 	}
 
@@ -242,7 +242,7 @@ func startContainers(cli *client.Client, ctx context.Context) error {
 		isExistsName, _ := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerNameFilter})
 		if len(isExistsName) > 0 {
 			busyName = true
-			w.Event(progress.ErrorMessageEvent(local.Name, "Unable to start container: name is already in use"))
+			w.Event(progress.ErrorMessageEvent(local.Name, "Unable to start container: name already in use"))
 		}
 		if busyName {
 			continue
