@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/docker/compose/v2/pkg/progress"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
-	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 )
 
 func init() {
@@ -20,19 +21,60 @@ func init() {
 var downServiceCmd = &cobra.Command{
 	Use:   "down",
 	Short: "Stop and remove services",
-	Long: `Stops and removes portainer, mailcatcher and traefik containers.  
+	Long: `Stops and removes portainer, mailcatcher and traefik containers.
 Valid parameters for the "--service" flag: portainer, mail, traefik`,
 	Example: "dl down\ndl down -s portainer",
-	Run: func(cmd *cobra.Command, args []string) {
-		downService()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		err := progress.Run(ctx, func(ctx context.Context) error {
+			return downService(ctx)
+		})
+		if err != nil {
+			return err
+		}
+
+		return nil
 	},
 	ValidArgs: []string{"--service"},
 }
 
-func downService() {
-	ctx := context.Background()
+func downService(ctx context.Context) error {
+	w := progress.ContextWriter(ctx)
+	eg, _ := errgroup.WithContext(ctx)
+
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	handleError(err)
+
+	err = removeContainers(cli, ctx)
+	if err != nil {
+		return err
+	}
+
+	if isNet(cli) && len(source) == 0 {
+		eg.Go(func() error {
+			eventName := fmt.Sprintf("Network %q", localNetworkName)
+			w.Event(progress.RemovingEvent(eventName))
+
+			netFilters := filters.NewArgs(filters.Arg("name", localNetworkName))
+			list, err := cli.NetworkList(ctx, types.NetworkListOptions{Filters: netFilters})
+			err = cli.NetworkRemove(ctx, list[0].ID)
+
+			if err != nil {
+				w.Event(progress.ErrorMessageEvent(eventName, fmt.Sprint(err)))
+				return nil
+			}
+
+			w.Event(progress.RemovedEvent(eventName))
+			return nil
+		})
+	}
+
+	return eg.Wait()
+}
+
+func removeContainers(cli *client.Client, ctx context.Context) error {
+	w := progress.ContextWriter(ctx)
+	eg, _ := errgroup.WithContext(ctx)
 
 	localContainers := getServicesContainer()
 
@@ -46,43 +88,41 @@ func downService() {
 
 	if containerFilters.Len() == 0 {
 		fmt.Println("Unknown service")
-		return
+		return nil
 	}
 
 	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerFilters})
 	handleError(err)
 
 	for _, container := range containers {
+		container := container
 		containerName := strings.TrimPrefix(container.Names[0], "/")
 
-		spinnerStopping, _ := pterm.DefaultSpinner.Start("Stopping and remove container " + containerName)
-		err := cli.ContainerStop(ctx, container.ID, nil)
+		eg.Go(func() error {
+			eventName := fmt.Sprintf("Container %q", containerName)
 
-		spinnerStopping.UpdateText("Removing container " + containerName)
-		err = cli.ContainerRemove(ctx, container.ID, types.ContainerRemoveOptions{
-			// RemoveVolumes: true,
-			Force: true,
+			w.Event(progress.StoppingEvent(eventName))
+			err := cli.ContainerStop(ctx, container.ID, nil)
+			if err != nil {
+				w.Event(progress.ErrorMessageEvent(eventName, fmt.Sprint(err)))
+				return nil
+			}
+			w.Event(progress.StoppedEvent(eventName))
+
+			w.Event(progress.RemovingEvent(eventName))
+			err = cli.ContainerRemove(ctx, container.ID, types.ContainerRemoveOptions{
+				// RemoveVolumes: true,
+				Force: true,
+			})
+			if err != nil {
+				w.Event(progress.ErrorMessageEvent(eventName, fmt.Sprint(err)))
+				return nil
+			}
+			w.Event(progress.RemovedEvent(eventName))
+
+			return nil
 		})
-
-		if err != nil {
-			spinnerStopping.Fail("Error while deleting container " + containerName)
-			continue
-		}
-
-		spinnerStopping.Success()
 	}
 
-	if isNet(cli) && len(source) == 0 {
-		spinnerNetwork, _ := pterm.DefaultSpinner.Start("Deleting network")
-		netFilters := filters.NewArgs(filters.Arg("name", localNetworkName))
-		list, err := cli.NetworkList(ctx, types.NetworkListOptions{Filters: netFilters})
-		err = cli.NetworkRemove(ctx, list[0].ID)
-
-		if err != nil {
-			spinnerNetwork.Fail("Network deleting error")
-			return
-		}
-
-		spinnerNetwork.Success()
-	}
+	return eg.Wait()
 }
