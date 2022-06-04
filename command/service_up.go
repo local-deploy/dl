@@ -2,19 +2,21 @@ package command
 
 import (
 	"context"
-	"io/ioutil"
-	"net"
+	"encoding/json"
+	"fmt"
+	"io"
 	"strings"
-	"time"
 
+	"github.com/docker/compose/v2/pkg/progress"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/go-connections/nat"
-	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 )
 
 func init() {
@@ -28,18 +30,41 @@ var upServiceCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Start local services",
 	Long:  `Start portainer, mailcatcher and traefik containers.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		upService()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
+		err := progress.Run(ctx, func(ctx context.Context) error {
+			return upService(ctx)
+		})
+		if err != nil {
+			return err
+		}
+
+		return nil
 	},
 	ValidArgs: []string{"--service", "--restart"},
 }
 
-func upService() {
-	ctx := context.Background()
+func upService(ctx context.Context) error {
+	w := progress.ContextWriter(ctx)
+
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		pterm.Fatal.Printfln("Failed to connect to socket")
-		return
+		w.Event(progress.ErrorMessageEvent("Docker", "Failed to connect to socket"))
+		return err
+	}
+
+	// Check for images
+	err = pullRequiredImages(cli, ctx)
+	if err != nil {
+		return err
+	}
+
+	// Check network
+	if isNotNet(cli) {
+		err := createNetwork(cli, ctx)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Create portainer data volume
@@ -47,44 +72,166 @@ func upService() {
 
 	//goland:noinspection GoNilness
 	if len(volumeResponse.Volumes) == 0 {
+		eventName := fmt.Sprintf("Volume %q", "portainer_data")
+		w.Event(progress.CreatingEvent(eventName))
 		_, err = cli.VolumeCreate(ctx, volume.VolumeCreateBody{Name: "portainer_data"})
 		if err != nil {
-			pterm.Warning.Printfln("Failed to create portainer_data volume")
+			w.Event(progress.ErrorMessageEvent("Volume", fmt.Sprint(err)))
+			return nil
 		}
+		w.Event(progress.CreatedEvent(eventName))
 	}
 
-	// Check network
-	if isNotNet(cli) {
-		spinnerNet, _ := pterm.DefaultSpinner.Start("Network creation")
-		_, err = cli.NetworkCreate(ctx, localNetworkName, types.NetworkCreate{})
-		if err != nil {
-			spinnerNet.Fail("Network creation error")
-			return
-		}
-		spinnerNet.Success()
+	err = startContainers(cli, ctx)
+	if err != nil {
+		return err
 	}
+
+	return err
+}
+
+func pullRequiredImages(cli *client.Client, ctx context.Context) error {
+
+	return progress.Run(ctx, func(ctx context.Context) error {
+		w := progress.ContextWriter(ctx)
+		eg, ctx := errgroup.WithContext(ctx)
+
+		localContainers := getServicesContainer()
+		for _, local := range localContainers {
+			localContainer := local
+			imageFiler := filters.NewArgs(filters.Arg("reference", localContainer.Image+":"+localContainer.Version))
+			isImageExists, _ := cli.ImageList(ctx, types.ImageListOptions{All: true, Filters: imageFiler})
+
+			if len(isImageExists) == 0 {
+				eg.Go(func() error {
+					w.Event(progress.Event{
+						ID:     localContainer.Name,
+						Status: progress.Working,
+						Text:   "Pulling",
+					})
+
+					stream, err := cli.ImagePull(ctx, localContainer.Image+":"+localContainer.Version, types.ImagePullOptions{})
+					if err != nil {
+						w.TailMsgf(fmt.Sprint(err))
+						w.Event(progress.ErrorEvent(localContainer.Name))
+						return nil
+					}
+
+					dec := json.NewDecoder(stream)
+					for {
+						var jm jsonmessage.JSONMessage
+						if err := dec.Decode(&jm); err != nil {
+							if err == io.EOF {
+								break
+							}
+							return err
+						}
+						if jm.Error != nil {
+							return err
+						}
+						toPullProgressEvent(localContainer.Name, jm, w)
+					}
+
+					w.Event(progress.Event{
+						ID:     localContainer.Name,
+						Status: progress.Done,
+						Text:   "Pulled",
+					})
+
+					return err
+				})
+			}
+		}
+
+		err := eg.Wait()
+		if err != nil {
+			return err
+		}
+		return err
+	})
+}
+
+func toPullProgressEvent(parent string, jm jsonmessage.JSONMessage, w progress.Writer) {
+	if jm.ID == "" || jm.Progress == nil {
+		return
+	}
+
+	var (
+		text   string
+		status = progress.Working
+	)
+
+	text = jm.Progress.String()
+
+	if jm.Status == "Pull complete" ||
+		jm.Status == "Already exists" ||
+		strings.Contains(jm.Status, "Image is up to date") ||
+		strings.Contains(jm.Status, "Downloaded newer image") {
+		status = progress.Done
+	}
+
+	if jm.Error != nil {
+		status = progress.Error
+		text = jm.Error.Message
+	}
+
+	w.Event(progress.Event{
+		ID:         jm.ID,
+		ParentID:   parent,
+		Text:       jm.Status,
+		Status:     status,
+		StatusText: text,
+	})
+}
+
+func createNetwork(cli *client.Client, ctx context.Context) error {
+	w := progress.ContextWriter(ctx)
+
+	eventName := fmt.Sprintf("Network %q", localNetworkName)
+	w.Event(progress.CreatingEvent(eventName))
+	_, err := cli.NetworkCreate(ctx, localNetworkName, types.NetworkCreate{})
+	if err != nil {
+		w.Event(progress.ErrorMessageEvent("Network", fmt.Sprint(err)))
+		return err
+	}
+	w.Event(progress.CreatedEvent(eventName))
+
+	return nil
+}
+
+func startContainers(cli *client.Client, ctx context.Context) error {
+	w := progress.ContextWriter(ctx)
+	eg, _ := errgroup.WithContext(ctx)
 
 	localContainers := getServicesContainer()
 
 	for _, local := range localContainers {
+		localContainer := local
 		if len(source) > 0 && source != local.Name {
 			continue
 		}
 
 		// Check dl-services running containers
 		containerFilter := filters.NewArgs(filters.Arg("name", local.Name), filters.Arg("label", "com.docker.compose.project=dl-services"))
-		isExists, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerFilter})
+		isExists, _ := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerFilter})
 		if len(isExists) > 0 {
 			if !restart {
 				continue
 			}
 
-			spinnerRecreate, _ := pterm.DefaultSpinner.Start("Restarting container " + local.Name)
-			err := cli.ContainerRestart(ctx, isExists[0].ID, nil)
-			if err != nil {
-				spinnerRecreate.Warning("Container " + local.Name + " cannot be recreated")
-			}
-			spinnerRecreate.Success()
+			eg.Go(func() error {
+				eventName := fmt.Sprintf("Container %q", localContainer.Name)
+				w.Event(progress.RestartingEvent(eventName))
+				err := cli.ContainerRestart(ctx, isExists[0].ID, nil)
+				if err != nil {
+					w.TailMsgf(fmt.Sprint(err))
+					w.Event(progress.ErrorEvent(eventName))
+					return nil
+				}
+
+				w.Event(progress.RestartedEvent(eventName))
+				return nil
+			})
 
 			continue
 		}
@@ -92,94 +239,59 @@ func upService() {
 		// Check name running containers
 		busyName := false
 		containerNameFilter := filters.NewArgs(filters.Arg("name", local.Name))
-		isExistsName, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerNameFilter})
+		isExistsName, _ := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerNameFilter})
 		if len(isExistsName) > 0 {
 			busyName = true
-			pterm.Warning.Printfln("Unable to start container %s: name is already in use by container %s", isExistsName[0].ID, local.Name)
+			w.Event(progress.ErrorMessageEvent(local.Name, "Unable to start container: name is already in use"))
 		}
 		if busyName {
 			continue
 		}
 
-		// Check ports
-		ports := local.Ports
-		busyPort := false
-		for _, port := range ports {
-			rawIP, hostPort, _ := splitParts(port)
-			conn, _ := net.DialTimeout("tcp", net.JoinHostPort(rawIP, hostPort), time.Second)
-			if conn != nil {
-				//goland:noinspection GoDeferInLoop
-				defer func(conn net.Conn) {
-					_ = conn.Close()
-				}(conn)
-				busyPort = true
-				pterm.Warning.Printfln("Unable to start container %s: port %s is busy.", local.Name, hostPort)
-			}
-		}
-		if busyPort {
-			continue
-		}
-
-		// Check for images
-		imageFiler := filters.NewArgs(filters.Arg("reference", local.Image+":"+local.Version))
-		isImageExists, err := cli.ImageList(ctx, types.ImageListOptions{All: true, Filters: imageFiler})
-		if len(isImageExists) == 0 {
-			spinnerPulling, _ := pterm.DefaultSpinner.WithRemoveWhenDone(true).Start("Pulling image " + local.Image)
-
-			out, err := cli.ImagePull(ctx, local.Image+":"+local.Version, types.ImagePullOptions{})
-			_, err = ioutil.ReadAll(out)
-			if err != nil {
-				spinnerPulling.Warning("Unable to load image: " + err.Error())
-				return
-			}
-
-			spinnerPulling.Success()
-		}
-
-		spinnerStarting, _ := pterm.DefaultSpinner.Start("Starting container " + local.Name)
+		eventName := fmt.Sprintf("Container %q", local.Name)
+		w.Event(progress.CreatingEvent(eventName))
 
 		// Create containers
-		exposedPorts, portBindings, _ := nat.ParsePortSpecs(local.Ports)
+		eg.Go(func() error {
+			exposedPorts, portBindings, _ := nat.ParsePortSpecs(localContainer.Ports)
 
-		resp, err := cli.ContainerCreate(ctx,
-			&container.Config{
-				Cmd:          local.Cmd,
-				Image:        local.Image,
-				Volumes:      local.Volumes,
-				Entrypoint:   local.Entrypoint,
-				Labels:       local.Labels,
-				ExposedPorts: exposedPorts,
-				Env:          local.Env,
-			},
-			&container.HostConfig{
-				NetworkMode:   container.NetworkMode(localNetworkName),
-				RestartPolicy: container.RestartPolicy{Name: "always"},
-				PortBindings:  portBindings,
-				Mounts:        local.Mounts,
-			}, nil, nil, local.Name)
-		handleError(err)
+			resp, err := cli.ContainerCreate(ctx,
+				&container.Config{
+					Cmd:          localContainer.Cmd,
+					Image:        localContainer.Image,
+					Volumes:      localContainer.Volumes,
+					Entrypoint:   localContainer.Entrypoint,
+					Labels:       localContainer.Labels,
+					ExposedPorts: exposedPorts,
+					Env:          localContainer.Env,
+				},
+				&container.HostConfig{
+					NetworkMode:   container.NetworkMode(localNetworkName),
+					RestartPolicy: container.RestartPolicy{Name: "always"},
+					PortBindings:  portBindings,
+					Mounts:        localContainer.Mounts,
+				}, nil, nil, localContainer.Name)
 
-		// Start containers
-		err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
-		handleError(err)
+			if err != nil {
+				w.TailMsgf(fmt.Sprint(err))
+				w.Event(progress.ErrorEvent(eventName))
+				return nil
+			}
 
-		spinnerStarting.Success()
+			// Start containers
+			w.Event(progress.StartingEvent(eventName))
+			err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
+			if err != nil {
+				w.TailMsgf(fmt.Sprint(err))
+				w.Event(progress.ErrorEvent(eventName))
+				return nil
+			}
+
+			w.Event(progress.StartedEvent(eventName))
+
+			return nil
+		})
 	}
-}
 
-func splitParts(rawPort string) (string, string, string) {
-	parts := strings.Split(rawPort, ":")
-	n := len(parts)
-	containerPort := parts[n-1]
-
-	switch n {
-	case 1:
-		return "", "", containerPort
-	case 2:
-		return "", parts[0], containerPort
-	case 3:
-		return parts[0], parts[1], containerPort
-	default:
-		return strings.Join(parts[:n-2], ":"), parts[n-2], containerPort
-	}
+	return eg.Wait()
 }
