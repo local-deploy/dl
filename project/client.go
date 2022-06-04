@@ -2,6 +2,7 @@ package project
 
 import (
 	"bufio"
+	"context"
 	"io"
 	"net"
 	"os"
@@ -11,7 +12,6 @@ import (
 	"github.com/melbahja/goph"
 	"github.com/pkg/sftp"
 	"github.com/pterm/pterm"
-	"github.com/schollz/progressbar/v3"
 	"github.com/varrcan/dl/helper"
 	"golang.org/x/crypto/ssh"
 )
@@ -111,7 +111,8 @@ func (c SshClient) cleanRemote(remotePath string) (err error) {
 }
 
 // Download file from remote server
-func (c SshClient) download(remotePath, localPath string) (err error) {
+func (c SshClient) download(ctx context.Context, remotePath, localPath string) (err error) {
+	// w := progress.ContextWriter(ctx)
 	local, err := os.Create(localPath)
 	if err != nil {
 		return
@@ -130,20 +131,9 @@ func (c SshClient) download(remotePath, localPath string) (err error) {
 	}
 	defer remote.Close()
 
-	resp, _ := remote.Stat()
-
-	bar := progressbar.NewOptions64(resp.Size(),
-		progressbar.OptionEnableColorCodes(true),
-		progressbar.OptionShowBytes(true),
-		progressbar.OptionSetWidth(15),
-		progressbar.OptionSpinnerType(9),
-	)
-
-	if _, err = io.Copy(io.MultiWriter(local, bar), remote); err != nil {
+	if _, err = io.Copy(local, remote); err != nil {
 		return
 	}
-
-	_ = bar.RenderBlank()
 
 	return local.Sync()
 }

@@ -1,48 +1,67 @@
 package project
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
 
-	"github.com/pterm/pterm"
+	"github.com/docker/compose/v2/pkg/progress"
 	"github.com/varrcan/dl/helper"
 )
 
 type callMethod struct{}
 
 // CopyFiles Copying files from the server
-func (c SshClient) CopyFiles() {
+func (c SshClient) CopyFiles(ctx context.Context) {
 	var err error
+	w := progress.ContextWriter(ctx)
+
+	w.Event(progress.Event{
+		ID:     "Files",
+		Status: progress.Working,
+	})
 
 	switch c.Server.FwType {
 	case "bitrix":
-		err = c.packFiles("bitrix")
+		err = c.packFiles(ctx, "local")
 	case "wordpress":
-		err = c.packFiles("wp-admin wp-includes")
+		err = c.packFiles(ctx, "wp-admin wp-includes")
 	default:
 		return
 	}
 
 	if err != nil {
-		pterm.FgRed.Printfln("Error: %s \n", err)
+		fmt.Printf("Error: %s \n", err)
 		os.Exit(1)
 	}
 
-	err = c.downloadArchive()
+	err = c.downloadArchive(ctx)
 	if err == nil {
-		extractArchive(c.Server.FwType)
+		extractArchive(ctx, c.Server.FwType)
 
 		var a callMethod
 		reflect.ValueOf(&a).MethodByName(strings.Title(c.Server.FwType + "Access")).Call([]reflect.Value{})
 	}
+
+	w.Event(progress.Event{
+		ID:     "Files",
+		Status: progress.Done,
+	})
 }
 
 // packFiles Add files to archive
-func (c SshClient) packFiles(path string) error {
-	pterm.FgBlue.Println("Create files archive")
+func (c SshClient) packFiles(ctx context.Context, path string) error {
+	w := progress.ContextWriter(ctx)
+
+	w.Event(progress.Event{
+		ID:       "Archive files",
+		ParentID: "Files",
+		Status:   progress.Working,
+	})
 
 	excludeTarString := formatIgnoredPath()
 	tarCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&",
@@ -55,7 +74,17 @@ func (c SshClient) packFiles(path string) error {
 	}, " ")
 	_, err := c.Run(tarCmd)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	w.Event(progress.Event{
+		ID:       "Archive files",
+		ParentID: "Files",
+		Status:   progress.Done,
+	})
+
+	return nil
 }
 
 // formatIgnoredPath Exclude path from tar
@@ -75,28 +104,49 @@ func formatIgnoredPath() string {
 	return strings.Join(ignoredPath, " ")
 }
 
-func (c SshClient) downloadArchive() error {
-	pterm.FgBlue.Println("Download archive")
+func (c SshClient) downloadArchive(ctx context.Context) error {
+	w := progress.ContextWriter(ctx)
+
 	serverPath := filepath.Join(c.Server.Catalog, "production.tar.gz")
 	localPath := filepath.Join(Env.GetString("PWD"), "production.tar.gz")
 
-	err := c.download(serverPath, localPath)
+	w.Event(progress.Event{
+		ID:       "Download archive",
+		ParentID: "Files",
+		Status:   progress.Working,
+	})
+
+	err := c.download(ctx, serverPath, localPath)
 
 	if err != nil {
-		pterm.FgRed.Println("Download error: ", err)
+		w.Event(progress.ErrorMessageEvent("Download error", fmt.Sprint(err)))
 	}
 
 	err = c.cleanRemote(serverPath)
 	if err != nil {
-		pterm.FgRed.Println("File deletion error: ", err)
+		w.Event(progress.ErrorMessageEvent("File deletion error", fmt.Sprint(err)))
 	}
+
+	w.Event(progress.Event{
+		ID:       "Download archive",
+		ParentID: "Files",
+		Status:   progress.Done,
+	})
+
 	return err
 }
 
-func extractArchive(path string) {
+func extractArchive(ctx context.Context, path string) {
 	var err error
+	w := progress.ContextWriter(ctx)
 
-	pterm.FgBlue.Println("Extract files")
+	// w.Event(progress.Waiting("Extract files"))
+
+	w.Event(progress.Event{
+		ID:       "Extract archive",
+		ParentID: "Files",
+		Status:   progress.Working,
+	})
 
 	localPath := Env.GetString("PWD")
 	archive := filepath.Join(localPath, "production.tar.gz")
@@ -108,10 +158,16 @@ func extractArchive(path string) {
 	err = helper.ChmodR(path, 0775)
 
 	if err != nil {
-		pterm.FgRed.Println(string(outTar))
-		pterm.FgRed.Println(string(outRm))
-		pterm.FgRed.Println(err)
+		fmt.Println(string(outTar))
+		fmt.Println(string(outRm))
+		fmt.Println(err)
 	}
+
+	w.Event(progress.Event{
+		ID:       "Extract archive",
+		ParentID: "Files",
+		Status:   progress.Done,
+	})
 }
 
 // BitrixAccess Change bitrix database accesses
@@ -135,7 +191,7 @@ func (a *callMethod) BitrixAccess() {
 		dbconnFile).Run()
 
 	if err != nil {
-		pterm.FgRed.Println(err)
+		fmt.Println(err)
 	}
 }
 
@@ -153,6 +209,6 @@ func (a *callMethod) WordpressAccess() {
 		settingsFile).Run()
 
 	if err != nil {
-		pterm.FgRed.Println(err)
+		fmt.Println(err)
 	}
 }

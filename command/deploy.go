@@ -2,15 +2,16 @@ package command
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
 
+	"github.com/docker/compose/v2/pkg/progress"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
-	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/project"
 )
@@ -25,16 +26,24 @@ func init() {
 var pullCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Downloading db and files from the production server",
-	Long: `Downloading database and kernel files from the production server.  
-Without specifying the flag, files and the database are downloaded by default.  
+	Long: `Downloading database and kernel files from the production server.
+Without specifying the flag, files and the database are downloaded by default.
 If you specify a flag, for example -d, only the database will be downloaded.
 
-Directories that are downloaded by default  
-Bitrix CMS: "bitrix"  
-WordPress: "wp-admin" and "wp-includes"  
+Directories that are downloaded by default
+Bitrix CMS: "bitrix"
+WordPress: "wp-admin" and "wp-includes"
 Laravel: only the database is downloaded`,
-	Run: func(cmd *cobra.Command, args []string) {
-		deploy()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
+		err := progress.Run(ctx, func(ctx context.Context) error {
+			return deploy(ctx)
+		})
+		if err != nil {
+			return err
+		}
+
+		return nil
 	},
 	Example:   "dl deploy\ndl deploy -d\ndl deploy -f -o bitrix,upload",
 	ValidArgs: []string{"--database", "--files", "--override"},
@@ -48,7 +57,9 @@ var (
 	sshClient     *project.SshClient
 )
 
-func deploy() {
+func deploy(ctx context.Context) error {
+	w := progress.ContextWriter(ctx)
+
 	project.LoadEnv()
 
 	var err error
@@ -61,7 +72,7 @@ func deploy() {
 	})
 
 	if err != nil {
-		pterm.FgRed.Println(err)
+		w.Event(progress.ErrorMessageEvent("Client", "Failed connect to ssh"))
 		os.Exit(1)
 	}
 
@@ -69,14 +80,14 @@ func deploy() {
 	defer func(client *project.SshClient) {
 		err = client.Close()
 		if err != nil {
-			pterm.FgRed.Println(err)
+			fmt.Println(err)
 			return
 		}
 	}(sshClient)
 
 	sshClient.Server.FwType, err = detectFw()
 	if err != nil {
-		pterm.FgRed.Printfln("Failed to determine the FW. Please specify accesses manually.")
+		w.Event(progress.ErrorMessageEvent("Detect FW", "Failed determine the FW. Please specify accesses manually."))
 		os.Exit(1)
 	}
 
@@ -87,53 +98,53 @@ func deploy() {
 
 	if files == true {
 		pullWaitGroup.Add(1)
-		go startFiles()
+		go startFiles(ctx)
 	}
 
 	if database == true {
 		err = upDbContainer()
 		if err != nil {
-			pterm.FgRed.Println("Import failed: ", err)
+			w.Event(progress.ErrorMessageEvent("Import failed", fmt.Sprint(err)))
 			os.Exit(1)
 		}
 		pullWaitGroup.Add(1)
-		go startDump()
+		go startDump(ctx)
 	}
 
 	pullWaitGroup.Wait()
 
-	pterm.FgGreen.Println("All done")
+	return err
 }
 
-func startFiles() {
+func startFiles(ctx context.Context) {
 	defer pullWaitGroup.Done()
-	sshClient.CopyFiles()
+	sshClient.CopyFiles(ctx)
 }
 
-func startDump() {
+func startDump(ctx context.Context) {
 	defer pullWaitGroup.Done()
-	sshClient.DumpDb()
+	sshClient.DumpDb(ctx)
 }
 
 func detectFw() (string, error) {
 	ls := strings.Join([]string{"cd", sshClient.Server.Catalog, "&&", "ls"}, " ")
 	out, err := sshClient.Run(ls)
 	if err != nil {
-		pterm.FgRed.Println(err)
+		fmt.Println(err)
 	}
 
 	if strings.Contains(string(out), "bitrix") {
-		pterm.FgDefault.Println("Bitrix CMS detected")
+		fmt.Println("Bitrix CMS detected")
 		return "bitrix", nil
 	}
 
 	if strings.Contains(string(out), "wp-config.php") {
-		pterm.FgDefault.Println("WordPress CMS detected")
+		fmt.Println("WordPress CMS detected")
 		return "wordpress", nil
 	}
 
 	if strings.Contains(string(out), "artisan") {
-		pterm.FgDefault.Println("Laravel FW detected")
+		fmt.Println("Laravel FW detected")
 		return "laravel", nil
 	}
 
@@ -143,9 +154,11 @@ func detectFw() (string, error) {
 // upDbContainer Run db container before dump
 func upDbContainer() error {
 	ctx := context.Background()
+	w := progress.ContextWriter(ctx)
+
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		pterm.Fatal.Printfln("Failed to connect to socket")
+		w.Event(progress.ErrorMessageEvent("Failed to connect to socket", fmt.Sprint(err)))
 		return nil
 	}
 
@@ -160,7 +173,7 @@ func upDbContainer() error {
 			return lookErr
 		}
 
-		pterm.FgGreen.Printfln("Starting db container")
+		w.Event(progress.StartingEvent("Starting db container"))
 
 		cmdCompose := &exec.Cmd{
 			Path: compose,
@@ -173,6 +186,9 @@ func upDbContainer() error {
 		if err != nil {
 			return err
 		}
+
+		w.Event(progress.StartedEvent("Starting db container"))
+
 		return nil
 	}
 	return nil

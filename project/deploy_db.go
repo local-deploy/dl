@@ -1,12 +1,14 @@
 package project
 
 import (
+	"context"
 	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/docker/compose/v2/pkg/progress"
 	"github.com/pterm/pterm"
 )
 
@@ -16,9 +18,15 @@ type dbSettings struct {
 }
 
 // DumpDb Database import from server
-func (c SshClient) DumpDb() {
+func (c SshClient) DumpDb(ctx context.Context) {
 	var db *dbSettings
 	var err error
+
+	w := progress.ContextWriter(ctx)
+	w.Event(progress.Event{
+		ID:     "Database",
+		Status: progress.Working,
+	})
 
 	switch c.Server.FwType {
 	case "bitrix":
@@ -33,14 +41,19 @@ func (c SshClient) DumpDb() {
 		os.Exit(1)
 	}
 
-	err = c.mysqlDump(db)
+	err = c.mysqlDump(ctx, db)
 	if err != nil {
 		pterm.FgRed.Printfln("Failed to create database dump: %s \n", err)
 		os.Exit(1)
 	}
 
-	c.downloadDump()
-	c.importDb()
+	c.downloadDump(ctx)
+	c.importDb(ctx)
+
+	w.Event(progress.Event{
+		ID:     "Database",
+		Status: progress.Done,
+	})
 }
 
 // accessBitrixDb Attempt to determine database accesses
@@ -97,8 +110,13 @@ func (c SshClient) accessLaravelDb() (*dbSettings, error) {
 }
 
 // mysqlDump Create database dump
-func (c SshClient) mysqlDump(db *dbSettings) error {
-	pterm.FgGreen.Println("Create database dump")
+func (c SshClient) mysqlDump(ctx context.Context, db *dbSettings) error {
+	w := progress.ContextWriter(ctx)
+	w.Event(progress.Event{
+		ID:       "Create database dump",
+		ParentID: "Database",
+		Status:   progress.Working,
+	})
 
 	ignoredTablesString := db.formatIgnoredTables()
 	dumpCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&",
@@ -130,7 +148,17 @@ func (c SshClient) mysqlDump(db *dbSettings) error {
 	}, " ")
 	_, err := c.Run(dumpCmd)
 
-	return err
+	if err != nil {
+		return err
+	}
+
+	w.Event(progress.Event{
+		ID:       "Create database dump",
+		ParentID: "Database",
+		Status:   progress.Done,
+	})
+
+	return nil
 }
 
 // formatIgnoredTables Exclude tables from dump
@@ -149,12 +177,19 @@ func (d dbSettings) formatIgnoredTables() string {
 }
 
 // downloadDump Downloading a dump and deleting an archive from the server
-func (c SshClient) downloadDump() {
-	pterm.FgGreen.Println("Download database dump")
+func (c SshClient) downloadDump(ctx context.Context) {
+	w := progress.ContextWriter(ctx)
+
+	w.Event(progress.Event{
+		ID:       "Download database dump",
+		ParentID: "Database",
+		Status:   progress.Working,
+	})
+
 	serverPath := filepath.Join(c.Server.Catalog, "production.sql.gz")
 	localPath := filepath.Join(Env.GetString("PWD"), "production.sql.gz")
 
-	err := c.download(serverPath, localPath)
+	err := c.download(ctx, serverPath, localPath)
 
 	if err != nil {
 		pterm.FgRed.Println("Download error: ", err)
@@ -165,13 +200,25 @@ func (c SshClient) downloadDump() {
 	if err != nil {
 		pterm.FgRed.Println("File deletion error: ", err)
 	}
+
+	w.Event(progress.Event{
+		ID:       "Download database dump",
+		ParentID: "Database",
+		Status:   progress.Done,
+	})
 }
 
 // importDb Importing a database into a local container
-func (c SshClient) importDb() {
+func (c SshClient) importDb(ctx context.Context) {
 	var err error
 
-	pterm.FgGreen.Println("Import database")
+	w := progress.ContextWriter(ctx)
+
+	w.Event(progress.Event{
+		ID:       "Import database",
+		ParentID: "Database",
+		Status:   progress.Working,
+	})
 
 	docker, lookErr := exec.LookPath("docker")
 	gunzip, lookErr := exec.LookPath("gunzip")
@@ -197,10 +244,10 @@ func (c SshClient) importDb() {
 		local := Env.GetString("LOCAL_DOMAIN")
 		nip := Env.GetString("NIP_DOMAIN")
 
-		strSQL := `"UPDATE b_option SET VALUE = 'Y' WHERE MODULE_ID = 'main' AND NAME = 'update_devsrv'; 
-UPDATE b_lang SET SERVER_NAME='` + site + `.localhost' WHERE LID='s1'; 
-UPDATE b_lang SET b_lang.DOC_ROOT='' WHERE 1=(SELECT DOC_ROOT FROM (SELECT COUNT(LID) FROM b_lang) as cnt); 
-INSERT INTO b_lang_domain VALUES ('s1', '` + local + `'); 
+		strSQL := `"UPDATE b_option SET VALUE = 'Y' WHERE MODULE_ID = 'main' AND NAME = 'update_devsrv';
+UPDATE b_lang SET SERVER_NAME='` + site + `.localhost' WHERE LID='s1';
+UPDATE b_lang SET b_lang.DOC_ROOT='' WHERE 1=(SELECT DOC_ROOT FROM (SELECT COUNT(LID) FROM b_lang) as cnt);
+INSERT INTO b_lang_domain VALUES ('s1', '` + local + `');
 INSERT INTO b_lang_domain VALUES ('s1', '` + nip + `');"`
 
 		outUpdate, err := exec.Command("bash", "-c", "echo "+strSQL+" | "+docker+" exec -i "+siteDb+" /usr/bin/mysql --user=db --password=db --host=db db").CombinedOutput()
@@ -216,4 +263,10 @@ INSERT INTO b_lang_domain VALUES ('s1', '` + nip + `');"`
 	if err != nil {
 		pterm.FgRed.Println(err)
 	}
+
+	w.Event(progress.Event{
+		ID:       "Import database",
+		ParentID: "Database",
+		Status:   progress.Done,
+	})
 }
