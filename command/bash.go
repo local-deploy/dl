@@ -1,10 +1,10 @@
 package command
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 
-	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/project"
 )
@@ -32,7 +32,7 @@ func bash() {
 	bash, lookErr := exec.LookPath("bash")
 	docker, lookErr := exec.LookPath("docker")
 	if lookErr != nil {
-		pterm.FgRed.Println(lookErr)
+		fmt.Println(lookErr)
 		return
 	}
 
@@ -44,6 +44,7 @@ func bash() {
 		root = "--user root "
 	}
 
+	// TODO: rewrite to api
 	cmdCompose := &exec.Cmd{
 		Path:   bash,
 		Args:   []string{bash, "-c", docker + " exec -it " + root + container + " /bin/bash"},
