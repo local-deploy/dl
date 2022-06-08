@@ -182,17 +182,19 @@ func extractArchive(ctx context.Context, path string) {
 
 // BitrixAccess Change bitrix database accesses
 func (a *callMethod) BitrixAccess() {
-	var err error
 	localPath := Env.GetString("PWD")
 	settingsFile := filepath.Join(localPath, "bitrix", ".settings.php")
 	dbconnFile := filepath.Join(localPath, "bitrix", "php_interface", "dbconn.php")
 
-	err = exec.Command("sed", "-i", "-e", `/'debug' => /c 'debug' => true,`,
+	err := exec.Command("sed", "-i", "-e", `/'debug' => /c 'debug' => true,`,
 		"-e", `/'host' => /c 'host' => 'db',`,
 		"-e", `/'database' => /c 'database' => 'db',`,
 		"-e", `/'login' => /c 'login' => 'db',`,
 		"-e", `/'password' => /c 'password' => 'db',`,
 		settingsFile).Run()
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	err = exec.Command("sed", "-i", "-e", `/$DBHost /c $DBHost = \"db\";`,
 		"-e", `/$DBLogin /c $DBLogin = \"db\";`,

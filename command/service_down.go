@@ -26,9 +26,7 @@ Valid parameters for the "--service" flag: portainer, mail, traefik`,
 	Example: "dl down\ndl down -s portainer",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := context.Background()
-		err := progress.Run(ctx, func(ctx context.Context) error {
-			return downService(ctx)
-		})
+		err := progress.Run(ctx, downService)
 		if err != nil {
 			return err
 		}
@@ -45,7 +43,7 @@ func downService(ctx context.Context) error {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	handleError(err)
 
-	err = removeContainers(cli, ctx)
+	err = removeContainers(ctx, cli)
 	if err != nil {
 		return err
 	}
@@ -72,7 +70,7 @@ func downService(ctx context.Context) error {
 	return eg.Wait()
 }
 
-func removeContainers(cli *client.Client, ctx context.Context) error {
+func removeContainers(ctx context.Context, cli *client.Client) error {
 	w := progress.ContextWriter(ctx)
 	eg, _ := errgroup.WithContext(ctx)
 

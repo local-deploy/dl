@@ -220,10 +220,14 @@ func (c SshClient) importDb(ctx context.Context) {
 		Status:   progress.Working,
 	})
 
-	docker, lookErr := exec.LookPath("docker")
-	gunzip, lookErr := exec.LookPath("gunzip")
-	if lookErr != nil {
-		pterm.FgRed.Println(lookErr)
+	docker, err := exec.LookPath("docker")
+	if err != nil {
+		pterm.FgRed.Println(err)
+		return
+	}
+	gunzip, err := exec.LookPath("gunzip")
+	if err != nil {
+		pterm.FgRed.Println(err)
 		return
 	}
 

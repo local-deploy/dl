@@ -57,11 +57,7 @@ func IsBinFileExists() bool {
 
 	_, err := os.Stat(bin)
 
-	if err != nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }
 
 // ChmodR change file permissions recursively

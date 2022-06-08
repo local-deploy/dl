@@ -51,9 +51,7 @@ var (
 
 func deploy() error {
 	ctx := context.Background()
-	err := progress.Run(ctx, func(ctx context.Context) error {
-		return deployService(ctx)
-	})
+	err := progress.Run(ctx, deployService)
 	if err != nil {
 		return err
 	}
@@ -102,12 +100,12 @@ func deployService(ctx context.Context) error {
 		files = true
 	}
 
-	if files == true {
+	if files {
 		pullWaitGroup.Add(1)
 		go startFiles(ctx)
 	}
 
-	if database == true {
+	if database {
 		err = upDbContainer()
 		if err != nil {
 			w.Event(progress.ErrorMessageEvent("Import failed", fmt.Sprint(err)))

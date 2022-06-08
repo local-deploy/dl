@@ -6,7 +6,7 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
+	ioutil "io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -164,7 +164,7 @@ func extractArchive(archivePath string) error {
 	for {
 		header, err := tarReader.Next()
 
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 
@@ -221,7 +221,7 @@ func copyBin() error {
 	}
 
 	bytesRead, err := ioutil.ReadFile(tmpLinuxBin)
-	err = ioutil.WriteFile(binPath, bytesRead, 0775)
+	err = ioutil.WriteFile(binPath, bytesRead, 0775) //nolint:gosec
 	if err != nil {
 		return err
 	}
@@ -256,7 +256,7 @@ func copyConfigFiles() error {
 			if err != nil {
 				return err
 			}
-			return ioutil.WriteFile(filepath.Join(configFilesDir, relPath), data, 0644)
+			return ioutil.WriteFile(filepath.Join(configFilesDir, relPath), data, 0644) //nolint:gosec
 		}
 	})
 

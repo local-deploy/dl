@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -32,9 +33,7 @@ var upServiceCmd = &cobra.Command{
 	Long:  `Start portainer, mailcatcher and traefik containers.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		err := progress.Run(ctx, func(ctx context.Context) error {
-			return upService(ctx)
-		})
+		err := progress.Run(ctx, upService)
 		if err != nil {
 			return err
 		}
@@ -61,7 +60,7 @@ func upService(ctx context.Context) error {
 
 	// Check network
 	if isNotNet(cli) {
-		err := createNetwork(cli, ctx)
+		err := createNetwork(ctx, cli)
 		if err != nil {
 			return err
 		}
@@ -121,7 +120,7 @@ func pullRequiredImages(cli *client.Client, ctx context.Context) error {
 					for {
 						var jm jsonmessage.JSONMessage
 						if err := dec.Decode(&jm); err != nil {
-							if err == io.EOF {
+							if errors.Is(err, io.EOF) {
 								break
 							}
 							return err
@@ -184,7 +183,7 @@ func toPullProgressEvent(parent string, jm jsonmessage.JSONMessage, w progress.W
 	})
 }
 
-func createNetwork(cli *client.Client, ctx context.Context) error {
+func createNetwork(ctx context.Context, cli *client.Client) error {
 	w := progress.ContextWriter(ctx)
 
 	eventName := fmt.Sprintf("Network %q", localNetworkName)
