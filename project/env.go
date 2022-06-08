@@ -139,11 +139,7 @@ func IsEnvFileExists() bool {
 
 	_, err := os.Stat(env)
 
-	if err != nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }
 
 // IsEnvExampleFileExists checking for the existence of .env.example file
@@ -153,11 +149,7 @@ func IsEnvExampleFileExists() bool {
 
 	_, err := os.Stat(env)
 
-	if err != nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }
 
 func getLocalIp() string {

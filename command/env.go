@@ -122,7 +122,7 @@ func copyEnv() bool {
 		return false
 	}
 
-	err = ioutil.WriteFile(dest, bytesRead, 0644)
+	err = ioutil.WriteFile(dest, bytesRead, 0644) //nolint:gosec
 
 	if err != nil {
 		pterm.FgRed.Println(err)

@@ -5,14 +5,16 @@ import (
 	"compress/gzip"
 	"context"
 	"errors"
+	"fmt"
 	"io"
-	"io/ioutil"
+	ioutil "io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/docker/compose/v2/pkg/progress"
 	"github.com/google/go-github/v41/github"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
@@ -30,65 +32,124 @@ var selfUpdateCmd = &cobra.Command{
 	Aliases: []string{"upgrade"},
 	Short:   "Update dl",
 	Long:    `Downloading the latest version of the app.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		selfUpdate()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := context.Background()
+		tag, err := progress.RunWithStatus(ctx, selfUpdate)
+
+		if err != nil {
+			return err
+		}
+		if len(tag) > 0 {
+			printVersion(tag)
+		}
+
+		return nil
 	},
 }
 
 var noConfig bool
 
-func selfUpdate() {
+func selfUpdate(ctx context.Context) (string, error) {
+	w := progress.ContextWriter(ctx)
 	client := github.NewClient(nil)
 
-	spinnerRelease, _ := pterm.DefaultSpinner.Start("Getting the latest release")
+	w.Event(progress.Event{
+		ID:     "Update",
+		Status: progress.Working,
+	})
+
+	w.Event(progress.Event{
+		ID:       "Getting the latest release",
+		ParentID: "Update",
+		Status:   progress.Working,
+	})
+
 	release, _, err := client.Repositories.GetLatestRelease(context.Background(), "local-deploy", "dl")
 	if err != nil {
-		spinnerRelease.Fail("Failed to get release: %v", err)
-		return
+		w.Event(progress.ErrorMessageEvent("Getting the latest release", fmt.Sprintf("Failed to get release: %s", err)))
+		return "", nil
 	}
+
+	w.Event(progress.Event{
+		ID:       "Getting the latest release",
+		ParentID: "Update",
+		Status:   progress.Done,
+	})
 
 	time.Sleep(time.Second)
 	tmpPath := filepath.Join(os.TempDir(), *release.Assets[0].Name)
 
-	spinnerRelease.UpdateText("Downloading release")
+	w.Event(progress.Event{
+		ID:       "Downloading release",
+		ParentID: "Update",
+		Status:   progress.Working,
+	})
 	err = downloadRelease(tmpPath, *release.Assets[0].BrowserDownloadURL)
 	if err != nil {
-		spinnerRelease.Fail("Failed to download release: %v", err)
-		return
+		w.Event(progress.ErrorMessageEvent("Downloading release", fmt.Sprintf("Failed to download release: %s", err)))
+		return "", nil
 	}
-	spinnerRelease.Success()
+	w.Event(progress.Event{
+		ID:       "Downloading release",
+		ParentID: "Update",
+		Status:   progress.Done,
+	})
 
-	spinnerExtract, _ := pterm.DefaultSpinner.Start("Unpacking archive")
+	w.Event(progress.Event{
+		ID:       "Unpacking archive",
+		ParentID: "Update",
+		Status:   progress.Working,
+	})
 	err = extractArchive(tmpPath)
 	if err != nil {
-		spinnerExtract.Fail("Extract archive failed: %s", err)
-		os.Exit(1)
+		w.Event(progress.ErrorMessageEvent("Unpacking archive", fmt.Sprintf("Extract archive failed: %s", err)))
+		return "", nil
 	}
-	spinnerExtract.Success()
+	w.Event(progress.Event{
+		ID:       "Unpacking archive",
+		ParentID: "Update",
+		Status:   progress.Done,
+	})
 
-	spinnerFiles, _ := pterm.DefaultSpinner.Start("Copying files")
+	w.Event(progress.Event{
+		ID:       "Copying files",
+		ParentID: "Update",
+		Status:   progress.Working,
+	})
 	err = copyBin()
 	if err != nil {
-		spinnerFiles.Fail("Failed: %v", err)
-		return
+		w.Event(progress.ErrorMessageEvent("Copying files", fmt.Sprintf("Failed: %s", err)))
+		return "", nil
 	}
 
 	if !noConfig {
 		err = copyConfigFiles()
 		if err != nil {
-			spinnerFiles.Fail("Failed: %v", err)
-			return
+			w.Event(progress.ErrorMessageEvent("Copying files", fmt.Sprint(err)))
+			return "", nil
 		}
 	}
-	spinnerFiles.Success()
+	w.Event(progress.Event{
+		ID:       "Copying files",
+		ParentID: "Update",
+		Status:   progress.Done,
+	})
 
-	spinnerTmp, _ := pterm.DefaultSpinner.Start("Cleaning up temporary directory")
+	w.Event(progress.Event{
+		ID:       "Cleaning up temporary directory",
+		ParentID: "Update",
+		Status:   progress.Working,
+	})
 	err = os.RemoveAll(filepath.Join(os.TempDir(), "dl"))
 	if err != nil {
-		spinnerTmp.Fail("Failed: %v", err)
-		return
+		w.Event(progress.ErrorMessageEvent("Cleaning up temporary directory", fmt.Sprint(err)))
+		return "", nil
 	}
-	spinnerTmp.Success()
+	w.Event(progress.Event{
+		ID:       "Cleaning up temporary directory",
+		ParentID: "Update",
+		Status:   progress.Done,
+	})
 
 	viper.Set("version", *release.TagName)
 
@@ -102,7 +163,12 @@ func selfUpdate() {
 		pterm.FgRed.Println(err)
 	}
 
-	pterm.DefaultSection.Printfln("DL has been successfully updated to version %s", *release.TagName)
+	w.Event(progress.Event{
+		ID:     "Update",
+		Status: progress.Done,
+	})
+
+	return *release.TagName, nil
 }
 
 func downloadRelease(filepath string, url string) error {
@@ -164,7 +230,7 @@ func extractArchive(archivePath string) error {
 	for {
 		header, err := tarReader.Next()
 
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 
@@ -221,7 +287,7 @@ func copyBin() error {
 	}
 
 	bytesRead, err := ioutil.ReadFile(tmpLinuxBin)
-	err = ioutil.WriteFile(binPath, bytesRead, 0775)
+	err = ioutil.WriteFile(binPath, bytesRead, 0775) //nolint:gosec
 	if err != nil {
 		return err
 	}
@@ -256,9 +322,13 @@ func copyConfigFiles() error {
 			if err != nil {
 				return err
 			}
-			return ioutil.WriteFile(filepath.Join(configFilesDir, relPath), data, 0644)
+			return ioutil.WriteFile(filepath.Join(configFilesDir, relPath), data, 0644) //nolint:gosec
 		}
 	})
 
 	return err
+}
+
+func printVersion(tag string) {
+	pterm.DefaultSection.Printfln("DL has been successfully updated to version %s", tag)
 }
