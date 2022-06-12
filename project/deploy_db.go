@@ -3,6 +3,7 @@ package project
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -47,7 +48,12 @@ func (c SshClient) DumpDb(ctx context.Context) {
 		os.Exit(1)
 	}
 
-	c.downloadDump(ctx)
+	err = c.downloadDump(ctx)
+	if err != nil {
+		w.Event(progress.Event{ID: "Files", Status: progress.Error})
+		return
+	}
+
 	c.importDb(ctx)
 
 	w.Event(progress.Event{
@@ -177,7 +183,7 @@ func (d dbSettings) formatIgnoredTables() string {
 }
 
 // downloadDump Downloading a dump and deleting an archive from the server
-func (c SshClient) downloadDump(ctx context.Context) {
+func (c SshClient) downloadDump(ctx context.Context) error {
 	w := progress.ContextWriter(ctx)
 
 	w.Event(progress.Event{
@@ -192,13 +198,14 @@ func (c SshClient) downloadDump(ctx context.Context) {
 	err := c.download(ctx, serverPath, localPath)
 
 	if err != nil {
-		pterm.FgRed.Println("Download error: ", err)
-		os.Exit(1)
+		w.Event(progress.ErrorMessageEvent("Download error", fmt.Sprint(err)))
+		return err
 	}
 
 	err = c.cleanRemote(serverPath)
 	if err != nil {
-		pterm.FgRed.Println("File deletion error: ", err)
+		w.Event(progress.ErrorMessageEvent("File deletion error", fmt.Sprint(err)))
+		return err
 	}
 
 	w.Event(progress.Event{
@@ -206,6 +213,8 @@ func (c SshClient) downloadDump(ctx context.Context) {
 		ParentID: "Database",
 		Status:   progress.Done,
 	})
+
+	return err
 }
 
 // importDb Importing a database into a local container

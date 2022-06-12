@@ -2,6 +2,7 @@ package helper
 
 import (
 	"math"
+	"strconv"
 	"syscall"
 )
 
@@ -60,22 +61,37 @@ func (d disk) CalculateSpaceBeforeDeploy(deployFilesSize float64) float64 {
 	return math.Round(float64(d.Free) - deployFilesSize)
 }
 
-// ToKb convert bytes to kilobytes
-func ToKb(bytes float64) float64 {
-	return math.Round(bytes / float64(kb))
-}
-
-// ToMb convert bytes to megabytes
-func ToMb(bytes float64) float64 {
-	return math.Round(bytes / float64(mb))
-}
-
-// ToGb convert bytes to gigabytes
-func ToGb(bytes float64) float64 {
-	return math.Round(bytes / float64(gb))
-}
-
 // ToAvailablePercent calculate free percent
 func ToAvailablePercent(size uint64, total uint64) float64 {
 	return math.Round(100.0 * float64(size) / float64(total))
+}
+
+// HumanSize convert bytes to human friendly format
+func HumanSize(size float64) string {
+	var suffixes [5]string
+
+	suffixes[0] = "B"
+	suffixes[1] = "KB"
+	suffixes[2] = "MB"
+	suffixes[3] = "GB"
+	suffixes[4] = "TB"
+
+	base := math.Log(size) / math.Log(1024)
+	getSize := round(math.Pow(1024, base-math.Floor(base)), .5, 1)
+	getSuffix := suffixes[int(math.Floor(base))]
+	return strconv.FormatFloat(getSize, 'f', -1, 64) + " " + string(getSuffix)
+}
+
+func round(val float64, roundOn float64, places int) (newVal float64) {
+	var round float64
+	pow := math.Pow(10, float64(places))
+	digit := pow * val
+	_, div := math.Modf(digit)
+	if div >= roundOn {
+		round = math.Ceil(digit)
+	} else {
+		round = math.Floor(digit)
+	}
+	newVal = round / pow
+	return
 }
