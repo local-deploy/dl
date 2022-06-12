@@ -50,17 +50,17 @@ func (c SshClient) CopyFiles(ctx context.Context, override []string) {
 	}
 
 	err = c.downloadArchive(ctx)
-	if err == nil {
-		extractArchive(ctx, c.Server.FwType)
-
-		var a callMethod
-		reflect.ValueOf(&a).MethodByName(strings.Title(c.Server.FwType + "Access")).Call([]reflect.Value{})
+	if err != nil {
+		w.Event(progress.Event{ID: "Files", Status: progress.Error})
+		return
 	}
 
-	w.Event(progress.Event{
-		ID:     "Files",
-		Status: progress.Done,
-	})
+	extractArchive(ctx, c.Server.FwType)
+
+	var a callMethod
+	reflect.ValueOf(&a).MethodByName(strings.Title(c.Server.FwType + "Access")).Call([]reflect.Value{})
+
+	w.Event(progress.Event{ID: "Files", Status: progress.Done})
 }
 
 // packFiles Add files to archive
@@ -130,11 +130,13 @@ func (c SshClient) downloadArchive(ctx context.Context) error {
 
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Download error", fmt.Sprint(err)))
+		return err
 	}
 
 	err = c.cleanRemote(serverPath)
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("File deletion error", fmt.Sprint(err)))
+		return err
 	}
 
 	w.Event(progress.Event{
@@ -163,14 +165,26 @@ func extractArchive(ctx context.Context, path string) {
 
 	// TODO: rewrite to Go
 	outTar, err := exec.Command("tar", "-xzf", archive, "-C", localPath).CombinedOutput()
-	outRm, err := exec.Command("rm", "-f", archive).CombinedOutput()
-
-	err = helper.ChmodR(path, 0775)
-
+	// TODO: fix output
 	if err != nil {
 		fmt.Println(string(outTar))
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	outRm, err := exec.Command("rm", "-f", archive).CombinedOutput()
+	// TODO: fix output
+	if err != nil {
 		fmt.Println(string(outRm))
 		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	err = helper.ChmodR(path, 0775)
+	// TODO: fix output
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	w.Event(progress.Event{

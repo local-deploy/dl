@@ -3,6 +3,8 @@ package project
 import (
 	"bufio"
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -124,6 +126,19 @@ func (c SshClient) download(ctx context.Context, remotePath, localPath string) (
 		return
 	}
 	defer ftp.Close()
+
+	fileInfo, err := ftp.Stat(remotePath)
+	if err != nil {
+		return
+	}
+	defer ftp.Close()
+
+	disk := helper.FreeSpaceHome()
+	if fileInfo.Size() > int64(disk.Free) {
+		remoteSize := helper.HumanSize(float64(fileInfo.Size()))
+		localSize := helper.HumanSize(float64(disk.Free))
+		return errors.New(fmt.Sprintf("No disk space. Filesize %s, free space %s", remoteSize, localSize))
+	}
 
 	remote, err := ftp.Open(remotePath)
 	if err != nil {
