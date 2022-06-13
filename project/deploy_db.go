@@ -28,15 +28,15 @@ func (c SshClient) DumpDb(ctx context.Context) {
 		Status: progress.Working,
 	})
 
-	mysqlDataBase := Env.GetString("MYSQL_DATABASE")
-	mysqlLogin := Env.GetString("MYSQL_LOGIN")
-	mysqlPassword := Env.GetString("MYSQL_PASSWORD")
+	mysqlDataBase := Env.GetString("MYSQL_DATABASE_SRV")
+	mysqlLogin := Env.GetString("MYSQL_LOGIN_SRV")
+	mysqlPassword := Env.GetString("MYSQL_PASSWORD_SRV")
 	if len(mysqlDataBase) > 0 && len(mysqlLogin) > 0 && len(mysqlPassword) > 0 {
 		excludedTables := strings.Split(strings.TrimSpace(Env.GetString("EXCLUDED_TABLES")), ",")
 
 		db = &dbSettings{
-			Host:           Env.GetString("MYSQL_HOST"),
-			Port:           Env.GetString("MYSQL_PORT"),
+			Host:           Env.GetString("MYSQL_HOST_SRV"),
+			Port:           Env.GetString("MYSQL_PORT_SRV"),
 			DataBase:       mysqlDataBase,
 			Login:          mysqlLogin,
 			Password:       mysqlPassword,
