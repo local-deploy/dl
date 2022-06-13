@@ -76,6 +76,9 @@ func setDefaultEnv() {
 	Env.SetDefault("LOCAL_DOMAIN", fmt.Sprintf("%s.localhost", projectName))
 
 	Env.SetDefault("REPO", viper.GetString("repo"))
+
+	Env.SetDefault("MYSQL_HOST", viper.GetString("localhost"))
+	Env.SetDefault("MYSQL_PORT", viper.GetString("3306"))
 }
 
 // setComposeFile Set docker-compose files

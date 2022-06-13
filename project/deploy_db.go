@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -14,8 +13,8 @@ import (
 )
 
 type dbSettings struct {
-	Host, DataBase, Login, Password string
-	ExcludedTables                  []string
+	Host, DataBase, Login, Password, Port string
+	ExcludedTables                        []string
 }
 
 // DumpDb Database import from server
@@ -29,23 +28,40 @@ func (c SshClient) DumpDb(ctx context.Context) {
 		Status: progress.Working,
 	})
 
-	switch c.Server.FwType {
-	case "bitrix":
-		db, err = c.accessBitrixDb()
-	case "laravel":
-		db, err = c.accessLaravelDb()
-	case "wordpress": // TODO
-	}
+	mysqlDataBase := Env.GetString("MYSQL_DATABASE")
+	mysqlLogin := Env.GetString("MYSQL_LOGIN")
+	mysqlPassword := Env.GetString("MYSQL_PASSWORD")
+	if len(mysqlDataBase) > 0 && len(mysqlLogin) > 0 && len(mysqlPassword) > 0 {
+		excludedTables := strings.Split(strings.TrimSpace(Env.GetString("EXCLUDED_TABLES")), ",")
 
-	if err != nil {
-		pterm.FgRed.Printfln("Database access error: %s \n", err)
-		os.Exit(1)
+		db = &dbSettings{
+			Host:           Env.GetString("MYSQL_HOST"),
+			Port:           Env.GetString("MYSQL_PORT"),
+			DataBase:       mysqlDataBase,
+			Login:          mysqlLogin,
+			Password:       mysqlPassword,
+			ExcludedTables: excludedTables,
+		}
+	} else {
+		switch c.Server.FwType {
+		case "bitrix":
+			db, err = c.accessBitrixDb()
+		case "laravel":
+			db, err = c.accessLaravelDb()
+		case "wordpress": // TODO
+		}
+
+		if err != nil {
+			w.Event(progress.ErrorMessageEvent("Database access error", fmt.Sprint(err)))
+			return
+		}
 	}
 
 	err = c.mysqlDump(ctx, db)
 	if err != nil {
-		pterm.FgRed.Printfln("Failed to create database dump: %s \n", err)
-		os.Exit(1)
+		w.Event(progress.ErrorMessageEvent("Failed to create database dump", fmt.Sprint(err)))
+		w.Event(progress.Event{ID: "Files", Status: progress.Error})
+		return
 	}
 
 	err = c.downloadDump(ctx)
@@ -71,11 +87,13 @@ func (c SshClient) accessBitrixDb() (*dbSettings, error) {
 		`cat bitrix/.settings.php | grep "'password' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`,
 	}, " ")
 	cat, err := c.Run(catCmd)
+	if err != nil {
+		return nil, err
+	}
 
 	dbArray := strings.Split(strings.TrimSpace(string(cat)), "\n")
-
 	if len(dbArray) != 4 {
-		return nil, errors.New("failed to define variables")
+		return nil, errors.New("failed to define DB variables, please specify accesses manually")
 	}
 
 	excludedTables := strings.Split(strings.TrimSpace(Env.GetString("EXCLUDED_TABLES")), ",")
@@ -101,7 +119,7 @@ func (c SshClient) accessLaravelDb() (*dbSettings, error) {
 	dbArray := strings.Split(strings.TrimSpace(string(cat)), "\n")
 
 	if len(dbArray) != 4 {
-		return nil, errors.New("failed to define variables")
+		return nil, errors.New("failed to define DB variables, please specify accesses manually")
 	}
 
 	excludedTables := strings.Split(strings.TrimSpace(Env.GetString("EXCLUDED_TABLES")), ",")
@@ -124,10 +142,16 @@ func (c SshClient) mysqlDump(ctx context.Context, db *dbSettings) error {
 		Status:   progress.Working,
 	})
 
+	port := db.Port
+	if len(port) == 0 {
+		port = "3306"
+	}
+
 	ignoredTablesString := db.formatIgnoredTables()
 	dumpCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&",
 		"mysqldump",
 		"--host=" + db.Host,
+		"--port=" + port,
 		"--user=" + db.Login,
 		"--password=" + db.Password,
 		"--single-transaction=1",
@@ -140,6 +164,7 @@ func (c SshClient) mysqlDump(ctx context.Context, db *dbSettings) error {
 		"&&",
 		"mysqldump",
 		"--host=" + db.Host,
+		"--port=" + port,
 		"--user=" + db.Login,
 		"--password=" + db.Password,
 		"--single-transaction=1",

@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -91,7 +92,7 @@ func deployService(ctx context.Context) error {
 
 	sshClient.Server.FwType, err = detectFw()
 	if err != nil {
-		w.Event(progress.ErrorMessageEvent("Detect FW", "Failed determine the FW. Please specify accesses manually."))
+		w.Event(progress.ErrorMessageEvent("Detect FW", fmt.Sprint(err)))
 		os.Exit(1)
 	}
 
@@ -134,7 +135,7 @@ func detectFw() (string, error) {
 	ls := strings.Join([]string{"cd", sshClient.Server.Catalog, "&&", "ls"}, " ")
 	out, err := sshClient.Run(ls)
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 
 	if strings.Contains(string(out), "bitrix") {
@@ -152,7 +153,7 @@ func detectFw() (string, error) {
 		return "laravel", nil
 	}
 
-	return "", err
+	return "", errors.New("failed determine the FW, please specify accesses manually")
 }
 
 // upDbContainer Run db container before dump
