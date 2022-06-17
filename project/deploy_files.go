@@ -200,20 +200,24 @@ func (a *callMethod) BitrixAccess() {
 	settingsFile := filepath.Join(localPath, "bitrix", ".settings.php")
 	dbconnFile := filepath.Join(localPath, "bitrix", "php_interface", "dbconn.php")
 
+	mysqlDB := Env.GetString("MYSQL_DATABASE")
+	mysqlUser := Env.GetString("MYSQL_USER")
+	mysqlPassword := Env.GetString("MYSQL_PASSWORD")
+
 	err := exec.Command("sed", "-i", "-e", `/'debug' => /c 'debug' => true,`,
 		"-e", `/'host' => /c 'host' => 'db',`,
-		"-e", `/'database' => /c 'database' => 'db',`,
-		"-e", `/'login' => /c 'login' => 'db',`,
-		"-e", `/'password' => /c 'password' => 'db',`,
+		"-e", `/'database' => /c 'database' => '`+mysqlDB+`',`,
+		"-e", `/'login' => /c 'login' => '`+mysqlUser+`',`,
+		"-e", `/'password' => /c 'password' => '`+mysqlPassword+`',`,
 		settingsFile).Run()
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	err = exec.Command("sed", "-i", "-e", `/$DBHost /c $DBHost = \"db\";`,
-		"-e", `/$DBLogin /c $DBLogin = \"db\";`,
-		"-e", `/$DBPassword /c $DBPassword = \"db\";`,
-		"-e", `/$DBName /c $DBName = \"db\";`,
+		"-e", `/$DBLogin /c $DBLogin = \"`+mysqlUser+`\";`,
+		"-e", `/$DBPassword /c $DBPassword = \"`+mysqlPassword+`\";`,
+		"-e", `/$DBName /c $DBName = \"`+mysqlDB+`\";`,
 		dbconnFile).Run()
 
 	if err != nil {
@@ -227,11 +231,15 @@ func (a *callMethod) WordpressAccess() {
 	localPath := Env.GetString("PWD")
 	settingsFile := filepath.Join(localPath, "wp-config.php")
 
+	mysqlDB := Env.GetString("MYSQL_DATABASE")
+	mysqlUser := Env.GetString("MYSQL_USER")
+	mysqlPassword := Env.GetString("MYSQL_PASSWORD")
+
 	err = exec.Command("sed", "-i",
 		"-e", `/'DB_HOST' => /c define('DB_HOST', 'db');`,
-		"-e", `/'DB_NAME' => /c define('DB_NAME', 'db');`,
-		"-e", `/'DB_USER' => /c define('DB_USER', 'db');`,
-		"-e", `/'DB_PASSWORD' => /c define('DB_PASSWORD', 'db');`,
+		"-e", `/'DB_NAME' => /c define('DB_NAME', '`+mysqlDB+`');`,
+		"-e", `/'DB_USER' => /c define('DB_USER', '`+mysqlUser+`');`,
+		"-e", `/'DB_PASSWORD' => /c define('DB_PASSWORD', '`+mysqlPassword+`');`,
 		settingsFile).Run()
 
 	if err != nil {

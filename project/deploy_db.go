@@ -269,12 +269,21 @@ func (c SshClient) importDb(ctx context.Context) {
 
 	localPath := filepath.Join(Env.GetString("PWD"), "production.sql.gz")
 	site := Env.GetString("HOST_NAME")
-	siteDb := site + "_db"
+	siteDB := site + "_db"
 
-	outImport, err := exec.Command("bash", "-c", gunzip+" < "+localPath+" | "+docker+" exec -i "+siteDb+" /usr/bin/mysql --user=root --password=root db").CombinedOutput()
+	mysqlDB := Env.GetString("MYSQL_DATABASE")
+	mysqlUser := Env.GetString("MYSQL_USER")
+	mysqlPassword := Env.GetString("MYSQL_PASSWORD")
+	mysqlRootPassword := Env.GetString("MYSQL_ROOT_PASSWORD")
+
+	outImport, err := exec.Command("bash", "-c", gunzip+" < "+localPath+" | "+docker+" exec -i "+siteDB+" /usr/bin/mysql --user=root --password="+mysqlRootPassword+" "+mysqlDB+"").CombinedOutput() //nolint:gosec
 	if err != nil {
-		pterm.FgRed.Println(string(outImport))
-		pterm.FgRed.Println(err)
+		w.Event(progress.Event{
+			ID:       "Import database",
+			ParentID: "Database",
+			Status:   progress.Error,
+			Text:     string(outImport),
+		})
 		return
 	}
 
@@ -288,7 +297,7 @@ UPDATE b_lang SET b_lang.DOC_ROOT='' WHERE 1=(SELECT DOC_ROOT FROM (SELECT COUNT
 INSERT INTO b_lang_domain VALUES ('s1', '` + local + `');
 INSERT INTO b_lang_domain VALUES ('s1', '` + nip + `');"`
 
-		outUpdate, err := exec.Command("bash", "-c", "echo "+strSQL+" | "+docker+" exec -i "+siteDb+" /usr/bin/mysql --user=db --password=db --host=db db").CombinedOutput()
+		outUpdate, err := exec.Command("bash", "-c", "echo "+strSQL+" | "+docker+" exec -i "+siteDB+" /usr/bin/mysql --user="+mysqlUser+" --password="+mysqlPassword+" --host=db "+mysqlDB+"").CombinedOutput() //nolint:gosec
 		if err != nil {
 			pterm.FgRed.Println(string(outUpdate))
 			pterm.FgRed.Println(err)
