@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/project"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 func init() {
@@ -67,15 +68,38 @@ func deployService(ctx context.Context) error {
 
 	project.LoadEnv()
 
+	var sshPassword string
+
+	if project.Env.GetBool("DEBUG") == true {
+		fmt.Println("Connect to server")
+	}
+
+	if project.Env.GetString("AUTH_MODE") == "passwd" {
+		fmt.Println("Enter ssh password")
+		passwd, _ := terminal.ReadPassword(int(os.Stdin.Fd()))
+		sshPassword = string(passwd)
+	}
+
+	if project.Env.GetBool("DEBUG") == true {
+		fmt.Println("Auth mode:" + project.Env.GetString("AUTH_MODE"))
+		fmt.Println("Server:" + project.Env.GetString("SERVER"))
+		fmt.Println("ssh key:" + project.Env.GetString("SSH_KEY"))
+		fmt.Println("ssh password:" + sshPassword)
+		fmt.Println("User srv:" + project.Env.GetString("USER_SRV"))
+		fmt.Println("Port srv:" + project.Env.GetString("PORT_SRV"))
+		fmt.Println("Catalog srv:" + project.Env.GetString("CATALOG_SRV"))
+	}
+
 	var err error
 	sshClient, err = project.NewClient(&project.Server{
-		Server:  project.Env.GetString("SERVER"),
-		Key:     project.Env.GetString("SSH_KEY"),
-		User:    project.Env.GetString("USER_SRV"),
-		Port:    project.Env.GetUint("PORT_SRV"),
-		Catalog: project.Env.GetString("CATALOG_SRV"),
+		Server:   project.Env.GetString("SERVER"),
+		Key:      project.Env.GetString("SSH_KEY"),
+		Password: sshPassword,
+		User:     project.Env.GetString("USER_SRV"),
+		Port:     project.Env.GetUint("PORT_SRV"),
+		Catalog:  project.Env.GetString("CATALOG_SRV"),
 	})
-
+	
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Client", "Failed connect to ssh"))
 		os.Exit(1)

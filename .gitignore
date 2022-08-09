@@ -1,2 +1,5 @@
 .idea
 /dl
+/.env
+/.docker
+/*.gz
