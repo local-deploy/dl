@@ -13,3 +13,8 @@ services:
       - "LOCALTIME=${LOCALTIME:-Europe/Moscow}"
     volumes:
       - "${PWD}/.docker/volume/db/:/var/lib/mysql/:delegated"
+    networks:
+      dl_default: { }
+      default:
+        aliases:
+          - ${NETWORK_NAME}

@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 )
 
 // HomeDir user home directory
@@ -105,4 +106,14 @@ func CallMethod(i interface{}, methodName string) interface{} {
 
 	i = make([]string, 0)
 	return i
+}
+
+func ContainsHasPrefix(s []string, e string) bool {
+
+	for _, a := range s {
+		if strings.HasPrefix(e, a) || a == e {
+			return true
+		}
+	}
+	return false
 }

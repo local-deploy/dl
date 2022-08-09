@@ -85,6 +85,10 @@ func setDefaultEnv() {
 	Env.SetDefault("MYSQL_USER", "db")
 	Env.SetDefault("MYSQL_PASSWORD", "db")
 	Env.SetDefault("MYSQL_ROOT_PASSWORD", "root")
+
+	Env.SetDefault("MYSQL_MODE", "docker")
+	Env.SetDefault("MYSQL_HOST_LOCAL", "localhost")
+	Env.SetDefault("MYSQL_PORT_LOCAL", "3306")
 }
 
 // setComposeFile Set docker-compose files
