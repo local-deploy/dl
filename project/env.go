@@ -50,6 +50,7 @@ func setDefaultEnv() {
 	Env.SetDefault("PWD", dir)
 	Env.SetDefault("HOME", home)
 	Env.SetDefault("SSH_KEY", "id_rsa")
+	Env.SetDefault("DEBUG", false)
 
 	projectName := strings.ToLower(Env.GetString("HOST_NAME"))
 	if len(projectName) == 0 {
