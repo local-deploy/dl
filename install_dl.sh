@@ -1,36 +1,22 @@
 #!/bin/bash
-
 # Script to download and install DL, https://github.com/local-deploy/dl
 # Usage: chmod +x ./install_dl.sh && ./install_dl.sh
+
+# shellcheck disable=SC2059
 
 set -e
 
 GITHUB_REPO=local-deploy/dl
-TMPDIR=/tmp
+TMP_DIR=/tmp
 CURRENT_DIR=${PWD}
 
 RED='\033[31m'
 GREEN='\033[32m'
 YELLOW='\033[33m'
 RESET='\033[0m'
-OS=$(uname)
 
 if [[ $EUID -eq 0 ]]; then
   echo "This script must NOT be run with sudo/root. Please re-run without sudo" 1>&2
-  exit 1
-fi
-
-uname_arch=$(uname -m)
-if [ "$uname_arch" != "x86_64" ]; then
-  printf "${RED}Sorry, your machine architecture %s is not currently supported${RESET}\n" "${uname_arch}" && exit 1
-fi
-
-if [[ "$OS" == "Darwin" ]]; then
-  BIN="dl_darwin_amd64"
-elif [[ "$OS" == "Linux" ]]; then
-  BIN="dl_linux_amd64"
-else
-  printf "${RED}Sorry, this installer does not support your platform at this time${RESET}\n"
   exit 1
 fi
 
@@ -43,6 +29,31 @@ if ! docker-compose --version >/dev/null 2>&1; then
   printf "${YELLOW}docker-compose is required for dl. Please see https://docs.docker.com/compose/install/ ${RESET}\n"
   exit 1
 fi
+
+# check architecture
+architecture=""
+case $(uname -m) in
+    x86_64 | amd64) architecture="amd64" ;;
+    arm64 | aarch64 | armv8b | armv8l | aarch64_be)  architecture="arm64" ;;
+esac
+
+if [[ $architecture == "" ]]; then
+  printf "${RED}Sorry, your machine architecture %s is not currently supported${RESET}\n" "$(uname -m)" && exit 1
+fi
+
+# check OS
+os=""
+case $(uname) in
+    Linux)  os="linux" ;;
+    Darwin) os="darwin" ;;
+esac
+
+if [[ $architecture == "" ]]; then
+  printf "${RED}Sorry, this installer does not support %s platform at this time${RESET}\n" "$(uname)" && exit 1
+fi
+
+BIN="dl_${os}_${architecture}"
+
 
 case $SHELL in
 */zsh)
@@ -64,11 +75,11 @@ TARBALL="dl-$LATEST_RELEASE.tar.gz"
 
 printf "${GREEN}Downloading release %s${RESET}\n" "${LATEST_RELEASE}"
 
-curl -fsSL "$RELEASE_BASE_URL/$TARBALL" -o "${TMPDIR}/${TARBALL}" || (printf "${RED}Failed downloading %s/%s${RESET}\n" "${RELEASE_BASE_URL}" "${TARBALL}" && exit 1)
+curl -fsSL "$RELEASE_BASE_URL/$TARBALL" -o "${TMP_DIR}/${TARBALL}" || (printf "${RED}Failed downloading %s/%s${RESET}\n" "${RELEASE_BASE_URL}" "${TARBALL}" && exit 1)
 
 printf "${GREEN}Extract archive${RESET}\n"
 
-cd $TMPDIR
+cd $TMP_DIR
 tar -xzf "$TARBALL"
 
 if [ -d "$HOME/.config/dl/config-files" ]; then
@@ -78,7 +89,7 @@ if [ -f "$HOME/.local/bin/dl" ]; then
   rm -f "$HOME/.local/bin/dl"
 fi
 if [ -f "$HOME/.config/dl/config.yaml" ]; then
-  sed -i "/version/c version: $LATEST_RELEASE" $HOME/.config/dl/config.yaml
+  sed -i "/version/c version: $LATEST_RELEASE" "$HOME"/.config/dl/config.yaml
 fi
 
 if [ ! -d "$HOME/.local/bin" ]; then
@@ -100,7 +111,7 @@ chmod +x "$HOME/.local/bin/dl"
 
 printf "${GREEN}Remove temp files${RESET}\n"
 
-rm -f ${TMPDIR}$TARBALL
+rm -f ${TMP_DIR}$TARBALL
 
 #if command -v mkcert >/dev/null; then
 #  printf "${YELLOW}Running mkcert -install, which may request your sudo password.'.${RESET}\n"
