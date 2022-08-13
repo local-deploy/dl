@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/docker/compose/v2/pkg/progress"
-	"github.com/pterm/pterm"
 )
 
 type dbSettings struct {
@@ -23,10 +22,7 @@ func (c SshClient) DumpDb(ctx context.Context) {
 	var err error
 
 	w := progress.ContextWriter(ctx)
-	w.Event(progress.Event{
-		ID:     "Database",
-		Status: progress.Working,
-	})
+	w.Event(progress.Event{ID: "Database", Status: progress.Working})
 
 	mysqlDataBase := Env.GetString("MYSQL_DATABASE_SRV")
 	mysqlLogin := Env.GetString("MYSQL_LOGIN_SRV")
@@ -136,11 +132,7 @@ func (c SshClient) accessLaravelDb() (*dbSettings, error) {
 // mysqlDump Create database dump
 func (c SshClient) mysqlDump(ctx context.Context, db *dbSettings) error {
 	w := progress.ContextWriter(ctx)
-	w.Event(progress.Event{
-		ID:       "Create database dump",
-		ParentID: "Database",
-		Status:   progress.Working,
-	})
+	w.Event(progress.Event{ID: "Create database dump", ParentID: "Database", Status: progress.Working})
 
 	port := db.Port
 	if len(port) == 0 {
@@ -183,11 +175,7 @@ func (c SshClient) mysqlDump(ctx context.Context, db *dbSettings) error {
 		return err
 	}
 
-	w.Event(progress.Event{
-		ID:       "Create database dump",
-		ParentID: "Database",
-		Status:   progress.Done,
-	})
+	w.Event(progress.Event{ID: "Create database dump", ParentID: "Database", Status: progress.Done})
 
 	return nil
 }
@@ -211,11 +199,7 @@ func (d dbSettings) formatIgnoredTables() string {
 func (c SshClient) downloadDump(ctx context.Context) error {
 	w := progress.ContextWriter(ctx)
 
-	w.Event(progress.Event{
-		ID:       "Download database dump",
-		ParentID: "Database",
-		Status:   progress.Working,
-	})
+	w.Event(progress.Event{ID: "Download database dump", ParentID: "Database", Status: progress.Working})
 
 	serverPath := filepath.Join(c.Server.Catalog, "production.sql.gz")
 	localPath := filepath.Join(Env.GetString("PWD"), "production.sql.gz")
@@ -233,11 +217,7 @@ func (c SshClient) downloadDump(ctx context.Context) error {
 		return err
 	}
 
-	w.Event(progress.Event{
-		ID:       "Download database dump",
-		ParentID: "Database",
-		Status:   progress.Done,
-	})
+	w.Event(progress.Event{ID: "Download database dump", ParentID: "Database", Status: progress.Done})
 
 	return err
 }
@@ -248,20 +228,16 @@ func (c SshClient) importDb(ctx context.Context) {
 
 	w := progress.ContextWriter(ctx)
 
-	w.Event(progress.Event{
-		ID:       "Import database",
-		ParentID: "Database",
-		Status:   progress.Working,
-	})
+	w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Working})
 
 	docker, err := exec.LookPath("docker")
 	if err != nil {
-		pterm.FgRed.Println(err)
+		w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Error, Text: fmt.Sprint(err)})
 		return
 	}
 	gunzip, err := exec.LookPath("gunzip")
 	if err != nil {
-		pterm.FgRed.Println(err)
+		w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Error, Text: fmt.Sprint(err)})
 		return
 	}
 
@@ -278,12 +254,7 @@ func (c SshClient) importDb(ctx context.Context) {
 
 	outImport, err := exec.Command("bash", "-c", gunzip+" < "+localPath+" | "+docker+" exec -i "+siteDB+" /usr/bin/mysql --user=root --password="+mysqlRootPassword+" "+mysqlDB+"").CombinedOutput() //nolint:gosec
 	if err != nil {
-		w.Event(progress.Event{
-			ID:       "Import database",
-			ParentID: "Database",
-			Status:   progress.Error,
-			Text:     string(outImport),
-		})
+		w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Error, Text: string(outImport)})
 		return
 	}
 
@@ -299,8 +270,7 @@ INSERT INTO b_lang_domain VALUES ('s1', '` + nip + `');"`
 
 		outUpdate, err := exec.Command("bash", "-c", "echo "+strSQL+" | "+docker+" exec -i "+siteDB+" /usr/bin/mysql --user="+mysqlUser+" --password="+mysqlPassword+" --host=db "+mysqlDB+"").CombinedOutput() //nolint:gosec
 		if err != nil {
-			pterm.FgRed.Println(string(outUpdate))
-			pterm.FgRed.Println(err)
+			w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Error, Text: string(outUpdate)})
 			return
 		}
 	}
@@ -308,7 +278,7 @@ INSERT INTO b_lang_domain VALUES ('s1', '` + nip + `');"`
 	err = exec.Command("rm", localPath).Run()
 
 	if err != nil {
-		pterm.FgRed.Println(err)
+		w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Error, Text: fmt.Sprint(err)})
 	}
 
 	w.Event(progress.Event{

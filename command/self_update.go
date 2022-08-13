@@ -122,7 +122,7 @@ func selfUpdate(ctx context.Context) (string, error) {
 		return "", nil
 	}
 
-	if !noConfig {
+	if noConfig == false {
 		err = copyConfigFiles()
 		if err != nil {
 			w.Event(progress.ErrorMessageEvent("Copying files", fmt.Sprint(err)))
