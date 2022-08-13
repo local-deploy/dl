@@ -13,7 +13,7 @@ import (
 	"github.com/varrcan/dl/helper"
 )
 
-var version = "0.3.0"
+var version = "0.3.1"
 
 func main() {
 	if !helper.IsConfigDirExists() {
