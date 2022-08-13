@@ -91,7 +91,7 @@ func getServicesContainer() []localServicesContainer {
 		},
 		{
 			Name:    "portainer",
-			Image:   "portainer/portainer",
+			Image:   "portainer/portainer-ce",
 			Version: "latest",
 			Cmd:     []string{"--no-analytics"},
 			Volumes: map[string]struct{}{
