@@ -111,17 +111,16 @@ func askIsHostTrusted(host string, key ssh.PublicKey) bool {
 	reader := bufio.NewReader(os.Stdin)
 
 	pterm.FgYellow.Printf("The authenticity of host %s can't be established \nFingerprint key: %s \n", host, ssh.FingerprintSHA256(key))
-	pterm.FgYellow.Print("Are you sure you want to continue connecting (Y/n)?")
+	pterm.FgYellow.Print("Are you sure you want to continue connecting (Y/n)? ")
 
 	a, err := reader.ReadString('\n')
-
 	if err != nil {
 		pterm.FgRed.Println(err)
 		return false
 	}
 
-	return strings.ToLower(strings.TrimSpace(a)) == "y"
-
+	a = strings.TrimSpace(a)
+	return strings.ToLower(a) == "y" || a == ""
 }
 
 // cleanRemote Deleting file on the server
