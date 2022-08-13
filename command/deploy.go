@@ -69,11 +69,13 @@ func deployService(ctx context.Context) error {
 
 	var err error
 	sshClient, err = project.NewClient(&project.Server{
-		Server:  project.Env.GetString("SERVER"),
-		Key:     project.Env.GetString("SSH_KEY"),
-		User:    project.Env.GetString("USER_SRV"),
-		Port:    project.Env.GetUint("PORT_SRV"),
-		Catalog: project.Env.GetString("CATALOG_SRV"),
+		Addr:             project.Env.GetString("SERVER"),
+		Key:              project.Env.GetString("SSH_KEY"),
+		UseKeyPassphrase: project.Env.GetBool("ASK_KEY_PASSPHRASE"),
+		UsePassword:      project.Env.GetBool("USE_SSH_PASS"),
+		User:             project.Env.GetString("USER_SRV"),
+		Port:             project.Env.GetUint("PORT_SRV"),
+		Catalog:          project.Env.GetString("CATALOG_SRV"),
 	})
 
 	if err != nil {

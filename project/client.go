@@ -16,6 +16,7 @@ import (
 	"github.com/pterm/pterm"
 	"github.com/varrcan/dl/helper"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // SshClient represents ssh client
@@ -26,42 +27,79 @@ type SshClient struct {
 
 // Server config
 type Server struct {
-	Server, Key, User, Catalog, FwType string
-	Port                               uint
+	Addr, Key, User, Catalog, FwType string
+	UsePassword, UseKeyPassphrase    bool
+	Port                             uint
 }
 
 // NewClient returns new client and error if any
 func NewClient(server *Server) (c *SshClient, err error) {
-	home, _ := helper.HomeDir()
-
-	auth, err := goph.Key(filepath.Join(home, ".ssh", server.Key), "")
-	if err != nil {
-		pterm.FgRed.Println(err)
-		return
-	}
-
 	c = &SshClient{
 		Server: server,
 	}
 
 	c.Client, err = goph.NewConn(&goph.Config{
 		User:     c.Server.User,
-		Addr:     c.Server.Server,
+		Addr:     c.Server.Addr,
 		Port:     c.Server.Port,
-		Auth:     auth,
+		Auth:     getAuth(server),
 		Callback: verifyHost,
 	})
+
 	return
+}
+
+func getAuth(server *Server) goph.Auth {
+	if server.UsePassword {
+		auth := goph.Password(askPass("Enter SSH Password: "))
+
+		return auth
+	} else {
+		home, _ := helper.HomeDir()
+
+		auth, err := goph.Key(filepath.Join(home, ".ssh", server.Key), getPassphrase(server.UseKeyPassphrase))
+		if err != nil {
+			pterm.FgRed.Println(err)
+			return nil
+		}
+
+		return auth
+	}
+}
+
+func getPassphrase(ask bool) string {
+	if ask {
+		return askPass("Enter Private Key Passphrase: ")
+	}
+	return ""
+}
+
+func askPass(msg string) string {
+	fmt.Print(msg)
+	pass, err := terminal.ReadPassword(0)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("")
+
+	return strings.TrimSpace(string(pass))
 }
 
 func verifyHost(host string, remote net.Addr, key ssh.PublicKey) error {
 	hostFound, err := goph.CheckKnownHost(host, remote, key, "")
 
+	// Host in known hosts but key mismatch
+	if hostFound && err != nil {
+		return err
+	}
+
+	// handshake because public key already exists
 	if hostFound && err == nil {
 		return nil
 	}
 
-	if !askIsHostTrusted(host, key) {
+	if askIsHostTrusted(host, key) == false {
 		pterm.FgRed.Println("Connection aborted")
 		return nil
 	}
@@ -82,15 +120,8 @@ func askIsHostTrusted(host string, key ssh.PublicKey) bool {
 		return false
 	}
 
-	switch strings.ToLower(strings.TrimSpace(a)) {
-	case "n":
-		return false
-	case "y":
-	default:
-		return true
-	}
+	return strings.ToLower(strings.TrimSpace(a)) == "y"
 
-	return true
 }
 
 // cleanRemote Deleting file on the server
@@ -113,6 +144,7 @@ func (c SshClient) cleanRemote(remotePath string) (err error) {
 }
 
 // Download file from remote server
+//goland:noinspection GoUnhandledErrorResult
 func (c SshClient) download(ctx context.Context, remotePath, localPath string) (err error) {
 	// w := progress.ContextWriter(ctx)
 	local, err := os.Create(localPath)
