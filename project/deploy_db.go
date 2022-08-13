@@ -81,10 +81,10 @@ func (c SshClient) DumpDb(ctx context.Context) {
 // accessBitrixDb Attempt to determine database accesses
 func (c SshClient) accessBitrixDb() (*dbSettings, error) {
 	catCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&",
-		`cat bitrix/.settings.php | grep "'host' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`, "&&",
-		`cat bitrix/.settings.php | grep "'database' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`, "&&",
-		`cat bitrix/.settings.php | grep "'login' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`, "&&",
-		`cat bitrix/.settings.php | grep "'password' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`,
+		`$(which php) -r '$settings = include "bitrix/.settings.php"; echo $settings["connections"]["value"]["default"]["host"]."\n";
+echo $settings["connections"]["value"]["default"]["database"]."\n";
+echo $settings["connections"]["value"]["default"]["login"]."\n";
+echo $settings["connections"]["value"]["default"]["password"]."\n";'`,
 	}, " ")
 	cat, err := c.Run(catCmd)
 	if err != nil {
