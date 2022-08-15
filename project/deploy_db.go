@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/docker/compose/v2/pkg/progress"
@@ -145,7 +146,7 @@ func (c SshClient) mysqlDump(ctx context.Context, db *dbSettings) error {
 		"--host=" + db.Host,
 		"--port=" + port,
 		"--user=" + db.Login,
-		"--password='" + db.Password + "'",
+		"--password=" + strconv.Quote(db.Password),
 		"--single-transaction=1",
 		"--lock-tables=false",
 		"--no-data",
@@ -158,7 +159,7 @@ func (c SshClient) mysqlDump(ctx context.Context, db *dbSettings) error {
 		"--host=" + db.Host,
 		"--port=" + port,
 		"--user=" + db.Login,
-		"--password='" + db.Password + "'",
+		"--password=" + strconv.Quote(db.Password),
 		"--single-transaction=1",
 		"--force",
 		"--lock-tables=false",
