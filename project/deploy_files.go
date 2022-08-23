@@ -24,10 +24,7 @@ func (c SshClient) CopyFiles(ctx context.Context, override []string) {
 
 	w := progress.ContextWriter(ctx)
 
-	w.Event(progress.Event{
-		ID:     "Files",
-		Status: progress.Working,
-	})
+	w.Event(progress.Event{ID: "Files", Status: progress.Working})
 
 	switch c.Server.FwType {
 	case "bitrix":
@@ -55,7 +52,11 @@ func (c SshClient) CopyFiles(ctx context.Context, override []string) {
 		return
 	}
 
-	extractArchive(ctx, c.Server.FwType)
+	err = extractArchive(ctx, path)
+	if err != nil {
+		w.Event(progress.Event{ID: "Files", Status: progress.Error})
+		return
+	}
 
 	var a callMethod
 	reflect.ValueOf(&a).MethodByName(strings.Title(c.Server.FwType + "Access")).Call([]reflect.Value{})
@@ -148,50 +149,39 @@ func (c SshClient) downloadArchive(ctx context.Context) error {
 	return err
 }
 
-func extractArchive(ctx context.Context, path string) {
+func extractArchive(ctx context.Context, path string) error {
 	var err error
 	w := progress.ContextWriter(ctx)
 
-	// w.Event(progress.Waiting("Extract files"))
-
-	w.Event(progress.Event{
-		ID:       "Extract archive",
-		ParentID: "Files",
-		Status:   progress.Working,
-	})
+	w.Event(progress.Event{ID: "Extract archive", ParentID: "Files", Status: progress.Working})
 
 	localPath := Env.GetString("PWD")
 	archive := filepath.Join(localPath, "production.tar.gz")
 
 	// TODO: rewrite to Go
 	outTar, err := exec.Command("tar", "-xzf", archive, "-C", localPath).CombinedOutput()
-	// TODO: fix output
 	if err != nil {
-		fmt.Println(string(outTar))
-		fmt.Println(err)
-		os.Exit(1)
+		w.Event(progress.ErrorMessageEvent("Extract archive", fmt.Sprint(string(outTar))))
+		return err
 	}
 
 	outRm, err := exec.Command("rm", "-f", archive).CombinedOutput()
-	// TODO: fix output
 	if err != nil {
-		fmt.Println(string(outRm))
-		fmt.Println(err)
-		os.Exit(1)
+		w.Event(progress.ErrorMessageEvent("Extract archive", fmt.Sprint(string(outRm))))
+		return err
 	}
 
-	err = helper.ChmodR(path, 0775)
-	// TODO: fix output
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	s := strings.Split(path, " ")
+	for _, dir := range s {
+		err = helper.ChmodR(dir, 0775)
+		if err != nil {
+			w.Event(progress.ErrorMessageEvent("Extract archive", fmt.Sprint(err)))
+			return err
+		}
 	}
 
-	w.Event(progress.Event{
-		ID:       "Extract archive",
-		ParentID: "Files",
-		Status:   progress.Done,
-	})
+	w.Event(progress.Event{ID: "Extract archive", ParentID: "Files", Status: progress.Done})
+	return nil
 }
 
 // BitrixAccess Change bitrix database accesses
