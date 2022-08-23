@@ -6,7 +6,6 @@ Supported OS: Linux (debian, ubuntu, linux mint), macOS (in progress)
 Supported architectures: x64, arm64
 
 Dependencies:
-
 - docker
 - docker-compose v2
 
