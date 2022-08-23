@@ -7,10 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	ioutil "io/ioutil"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -273,11 +274,26 @@ func extractArchive(archivePath string) error {
 }
 
 func copyBin() error {
-	var err error
+	var (
+		err    error
+		system string
+		arch   string
+	)
 
 	binPath, _ := helper.BinPath()
-	// TODO: Darwin
-	tmpLinuxBin := filepath.Join(os.TempDir(), "dl", "bin", "dl_linux_amd64")
+
+	system, err = getSystem()
+	if err != nil {
+		return err
+	}
+
+	arch, err = getArch()
+	if err != nil {
+		return err
+	}
+
+	tmpLinuxBin := strings.Join([]string{"dl", system, arch}, "_")
+	tmpBinPath := filepath.Join(os.TempDir(), "dl", "bin", tmpLinuxBin)
 
 	if helper.IsBinFileExists() {
 		err = os.Remove(binPath)
@@ -286,12 +302,32 @@ func copyBin() error {
 		}
 	}
 
-	bytesRead, err := ioutil.ReadFile(tmpLinuxBin)
+	bytesRead, err := ioutil.ReadFile(tmpBinPath)
 	err = ioutil.WriteFile(binPath, bytesRead, 0775) //nolint:gosec
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func getSystem() (string, error) {
+	system := runtime.GOOS
+
+	switch system {
+	case "linux", "darwin":
+		return system, nil
+	}
+	return "", errors.New(fmt.Sprintf("This installer does not support %s platform at this time", system))
+}
+
+func getArch() (string, error) {
+	arch := runtime.GOARCH
+
+	switch arch {
+	case "amd64", "arm64":
+		return arch, nil
+	}
+	return "", errors.New(fmt.Sprintf("Your machine architecture %s is not currently supported", arch))
 }
 
 func copyConfigFiles() error {

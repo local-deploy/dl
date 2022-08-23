@@ -48,7 +48,7 @@ case $(uname) in
     Darwin) os="darwin" ;;
 esac
 
-if [[ $architecture == "" ]]; then
+if [[ $os == "" ]]; then
   printf "${RED}Sorry, this installer does not support %s platform at this time${RESET}\n" "$(uname)" && exit 1
 fi
 
