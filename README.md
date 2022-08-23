@@ -2,13 +2,15 @@ Deploy Local — site deployment assistant locally.
 
 A convenient wrapper over docker-compose, which simplifies the local deployment of the project.
 
-Supported OS: Linux (debian, ubuntu, linux mint), macOS (not tested)  
-Supported architectures: x64
+Supported OS: Linux (debian, ubuntu, linux mint), macOS (in progress)  
+Supported architectures: x64, arm64
 
 Dependencies:
 
 - docker
-- docker-compose
+- docker-compose v2
+
+The `docker compose` (as plugin) is not supported yet
 
 ### Documentation [local-deploy.github.io](https://local-deploy.github.io/)
 
