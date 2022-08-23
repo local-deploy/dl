@@ -54,7 +54,8 @@ func deploy() error {
 	ctx := context.Background()
 	err := progress.Run(ctx, deployService)
 	if err != nil {
-		return err
+		fmt.Println("Something went wrong...")
+		return nil
 	}
 
 	fmt.Println("All done")
@@ -68,26 +69,17 @@ func deployService(ctx context.Context) error {
 	project.LoadEnv()
 
 	var err error
-	sshClient, err = project.NewClient(&project.Server{
-		Addr:             project.Env.GetString("SERVER"),
-		Key:              project.Env.GetString("SSH_KEY"),
-		UseKeyPassphrase: project.Env.GetBool("ASK_KEY_PASSPHRASE"),
-		UsePassword:      project.Env.GetBool("USE_SSH_PASS"),
-		User:             project.Env.GetString("USER_SRV"),
-		Port:             project.Env.GetUint("PORT_SRV"),
-		Catalog:          project.Env.GetString("CATALOG_SRV"),
-	})
 
+	sshClient, err = getClient()
 	if err != nil {
-		w.Event(progress.ErrorMessageEvent("Client", "Failed connect to ssh"))
-		os.Exit(1)
+		w.Event(progress.ErrorMessageEvent("Failed to connect", fmt.Sprint(err)))
+		return err
 	}
 
 	// Defer closing the network connection.
 	defer func(client *project.SshClient) {
 		err = client.Close()
 		if err != nil {
-			fmt.Println(err)
 			return
 		}
 	}(sshClient)
@@ -95,7 +87,7 @@ func deployService(ctx context.Context) error {
 	sshClient.Server.FwType, err = detectFw()
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Detect FW", fmt.Sprint(err)))
-		os.Exit(1)
+		return err
 	}
 
 	if !database && !files {
@@ -121,6 +113,20 @@ func deployService(ctx context.Context) error {
 	pullWaitGroup.Wait()
 
 	return err
+}
+
+func getClient() (c *project.SshClient, err error) {
+	c, err = project.NewClient(&project.Server{
+		Addr:             project.Env.GetString("SERVER"),
+		Key:              project.Env.GetString("SSH_KEY"),
+		UseKeyPassphrase: project.Env.GetBool("ASK_KEY_PASSPHRASE"),
+		UsePassword:      project.Env.GetBool("USE_SSH_PASS"),
+		User:             project.Env.GetString("USER_SRV"),
+		Port:             project.Env.GetUint("PORT_SRV"),
+		Catalog:          project.Env.GetString("CATALOG_SRV"),
+	})
+
+	return
 }
 
 func startFiles(ctx context.Context) {
@@ -155,13 +161,15 @@ func detectFw() (string, error) {
 		return "laravel", nil
 	}
 
-	return "", errors.New("failed determine the FW, please specify accesses manually")
+	return "", errors.New("failed determine the Framework, please specify accesses manually https://clck.ru/uAGwX")
 }
 
 // upDbContainer Run db container before dump
 func upDbContainer() error {
 	ctx := context.Background()
 	w := progress.ContextWriter(ctx)
+
+	w.Event(progress.StartingEvent("Starting db container"))
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
@@ -179,8 +187,6 @@ func upDbContainer() error {
 		if lookErr != nil {
 			return lookErr
 		}
-
-		w.Event(progress.StartingEvent("Starting db container"))
 
 		cmdCompose := &exec.Cmd{
 			Path: compose,
