@@ -105,7 +105,7 @@ case ":$PATH:" in
 esac
 
 mv "bin/$BIN" "$HOME/.local/bin/dl"
-mv "config-files" "$HOME/.config/dl/config-files/"
+mv "config-files" "$HOME/.config/dl/"
 
 chmod +x "$HOME/.local/bin/dl"
 
