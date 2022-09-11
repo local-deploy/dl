@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
+	"github.com/varrcan/dl/helper"
 	"github.com/varrcan/dl/project"
 )
 
@@ -21,7 +22,7 @@ func init() {
 var upCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Up project",
-	Long: `Start project containers. On completion, displays the local links to the project.  
+	Long: `Start project containers. On completion, displays the local links to the project.
 Analogue of the "docker-compose up -d" command.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		up()
@@ -46,18 +47,22 @@ func up() {
 		return
 	}
 
-	compose, lookErr := exec.LookPath("docker-compose")
-	if lookErr != nil {
-		pterm.FgRed.Printfln("docker-compose not found. Please install it. https://docs.docker.com/compose/install/")
-		return
-	}
-
 	pterm.FgGreen.Printfln("Starting project...")
 
+	bin, option := helper.GetCompose()
+	Args := []string{bin}
+	preArgs := []string{"-p", project.Env.GetString("NETWORK_NAME"), "up", "-d"}
+
+	if len(option) > 0 {
+		Args = append(Args, option)
+	}
+
+	Args = append(Args, preArgs...)
+
 	cmdCompose := &exec.Cmd{
-		Path:   compose,
+		Path:   bin,
 		Dir:    project.Env.GetString("PWD"),
-		Args:   []string{compose, "-p", project.Env.GetString("NETWORK_NAME"), "up", "-d"},
+		Args:   Args,
 		Env:    project.CmdEnv(),
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
@@ -65,7 +70,7 @@ func up() {
 
 	err = cmdCompose.Run()
 	if err != nil {
-		pterm.FgGreen.Printfln(fmt.Sprint(err))
+		pterm.FgRed.Printfln(fmt.Sprint(err))
 		return
 	}
 	pterm.FgGreen.Printfln("Project has been successfully started")

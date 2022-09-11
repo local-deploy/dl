@@ -15,6 +15,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
+	"github.com/varrcan/dl/helper"
 	"github.com/varrcan/dl/project"
 )
 
@@ -196,15 +197,20 @@ func upDbContainer() error {
 	containerExists, err := cli.ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter})
 
 	if len(containerExists) == 0 {
-		compose, lookErr := exec.LookPath("docker-compose")
-		if lookErr != nil {
-			return lookErr
+		bin, option := helper.GetCompose()
+		Args := []string{bin}
+		preArgs := []string{"-p", project.Env.GetString("NETWORK_NAME"), "up", "-d", "db"}
+
+		if len(option) > 0 {
+			Args = append(Args, option)
 		}
 
+		Args = append(Args, preArgs...)
+
 		cmdCompose := &exec.Cmd{
-			Path: compose,
+			Path: bin,
 			Dir:  project.Env.GetString("PWD"),
-			Args: []string{compose, "-p", project.Env.GetString("NETWORK_NAME"), "up", "-d", "db"},
+			Args: Args,
 			Env:  project.CmdEnv(),
 		}
 

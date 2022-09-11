@@ -2,8 +2,11 @@ package helper
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
+
+	"github.com/pterm/pterm"
 )
 
 // HomeDir user home directory
@@ -105,4 +108,30 @@ func CallMethod(i interface{}, methodName string) interface{} {
 
 	i = make([]string, 0)
 	return i
+}
+
+// GetCompose get link to executable file and arguments
+func GetCompose() (string, string) {
+	if isComposePlugin() {
+		docker, _ := exec.LookPath("docker")
+		return docker, "compose"
+	} else {
+		dockerCompose, lookErr := exec.LookPath("docker-compose")
+		if lookErr != nil {
+			pterm.FgRed.Printfln("docker-compose not found. Please install it. https://docs.docker.com/compose/install/")
+			os.Exit(1)
+		}
+
+		return dockerCompose, ""
+	}
+}
+
+// isComposePlugin check if docker compose installed as a plugin
+func isComposePlugin() bool {
+	_, err := exec.Command("docker", "compose").CombinedOutput()
+	if err != nil {
+		return false
+	}
+
+	return true
 }
