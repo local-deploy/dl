@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"os/exec"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
@@ -18,6 +19,10 @@ var version = "0.3.2"
 func main() {
 	if !helper.IsConfigDirExists() {
 		pterm.FgRed.Printfln("The application has not been initialized. Please run the command:\ncurl -s https://raw.githubusercontent.com/local-deploy/dl/master/install_dl.sh | bash")
+		return
+	}
+
+	if !dockerCheck() {
 		return
 	}
 
@@ -93,6 +98,15 @@ func wpdeployCheck() bool {
 	}
 	if len(isExists) > 0 {
 		pterm.Error.Println("An old version of wpdeploy is running. Please stop wpdeploy with the command: wpdeploy local-services down")
+		return false
+	}
+	return true
+}
+
+func dockerCheck() bool {
+	_, err := exec.LookPath("docker")
+	if err != nil {
+		pterm.FgRed.Printfln("Docker not found. Please install it. https://docs.docker.com/engine/install/")
 		return false
 	}
 	return true
