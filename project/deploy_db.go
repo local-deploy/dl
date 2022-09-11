@@ -45,7 +45,8 @@ func (c SshClient) DumpDb(ctx context.Context) {
 			db, err = c.accessBitrixDb()
 		case "laravel":
 			db, err = c.accessLaravelDb()
-		case "wordpress": // TODO
+		case "wordpress":
+			db, err = c.accessWpDb()
 		}
 
 		if err != nil {
@@ -82,6 +83,32 @@ func (c SshClient) accessBitrixDb() (*dbSettings, error) {
 echo $settings["connections"]["value"]["default"]["database"]."\n";
 echo $settings["connections"]["value"]["default"]["login"]."\n";
 echo $settings["connections"]["value"]["default"]["password"]."\n";'`,
+	}, " ")
+	cat, err := c.Run(catCmd)
+	if err != nil {
+		return nil, err
+	}
+
+	dbArray := strings.Split(strings.TrimSpace(string(cat)), "\n")
+	if len(dbArray) != 4 {
+		return nil, errors.New("failed to define DB variables, please specify accesses manually")
+	}
+
+	excludedTables := strings.Split(strings.TrimSpace(Env.GetString("EXCLUDED_TABLES")), ",")
+
+	return &dbSettings{
+		Host:           dbArray[0],
+		DataBase:       dbArray[1],
+		Login:          dbArray[2],
+		Password:       dbArray[3],
+		ExcludedTables: excludedTables,
+	}, err
+}
+
+// accessWpDb Attempt to determine database accesses
+func (c SshClient) accessWpDb() (*dbSettings, error) {
+	catCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&",
+		`$(which php) -r 'error_reporting(0); define("SHORTINIT",true); $settings = include "wp-config.php"; echo DB_HOST."\n"; echo DB_NAME."\n"; echo DB_USER."\n"; echo DB_PASSWORD."\n";'`,
 	}, " ")
 	cat, err := c.Run(catCmd)
 	if err != nil {
