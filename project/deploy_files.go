@@ -11,6 +11,8 @@ import (
 
 	"github.com/docker/compose/v2/pkg/progress"
 	"github.com/varrcan/dl/helper"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type callMethod struct{}
@@ -59,7 +61,10 @@ func (c SshClient) CopyFiles(ctx context.Context, override []string) {
 	}
 
 	var a callMethod
-	reflect.ValueOf(&a).MethodByName(strings.Title(c.Server.FwType + "Access")).Call([]reflect.Value{})
+	reflect.
+		ValueOf(&a).
+		MethodByName(cases.Title(language.Und, cases.NoLower).String(c.Server.FwType + "Access")).
+		Call([]reflect.Value{})
 
 	w.Event(progress.Event{ID: "Files", Status: progress.Done})
 }
@@ -226,10 +231,10 @@ func (a *callMethod) WordpressAccess() {
 	mysqlPassword := Env.GetString("MYSQL_PASSWORD")
 
 	err = exec.Command("sed", "-i",
-		"-e", `/'DB_HOST' => /c define('DB_HOST', 'db');`,
-		"-e", `/'DB_NAME' => /c define('DB_NAME', '`+mysqlDB+`');`,
-		"-e", `/'DB_USER' => /c define('DB_USER', '`+mysqlUser+`');`,
-		"-e", `/'DB_PASSWORD' => /c define('DB_PASSWORD', '`+mysqlPassword+`');`,
+		"-e", `/'DB_HOST'/c define('DB_HOST', 'db');`,
+		"-e", `/'DB_NAME'/c define('DB_NAME', '`+mysqlDB+`');`,
+		"-e", `/'DB_USER'/c define('DB_USER', '`+mysqlUser+`');`,
+		"-e", `/'DB_PASSWORD'/c define('DB_PASSWORD', '`+mysqlPassword+`');`,
 		settingsFile).Run()
 
 	if err != nil {

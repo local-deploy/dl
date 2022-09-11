@@ -13,6 +13,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/project"
 )
@@ -60,7 +61,19 @@ func deploy() error {
 
 	fmt.Println("All done")
 
+	showSpecificInfo()
+
 	return nil
+}
+
+// showProjectInfo Display specific FW info
+func showSpecificInfo() {
+	if sshClient.Server.FwType == "wordpress" {
+		n := project.Env.GetString("NIP_DOMAIN")
+		pterm.Println()
+		pterm.FgYellow.Println("Please specify the domain in the wp-config.php file:")
+		pterm.FgDefault.Printfln("define('WP_HOME', 'http://%s');\ndefine('WP_SITEURL', 'http://%s');", n, n)
+	}
 }
 
 func deployService(ctx context.Context) error {
