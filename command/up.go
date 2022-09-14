@@ -1,11 +1,15 @@
 package command
 
 import (
+	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
+	"github.com/docker/compose/v2/pkg/progress"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
@@ -43,8 +47,11 @@ func up() {
 	traefikExists, err := cli.ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter})
 
 	if len(traefikExists) == 0 {
-		pterm.FgRed.Printfln("Start local services first: dl service up")
-		return
+		err := startLocalServices()
+		if err != nil {
+			pterm.FgRed.Println(err)
+			return
+		}
 	}
 
 	pterm.FgGreen.Printfln("Starting project...")
@@ -76,6 +83,28 @@ func up() {
 	pterm.FgGreen.Printfln("Project has been successfully started")
 
 	showProjectInfo()
+}
+
+func startLocalServices() error {
+	reader := bufio.NewReader(os.Stdin)
+
+	pterm.FgRed.Print("Local services are not running. Would you like to launch (Y/n)?")
+
+	a, err := reader.ReadString('\n')
+	if err != nil {
+		return err
+	}
+
+	a = strings.TrimSpace(a)
+	if strings.ToLower(a) == "y" || a == "" {
+		ctx := context.Background()
+		err := progress.Run(ctx, upService)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	return errors.New("start local services first: dl service up")
 }
 
 // showProjectInfo Display project links
