@@ -1,12 +1,8 @@
 package main
 
 import (
-	"context"
 	"os/exec"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/client"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -26,7 +22,7 @@ func main() {
 		return
 	}
 
-	if !wpdeployCheck() {
+	if !helper.WpdeployCheck() {
 		return
 	}
 
@@ -80,27 +76,6 @@ func createConfigFile() error {
 	}
 
 	return errWrite
-}
-
-func wpdeployCheck() bool {
-	ctx := context.Background()
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	if err != nil {
-		pterm.FgRed.Println("Failed to connect to socket")
-		return false
-	}
-
-	containerFilter := filters.NewArgs(filters.Arg("label", "com.docker.compose.project=local-services"))
-	isExists, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerFilter})
-	if err != nil {
-		pterm.FgRed.Println(err)
-		return false
-	}
-	if len(isExists) > 0 {
-		pterm.FgRed.Println("An old version of wpdeploy is running. Please stop wpdeploy with the command: wpdeploy local-services down")
-		return false
-	}
-	return true
 }
 
 func dockerCheck() bool {
