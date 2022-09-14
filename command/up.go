@@ -88,7 +88,7 @@ func up() {
 func startLocalServices() error {
 	reader := bufio.NewReader(os.Stdin)
 
-	pterm.FgRed.Print("Local services are not running. Would you like to launch (Y/n)?")
+	pterm.FgYellow.Print("Local services are not running. Would you like to launch (Y/n)? ")
 
 	a, err := reader.ReadString('\n')
 	if err != nil {
@@ -104,7 +104,8 @@ func startLocalServices() error {
 		}
 		return nil
 	}
-	return errors.New("start local services first: dl service up")
+	//goland:noinspection GoErrorStringFormat
+	return errors.New("Start local services first: dl service up")
 }
 
 // showProjectInfo Display project links
