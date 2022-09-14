@@ -25,8 +25,8 @@ if ! docker --version >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! docker-compose --version >/dev/null 2>&1; then
-  printf "${YELLOW}docker-compose is required for dl. Please see https://docs.docker.com/compose/install/ ${RESET}\n"
+if ! docker compose version >/dev/null 2>&1; then
+  printf "${YELLOW}docker compose is required for dl. Please see https://docs.docker.com/compose/install/ ${RESET}\n"
   exit 1
 fi
 
