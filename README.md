@@ -1,15 +1,19 @@
+[![Build](https://github.com/local-deploy/dl/actions/workflows/release.yml/badge.svg)](https://github.com/local-deploy/dl/actions/workflows/release.yml)
+
 Deploy Local — site deployment assistant locally.
 
 A convenient wrapper over docker-compose, which simplifies the local deployment of the project.
 
-Supported OS: Linux (debian, ubuntu, linux mint), macOS (in progress)  
+Supported OS: Linux (debian, ubuntu, linux mint), macOS (tested)  
 Supported architectures: x64, arm64
+Supported frameworks and CMS: Bitrix, Laravel, WordPress
 
 Dependencies:
+
 - docker
 - docker-compose v2
 
-The `docker compose` (as plugin) is not supported yet
+The `docker compose` (as plugin) supported
 
 ### Documentation [local-deploy.github.io](https://local-deploy.github.io/)
 
