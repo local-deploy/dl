@@ -1,4 +1,4 @@
-name: Build Go binaries
+name: Build and release
 
 on:
   push:
@@ -9,9 +9,44 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Set up env
+        run: |
+          echo binary_path="${GITHUB_WORKSPACE}/bin" >> $GITHUB_ENV
+          echo binary_name=$(basename "${GITHUB_REPOSITORY}") >> $GITHUB_ENV
+          echo release_tag=$(basename "${GITHUB_REF}") >> $GITHUB_ENV
+
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Loading dependencies
+        run: go mod download
+
+      - name: Build binary
+        run: |
+          mkdir -p "${{ env.binary_path }}"
+          TARGETS=("linux/amd64" "linux/arm64" "darwin/amd64" "darwin/arm64")
+
+          for target in "${TARGETS[@]}"; do
+            os="$(echo "${target}" | cut -d '/' -f1)"
+            arch="$(echo "${target}" | cut -d '/' -f2)"
+            output="${{ env.binary_path }}/${{ env.binary_name }}_${os}_${arch}"
+
+            echo "----> Building for: ${target}"
+            GOOS=${os} GOARCH=${arch} CGO_ENABLED=0 go build -o "${output}"
+          done
+
+      - name: Compress files
+        run: tar cvfz "${{ env.binary_name }}"-"${{ env.release_tag }}".tar.gz config-files bin
+
       - name: Make release
-        uses: docker://ghcr.io/local-deploy/build-release:latest
+        run: hub release create -a "${GITHUB_WORKSPACE}"/"${{ env.binary_name }}"-"${{ env.release_tag }}".tar.gz -m "${{ env.release_tag }}" "${GITHUB_REF}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
