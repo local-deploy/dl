@@ -5,7 +5,7 @@ Deploy Local — site deployment assistant locally.
 A convenient wrapper over docker-compose, which simplifies the local deployment of the project.
 
 Supported OS: Linux (debian, ubuntu, linux mint), macOS (tested)  
-Supported architectures: x64, arm64
+Supported architectures: x64, arm64  
 Supported frameworks and CMS: Bitrix, Laravel, WordPress
 
 Dependencies:
