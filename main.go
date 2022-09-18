@@ -5,13 +5,12 @@ import (
 	"time"
 
 	"github.com/pterm/pterm"
-	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/varrcan/dl/command"
 	"github.com/varrcan/dl/helper"
 )
 
-var version = "0.3.7"
+var version = "0.3.8"
 
 func main() {
 	if !helper.IsConfigDirExists() {
@@ -31,7 +30,7 @@ func main() {
 		firstStart()
 	}
 
-	cobra.OnInitialize(initConfig)
+	initConfig()
 	command.Execute()
 }
 
