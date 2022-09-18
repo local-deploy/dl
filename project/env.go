@@ -125,6 +125,10 @@ func setComposeFiles() {
 		files = append(files, images["memcached"])
 	}
 
+	if len(Env.GetString("APPEND_COMPOSE_FILE")) > 0 {
+		files = append(files, Env.GetString("APPEND_COMPOSE_FILE"))
+	}
+
 	containers := strings.Join(files, ":")
 	Env.SetDefault("COMPOSE_FILE", containers)
 }
