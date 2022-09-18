@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/sftp"
 	"github.com/pterm/pterm"
 	"github.com/varrcan/dl/helper"
+	"github.com/varrcan/dl/utils/disk"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -164,10 +165,10 @@ func (c SshClient) download(ctx context.Context, remotePath, localPath string) (
 	}
 	defer ftp.Close()
 
-	disk := helper.FreeSpaceHome()
-	if fileInfo.Size() > int64(disk.Free) {
-		remoteSize := helper.HumanSize(float64(fileInfo.Size()))
-		localSize := helper.HumanSize(float64(disk.Free))
+	localDisk := disk.FreeSpaceHome()
+	if fileInfo.Size() > int64(localDisk.Free) {
+		remoteSize := disk.HumanSize(float64(fileInfo.Size()))
+		localSize := disk.HumanSize(float64(localDisk.Free))
 		return errors.New(fmt.Sprintf("No disk space. Filesize %s, free space %s", remoteSize, localSize))
 	}
 

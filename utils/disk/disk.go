@@ -1,12 +1,13 @@
-package helper
+package disk
 
 import (
 	"math"
+	"os"
 	"strconv"
 	"syscall"
 )
 
-type disk struct {
+type Disk struct {
 	Total uint64
 	Used  uint64
 	Free  uint64
@@ -20,8 +21,8 @@ const (
 )
 
 // FreeSpaceHome free space in home directory
-func FreeSpaceHome() (d *disk) {
-	home, err := HomeDir()
+func FreeSpaceHome() (d *Disk) {
+	home, err := homeDir()
 	d = CheckFreeSpace(home)
 	if err != nil {
 		return
@@ -31,14 +32,14 @@ func FreeSpaceHome() (d *disk) {
 }
 
 // CheckFreeSpace free space of the specified directory
-func CheckFreeSpace(path string) (d *disk) {
+func CheckFreeSpace(path string) (d *Disk) {
 	fs := syscall.Statfs_t{}
 	err := syscall.Statfs(path, &fs)
 	if err != nil {
 		return
 	}
 
-	d = &disk{
+	d = &Disk{
 		Total: fs.Blocks * uint64(fs.Bsize),
 		Free:  fs.Bfree * uint64(fs.Bsize),
 		Used:  (fs.Blocks * uint64(fs.Bsize)) - (fs.Bfree * uint64(fs.Bsize)),
@@ -47,17 +48,17 @@ func CheckFreeSpace(path string) (d *disk) {
 }
 
 // GetPercentFree free space percentage
-func (d disk) GetPercentFree() float64 {
+func (d Disk) GetPercentFree() float64 {
 	return math.Round(100.0 * float64(d.Free) / float64(d.Total))
 }
 
 // GetFreeSpace free space
-func (d disk) GetFreeSpace() float64 {
+func (d Disk) GetFreeSpace() float64 {
 	return float64(d.Free)
 }
 
 // CalculateSpaceBeforeDeploy calculate free space before deployment
-func (d disk) CalculateSpaceBeforeDeploy(deployFilesSize float64) float64 {
+func (d Disk) CalculateSpaceBeforeDeploy(deployFilesSize float64) float64 {
 	return math.Round(float64(d.Free) - deployFilesSize)
 }
 
@@ -94,4 +95,8 @@ func round(val float64, roundOn float64, places int) (newVal float64) {
 	}
 	newVal = round / pow
 	return
+}
+
+func homeDir() (string, error) {
+	return os.UserHomeDir()
 }
