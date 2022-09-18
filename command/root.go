@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/spf13/cobra"
+	"github.com/varrcan/dl/utils"
 )
 
 var rootCmd = &cobra.Command{
@@ -21,19 +22,6 @@ func handleError(err error) {
 
 // Execute root command
 func Execute() {
-	// pterm.Info.Prefix = pterm.Prefix{
-	//	Text: "",
-	// }
-	// pterm.Success.Prefix = pterm.Prefix{
-	//	Text: "",
-	// }
-	// pterm.Error.Prefix = pterm.Prefix{
-	//	Text: "",
-	// }
-	// pterm.Warning.Prefix = pterm.Prefix{
-	//	Text: "",
-	// }
-
 	usageTemplate := usageTemplate()
 
 	rootCmd.SetUsageTemplate(usageTemplate)
@@ -41,6 +29,9 @@ func Execute() {
 	// rootCmd.CompletionOptions.DisableDefaultCmd = true
 
 	cobra.CheckErr(rootCmd.Execute())
+
+	// check for new version
+	utils.CheckUpdates()
 }
 
 // usageTemplate returns usage template for the command.

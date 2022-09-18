@@ -2,6 +2,7 @@ package main
 
 import (
 	"os/exec"
+	"time"
 
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
@@ -68,6 +69,7 @@ func createConfigFile() error {
 	viper.Set("version", version)
 	viper.Set("locale", "en")
 	viper.Set("repo", "ghcr.io")
+	viper.Set("check-updates", time.Now())
 
 	errWrite := viper.SafeWriteConfig()
 

@@ -16,11 +16,11 @@ import (
 	"time"
 
 	"github.com/docker/compose/v2/pkg/progress"
-	"github.com/google/go-github/v41/github"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/varrcan/dl/helper"
+	"github.com/varrcan/dl/utils/github"
 )
 
 func init() {
@@ -52,71 +52,38 @@ var noConfig bool
 
 func selfUpdate(ctx context.Context) (string, error) {
 	w := progress.ContextWriter(ctx)
-	client := github.NewClient(nil)
 
-	w.Event(progress.Event{
-		ID:     "Update",
-		Status: progress.Working,
-	})
+	w.Event(progress.Event{ID: "Update", Status: progress.Working})
+	w.Event(progress.Event{ID: "Getting the latest release", ParentID: "Update", Status: progress.Working})
 
-	w.Event(progress.Event{
-		ID:       "Getting the latest release",
-		ParentID: "Update",
-		Status:   progress.Working,
-	})
-
-	release, _, err := client.Repositories.GetLatestRelease(context.Background(), "local-deploy", "dl")
+	release, err := github.GetLatestRelease("local-deploy", "dl")
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Getting the latest release", fmt.Sprintf("Failed to get release: %s", err)))
 		return "", nil
 	}
 
-	w.Event(progress.Event{
-		ID:       "Getting the latest release",
-		ParentID: "Update",
-		Status:   progress.Done,
-	})
+	w.Event(progress.Event{ID: "Getting the latest release", ParentID: "Update", Status: progress.Done})
 
 	time.Sleep(time.Second)
-	tmpPath := filepath.Join(os.TempDir(), *release.Assets[0].Name)
+	tmpPath := filepath.Join(os.TempDir(), release.AssetsName)
 
-	w.Event(progress.Event{
-		ID:       "Downloading release",
-		ParentID: "Update",
-		Status:   progress.Working,
-	})
-	err = downloadRelease(tmpPath, *release.Assets[0].BrowserDownloadURL)
+	w.Event(progress.Event{ID: "Downloading release", ParentID: "Update", Status: progress.Working})
+	err = downloadRelease(tmpPath, release.AssetsUrl)
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Downloading release", fmt.Sprintf("Failed to download release: %s", err)))
 		return "", nil
 	}
-	w.Event(progress.Event{
-		ID:       "Downloading release",
-		ParentID: "Update",
-		Status:   progress.Done,
-	})
+	w.Event(progress.Event{ID: "Downloading release", ParentID: "Update", Status: progress.Done})
 
-	w.Event(progress.Event{
-		ID:       "Unpacking archive",
-		ParentID: "Update",
-		Status:   progress.Working,
-	})
+	w.Event(progress.Event{ID: "Unpacking archive", ParentID: "Update", Status: progress.Working})
 	err = extractArchive(tmpPath)
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Unpacking archive", fmt.Sprintf("Extract archive failed: %s", err)))
 		return "", nil
 	}
-	w.Event(progress.Event{
-		ID:       "Unpacking archive",
-		ParentID: "Update",
-		Status:   progress.Done,
-	})
+	w.Event(progress.Event{ID: "Unpacking archive", ParentID: "Update", Status: progress.Done})
+	w.Event(progress.Event{ID: "Copying files", ParentID: "Update", Status: progress.Working})
 
-	w.Event(progress.Event{
-		ID:       "Copying files",
-		ParentID: "Update",
-		Status:   progress.Working,
-	})
 	err = copyBin()
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Copying files", fmt.Sprintf("Failed: %s", err)))
@@ -130,46 +97,32 @@ func selfUpdate(ctx context.Context) (string, error) {
 			return "", nil
 		}
 	}
-	w.Event(progress.Event{
-		ID:       "Copying files",
-		ParentID: "Update",
-		Status:   progress.Done,
-	})
+	w.Event(progress.Event{ID: "Copying files", ParentID: "Update", Status: progress.Done})
+	w.Event(progress.Event{ID: "Cleaning up temporary directory", ParentID: "Update", Status: progress.Working})
 
-	w.Event(progress.Event{
-		ID:       "Cleaning up temporary directory",
-		ParentID: "Update",
-		Status:   progress.Working,
-	})
 	err = os.RemoveAll(filepath.Join(os.TempDir(), "dl"))
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Cleaning up temporary directory", fmt.Sprint(err)))
 		return "", nil
 	}
-	w.Event(progress.Event{
-		ID:       "Cleaning up temporary directory",
-		ParentID: "Update",
-		Status:   progress.Done,
-	})
+	w.Event(progress.Event{ID: "Cleaning up temporary directory", ParentID: "Update", Status: progress.Done})
 
-	viper.Set("version", *release.TagName)
+	viper.Set("version", release.Version)
 
 	repo := viper.GetString("repo")
 	if len(repo) == 0 {
 		viper.Set("repo", "ghcr.io")
 	}
+	viper.Set("check-updates", time.Now())
 
 	err = viper.WriteConfig()
 	if err != nil {
 		pterm.FgRed.Println(err)
 	}
 
-	w.Event(progress.Event{
-		ID:     "Update",
-		Status: progress.Done,
-	})
+	w.Event(progress.Event{ID: "Update", Status: progress.Done})
 
-	return *release.TagName, nil
+	return release.Version, nil
 }
 
 func downloadRelease(filepath string, url string) error {
