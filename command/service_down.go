@@ -13,30 +13,29 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func init() {
-	serviceCmd.AddCommand(downServiceCmd)
-	downServiceCmd.Flags().StringVarP(&source, "service", "s", "", "Stop and remove single service")
-}
-
-var downServiceCmd = &cobra.Command{
-	Use:   "down",
-	Short: "Stop and remove services",
-	Long: `Stops and removes portainer, mailcatcher and traefik containers.
+func downServiceCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "down",
+		Short: "Stop and remove services",
+		Long: `Stops and removes portainer, mailcatcher and traefik containers.
 Valid parameters for the "--service" flag: portainer, mail, traefik`,
-	Example: "dl down\ndl down -s portainer",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := context.Background()
-		err := progress.Run(ctx, downService)
-		if err != nil {
-			return err
-		}
+		Example: "dl down\ndl down -s portainer",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := context.Background()
+			err := progress.Run(ctx, downServiceRun)
+			if err != nil {
+				return err
+			}
 
-		return nil
-	},
-	ValidArgs: []string{"--service"},
+			return nil
+		},
+		ValidArgs: []string{"--service"},
+	}
+	cmd.Flags().StringVarP(&source, "service", "s", "", "Stop and remove single service")
+	return cmd
 }
 
-func downService(ctx context.Context) error {
+func downServiceRun(ctx context.Context) error {
 	w := progress.ContextWriter(ctx)
 	eg, _ := errgroup.WithContext(ctx)
 

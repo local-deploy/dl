@@ -23,34 +23,33 @@ import (
 	"github.com/varrcan/dl/utils/github"
 )
 
-func init() {
-	rootCmd.AddCommand(selfUpdateCmd)
-	selfUpdateCmd.Flags().BoolVarP(&noConfig, "no-overwrite", "n", false, "Do not overwrite configuration files")
-}
-
-var selfUpdateCmd = &cobra.Command{
-	Use:     "self-update",
-	Aliases: []string{"upgrade"},
-	Short:   "Update dl",
-	Long:    `Downloading the latest version of the app.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := context.Background()
-		tag, err := progress.RunWithStatus(ctx, selfUpdate)
-
-		if err != nil {
-			return err
-		}
-		if len(tag) > 0 {
-			printVersion(tag)
-		}
-
-		return nil
-	},
-}
-
 var noConfig bool
 
-func selfUpdate(ctx context.Context) (string, error) {
+func selfUpdateCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "self-update",
+		Aliases: []string{"upgrade"},
+		Short:   "Update dl",
+		Long:    `Downloading the latest version of the app.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := context.Background()
+			tag, err := progress.RunWithStatus(ctx, selfUpdateRun)
+
+			if err != nil {
+				return err
+			}
+			if len(tag) > 0 {
+				printVersion(tag)
+			}
+
+			return nil
+		},
+	}
+	cmd.Flags().BoolVarP(&noConfig, "no-overwrite", "n", false, "Do not overwrite configuration files")
+	return cmd
+}
+
+func selfUpdateRun(ctx context.Context) (string, error) {
 	w := progress.ContextWriter(ctx)
 
 	w.Event(progress.Event{ID: "Update", Status: progress.Working})

@@ -9,21 +9,20 @@ import (
 	"github.com/spf13/viper"
 )
 
-func init() {
-	configCmd.AddCommand(configLangCmd)
+func configLangCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "lang",
+		Short: "Language configuration",
+		Long:  `Menu for setting up the language.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			configLangRun()
+		},
+		Hidden: true,
+	}
+	return cmd
 }
 
-var configLangCmd = &cobra.Command{
-	Use:   "lang",
-	Short: "Language configuration",
-	Long:  `Menu for setting up the language.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		setLang()
-	},
-	Hidden: true,
-}
-
-func setLang() {
+func configLangRun() {
 	menu := wmenu.NewMenu("Select application language:")
 	menu.LoopOnInvalid()
 

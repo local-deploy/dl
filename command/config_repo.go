@@ -9,21 +9,20 @@ import (
 	"github.com/spf13/viper"
 )
 
-func init() {
-	configCmd.AddCommand(configRepoCmd)
+func configRepoCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "repo",
+		Short: "Repository source configuration",
+		Long:  `Menu for setting up the images source repository.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			configRepoRun()
+		},
+		Hidden: false,
+	}
+	return cmd
 }
 
-var configRepoCmd = &cobra.Command{
-	Use:   "repo",
-	Short: "Repository source configuration",
-	Long:  `Menu for setting up the images source repository.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		setRepo()
-	},
-	Hidden: false,
-}
-
-func setRepo() {
+func configRepoRun() {
 	menu := wmenu.NewMenu("Select application repository source:")
 	menu.LoopOnInvalid()
 

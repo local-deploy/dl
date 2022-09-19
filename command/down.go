@@ -11,21 +11,20 @@ import (
 	"github.com/varrcan/dl/project"
 )
 
-func init() {
-	rootCmd.AddCommand(downCmd)
-}
-
-var downCmd = &cobra.Command{
-	Use:   "down",
-	Short: "Down project",
-	Long: `Stop and remove running project containers and network.
+func downCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "down",
+		Short: "Down project",
+		Long: `Stop and remove running project containers and network.
 Analogue of the "docker-compose down" command.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		down()
-	},
+		Run: func(cmd *cobra.Command, args []string) {
+			downRun()
+		},
+	}
+	return cmd
 }
 
-func down() {
+func downRun() {
 	project.LoadEnv()
 
 	pterm.FgGreen.Printfln("Stopping project...")

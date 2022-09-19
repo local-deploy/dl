@@ -19,21 +19,20 @@ import (
 	"github.com/varrcan/dl/project"
 )
 
-func init() {
-	rootCmd.AddCommand(upCmd)
-}
-
-var upCmd = &cobra.Command{
-	Use:   "up",
-	Short: "Up project",
-	Long: `Start project containers. On completion, displays the local links to the project.
+func upCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "up",
+		Short: "Up project",
+		Long: `Start project containers. On completion, displays the local links to the project.
 Analogue of the "docker-compose up -d" command.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		up()
-	},
+		Run: func(cmd *cobra.Command, args []string) {
+			upRun()
+		},
+	}
+	return cmd
 }
 
-func up() {
+func upRun() {
 	project.LoadEnv()
 
 	ctx := context.Background()
@@ -98,7 +97,7 @@ func startLocalServices() error {
 	a = strings.TrimSpace(a)
 	if strings.ToLower(a) == "y" || a == "" {
 		ctx := context.Background()
-		err := progress.Run(ctx, upService)
+		err := progress.Run(ctx, upServiceRun)
 		if err != nil {
 			return err
 		}

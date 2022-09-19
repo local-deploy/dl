@@ -21,10 +21,6 @@ type localServicesContainer struct {
 	Env        []string
 }
 
-func init() {
-	rootCmd.AddCommand(serviceCmd)
-}
-
 var source string
 var localNetworkName = "dl_default"
 
@@ -33,6 +29,16 @@ var serviceCmd = &cobra.Command{
 	Short:     "Local services configuration",
 	Long:      `Local services configuration (portainer, mailcatcher, traefik).`,
 	ValidArgs: []string{"up", "down", "recreate", "restart"},
+}
+
+func serviceCommand() *cobra.Command {
+	serviceCmd.AddCommand(
+		downServiceCommand(),
+		recreateServiceCommand(),
+		restartServiceCommand(),
+		upServiceCommand(),
+	)
+	return serviceCmd
 }
 
 // getServicesContainer local services containers

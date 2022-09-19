@@ -9,24 +9,23 @@ import (
 	"github.com/varrcan/dl/project"
 )
 
-func init() {
-	rootCmd.AddCommand(bashCmd)
-	bashCmd.Flags().BoolVarP(&bashRoot, "root", "r", false, "Login as root")
-}
-
-var bashCmd = &cobra.Command{
-	Use:   "bash",
-	Short: "Login to PHP container",
-	Long:  `Login to PHP container as www-data or root user and start bash shell.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		bash()
-	},
-	ValidArgs: []string{"--root"},
-}
-
 var bashRoot bool
 
-func bash() {
+func bashCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "bash",
+		Short: "Login to PHP container",
+		Long:  `Login to PHP container as www-data or root user and start bash shell.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			runBash()
+		},
+		ValidArgs: []string{"--root"},
+	}
+	cmd.Flags().BoolVarP(&bashRoot, "root", "r", false, "Login as root")
+	return cmd
+}
+
+func runBash() {
 	project.LoadEnv()
 
 	bash, lookErr := exec.LookPath("bash")
