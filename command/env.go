@@ -13,20 +13,19 @@ import (
 	"github.com/varrcan/dl/project"
 )
 
-func init() {
-	rootCmd.AddCommand(envCmd)
+func envCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "env",
+		Short: "Create env file",
+		Long:  `Create or replace an .env file. If the .env.example file is located in the root project directory, it will be used.`,
+		Run: func(cmd *cobra.Command, args []string) {
+			runEnv()
+		},
+	}
+	return cmd
 }
 
-var envCmd = &cobra.Command{
-	Use:   "env",
-	Short: "Create env file",
-	Long:  `Create or replace an .env file. If the .env.example file is located in the root project directory, it will be used.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		env()
-	},
-}
-
-func env() {
+func runEnv() {
 	if project.IsEnvFileExists() {
 		showEnvMenu()
 	} else {

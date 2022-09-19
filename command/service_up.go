@@ -20,30 +20,30 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func init() {
-	serviceCmd.AddCommand(upServiceCmd)
-	upServiceCmd.Flags().StringVarP(&source, "service", "s", "", "Start single service")
-	upServiceCmd.Flags().BoolVarP(&restart, "restart", "r", false, "Restart running containers")
-}
-
 var restart bool
-var upServiceCmd = &cobra.Command{
-	Use:   "up",
-	Short: "Start local services",
-	Long:  `Start portainer, mailcatcher and traefik containers.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		err := progress.Run(ctx, upService)
-		if err != nil {
-			return err
-		}
 
-		return nil
-	},
-	ValidArgs: []string{"--service", "--restart"},
+func upServiceCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "up",
+		Short: "Start local services",
+		Long:  `Start portainer, mailcatcher and traefik containers.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			err := progress.Run(ctx, upServiceRun)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+		ValidArgs: []string{"--service", "--restart"},
+	}
+	cmd.Flags().StringVarP(&source, "service", "s", "", "Start single service")
+	cmd.Flags().BoolVarP(&restart, "restart", "r", false, "Restart running containers")
+	return cmd
 }
 
-func upService(ctx context.Context) error {
+func upServiceRun(ctx context.Context) error {
 	w := progress.ContextWriter(ctx)
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())

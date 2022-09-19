@@ -19,31 +19,6 @@ import (
 	"github.com/varrcan/dl/project"
 )
 
-func init() {
-	rootCmd.AddCommand(pullCmd)
-	pullCmd.Flags().BoolVarP(&database, "database", "d", false, "Dump only database from server")
-	pullCmd.Flags().BoolVarP(&files, "files", "f", false, "Download only files from server")
-	pullCmd.Flags().StringSliceVarP(&override, "override", "o", nil, "Override downloaded files (comma separated values)")
-}
-
-var pullCmd = &cobra.Command{
-	Use:   "deploy",
-	Short: "Downloading db and files from the production server",
-	Long: `Downloading database and kernel files from the production server.
-Without specifying the flag, files and the database are downloaded by default.
-If you specify a flag, for example -d, only the database will be downloaded.
-
-Directories that are downloaded by default
-Bitrix CMS: "bitrix"
-WordPress: "wp-admin" and "wp-includes"
-Laravel: only the database is downloaded`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return deploy()
-	},
-	Example:   "dl deploy\ndl deploy -d\ndl deploy -f -o bitrix,upload",
-	ValidArgs: []string{"--database", "--files", "--override"},
-}
-
 var (
 	database      bool
 	files         bool
@@ -52,7 +27,31 @@ var (
 	sshClient     *project.SshClient
 )
 
-func deploy() error {
+func deployCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "deploy",
+		Short: "Downloading db and files from the production server",
+		Long: `Downloading database and kernel files from the production server.
+Without specifying the flag, files and the database are downloaded by default.
+If you specify a flag, for example -d, only the database will be downloaded.
+
+Directories that are downloaded by default
+Bitrix CMS: "bitrix"
+WordPress: "wp-admin" and "wp-includes"
+Laravel: only the database is downloaded`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return deployRun()
+		},
+		Example:   "dl deploy\ndl deploy -d\ndl deploy -f -o bitrix,upload",
+		ValidArgs: []string{"--database", "--files", "--override"},
+	}
+	cmd.Flags().BoolVarP(&database, "database", "d", false, "Dump only database from server")
+	cmd.Flags().BoolVarP(&files, "files", "f", false, "Download only files from server")
+	cmd.Flags().StringSliceVarP(&override, "override", "o", nil, "Override downloaded files (comma separated values)")
+	return cmd
+}
+
+func deployRun() error {
 	ctx := context.Background()
 	err := progress.Run(ctx, deployService)
 	if err != nil {
