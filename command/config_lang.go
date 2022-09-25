@@ -1,10 +1,9 @@
 package command
 
 import (
-	"fmt"
 	"log"
 
-	"github.com/dixonwille/wmenu/v5"
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -23,26 +22,15 @@ func configLangCommand() *cobra.Command {
 }
 
 func configLangRun() {
-	menu := wmenu.NewMenu("Select application language:")
-	menu.LoopOnInvalid()
+	currentRepo := viper.GetString("locale")
+	options := []string{"en", "ru"}
+	selectedOption, _ := pterm.DefaultInteractiveSelect.
+		WithOptions(options).
+		WithDefaultOption(currentRepo).
+		Show("Select application language")
+	pterm.Printfln("Selected lang: %s", pterm.Green(selectedOption))
 
-	menu.Action(func(opts []wmenu.Opt) error { fmt.Println(opts[0].Value); return nil })
-
-	locale := viper.GetString("locale")
-
-	menu.Option("English", "en", locale == "en", func(opt wmenu.Opt) error {
-		saveLangConfig(opt.Value)
-		return nil
-	})
-	menu.Option("Russian", "ru", locale == "ru", func(opt wmenu.Opt) error {
-		saveLangConfig(opt.Value)
-		return nil
-	})
-
-	err := menu.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
+	saveLangConfig(selectedOption)
 }
 
 func saveLangConfig(lang interface{}) {
@@ -50,12 +38,5 @@ func saveLangConfig(lang interface{}) {
 	err := viper.WriteConfig()
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	switch lang {
-	case "ru":
-		fmt.Println("Выбран русский язык")
-	case "en":
-		fmt.Println("English language selected")
 	}
 }

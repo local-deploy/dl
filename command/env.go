@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dixonwille/wmenu/v5"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/helper"
@@ -37,32 +36,23 @@ func runEnv() {
 
 func showEnvMenu() {
 	pterm.FgYellow.Println("The .env file exists!")
-	menu := wmenu.NewMenu("Select the necessary action:")
-	menu.LoopOnInvalid()
 
-	menu.Option("Replace file", "replace", false, func(opt wmenu.Opt) error {
+	options := []string{"replace file", "just show", "abort"}
+	selectedOption, _ := pterm.DefaultInteractiveSelect.
+		WithOptions(options).
+		Show("Select the necessary action")
+
+	switch selectedOption {
+	case "replace file":
 		deleteEnv()
 		copyEnv()
 		pterm.FgGreen.Println("File replaced successfully.")
-		return nil
-	})
-	// menu.Option("Merge (dangerous)", "merge", false, func(opt wmenu.Opt) error {
-	//	mergeEnv()
-	//	return nil
-	// })
-	menu.Option("Just show", "show", false, func(opt wmenu.Opt) error {
+		break
+	case "just show":
 		printEnvConfig()
-		return nil
-	})
-	menu.Option("Abort", "abort", true, func(opt wmenu.Opt) error {
-		return nil
-	})
-
-	err := menu.Run()
-	if err != nil {
-		pterm.FgRed.Println(err)
-
-		return
+		break
+	case "abort":
+		break
 	}
 }
 
@@ -92,7 +82,6 @@ func printEnvConfig() {
 
 func deleteEnv() {
 	err := os.Remove(".env")
-
 	if err != nil {
 		pterm.FgRed.Println(err)
 		return
@@ -112,22 +101,17 @@ func copyEnv() bool {
 	}
 
 	dest := filepath.Join(currentDir, ".env")
-
 	bytesRead, err := ioutil.ReadFile(src)
-
 	if err != nil {
 		pterm.FgRed.Println(err)
-
 		return false
 	}
 
 	err = ioutil.WriteFile(dest, bytesRead, 0644) //nolint:gosec
-
 	if err != nil {
 		pterm.FgRed.Println(err)
 
 		return false
 	}
-
 	return true
 }
