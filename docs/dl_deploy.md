@@ -4,13 +4,13 @@ Downloading db and files from the production server
 
 ### Synopsis
 
-Downloading database and kernel files from the production server.  
-Without specifying the flag, files and the database are downloaded by default.  
+Downloading database and kernel files from the production server.
+Without specifying the flag, files and the database are downloaded by default.
 If you specify a flag, for example -d, only the database will be downloaded.
 
-Directories that are downloaded by default  
-Bitrix CMS: "bitrix"  
-WordPress: "wp-admin" and "wp-includes"  
+Directories that are downloaded by default
+Bitrix CMS: "bitrix"
+WordPress: "wp-admin" and "wp-includes"
 Laravel: only the database is downloaded
 
 ```
@@ -34,7 +34,13 @@ dl deploy -f -o bitrix,upload
   -o, --override strings   Override downloaded files (comma separated values)
 ```
 
+### Options inherited from parent commands
+
+```
+      --debug   Show more output
+```
+
 ### SEE ALSO
 
-* [dl](dl.md)	 - Deploy Local
+* [dl](dl.md)     - Deploy Local
 

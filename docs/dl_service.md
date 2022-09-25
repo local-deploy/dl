@@ -12,11 +12,17 @@ Local services configuration (portainer, mailcatcher, traefik).
   -h, --help   help for service
 ```
 
+### Options inherited from parent commands
+
+```
+      --debug   Show more output
+```
+
 ### SEE ALSO
 
-* [dl](dl.md)	 - Deploy Local
-* [dl service down](dl_service_down.md)	 - Stop and remove services
-* [dl service recreate](dl_service_recreate.md)	 - Recreate containers
-* [dl service restart](dl_service_restart.md)	 - Restart containers
-* [dl service up](dl_service_up.md)	 - Start local services
+* [dl](dl.md)     - Deploy Local
+* [dl service down](dl_service_down.md)     - Stop and remove services
+* [dl service recreate](dl_service_recreate.md)     - Recreate containers
+* [dl service restart](dl_service_restart.md)     - Restart containers
+* [dl service up](dl_service_up.md)     - Start local services
 

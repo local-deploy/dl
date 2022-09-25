@@ -4,17 +4,21 @@ Deploy Local
 
 ### Synopsis
 
-Deploy Local — site deployment assistant locally. Complete documentation is available at https://local-deploy.github.io/
+Deploy Local — site deployment assistant locally.
+Complete documentation is available at https://local-deploy.github.io/
 
 ### Options
 
 ```
-  -h, --help   help for dl
+      --debug   Show more output
+  -h, --help    help for dl
 ```
 
 ### SEE ALSO
 
 * [dl bash](dl_bash.md)     - Login to PHP container
+* [dl completion](dl_completion.md)     - Generate completion script
+* [dl config](dl_config.md)     - Application configuration
 * [dl deploy](dl_deploy.md)     - Downloading db and files from the production server
 * [dl down](dl_down.md)     - Down project
 * [dl env](dl_env.md)     - Create env file

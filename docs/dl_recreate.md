@@ -16,7 +16,13 @@ dl recreate [flags]
   -h, --help   help for recreate
 ```
 
+### Options inherited from parent commands
+
+```
+      --debug   Show more output
+```
+
 ### SEE ALSO
 
-* [dl](dl.md)	 - Deploy Local
+* [dl](dl.md)     - Deploy Local
 

@@ -16,7 +16,13 @@ dl service restart [flags]
   -h, --help   help for restart
 ```
 
+### Options inherited from parent commands
+
+```
+      --debug   Show more output
+```
+
 ### SEE ALSO
 
-* [dl service](dl_service.md)	 - Local services configuration
+* [dl service](dl_service.md)     - Local services configuration
 

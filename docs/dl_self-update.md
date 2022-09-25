@@ -17,7 +17,13 @@ dl self-update [flags]
   -n, --no-overwrite   Do not overwrite configuration files
 ```
 
+### Options inherited from parent commands
+
+```
+      --debug   Show more output
+```
+
 ### SEE ALSO
 
-* [dl](dl.md)	 - Deploy Local
+* [dl](dl.md)     - Deploy Local
 

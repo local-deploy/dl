@@ -4,7 +4,7 @@ Stop and remove services
 
 ### Synopsis
 
-Stops and removes portainer, mailcatcher and traefik containers.  
+Stops and removes portainer, mailcatcher and traefik containers.
 Valid parameters for the "--service" flag: portainer, mail, traefik
 
 ```
@@ -25,7 +25,13 @@ dl down -s portainer
   -s, --service string   Stop and remove single service
 ```
 
+### Options inherited from parent commands
+
+```
+      --debug   Show more output
+```
+
 ### SEE ALSO
 
-* [dl service](dl_service.md)	 - Local services configuration
+* [dl service](dl_service.md)     - Local services configuration
 

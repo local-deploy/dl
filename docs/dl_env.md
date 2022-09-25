@@ -16,7 +16,13 @@ dl env [flags]
   -h, --help   help for env
 ```
 
+### Options inherited from parent commands
+
+```
+      --debug   Show more output
+```
+
 ### SEE ALSO
 
-* [dl](dl.md)	 - Deploy Local
+* [dl](dl.md)     - Deploy Local
 

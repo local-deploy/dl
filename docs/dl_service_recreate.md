@@ -17,7 +17,13 @@ dl service recreate [flags]
   -s, --service string   Recreate single service
 ```
 
+### Options inherited from parent commands
+
+```
+      --debug   Show more output
+```
+
 ### SEE ALSO
 
-* [dl service](dl_service.md)	 - Local services configuration
+* [dl service](dl_service.md)     - Local services configuration
 

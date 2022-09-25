@@ -17,7 +17,13 @@ dl bash [flags]
   -r, --root   Login as root
 ```
 
+### Options inherited from parent commands
+
+```
+      --debug   Show more output
+```
+
 ### SEE ALSO
 
-* [dl](dl.md)	 - Deploy Local
+* [dl](dl.md)     - Deploy Local
 
