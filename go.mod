@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/dixonwille/wmenu/v5 v5.1.0
-	github.com/docker/compose/v2 v2.10.2
+	github.com/docker/compose/v2 v2.11.1
 	github.com/docker/docker v20.10.18+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/google/go-github/v41 v41.0.0
@@ -30,9 +30,11 @@ require (
 	github.com/bugsnag/panicwrap v1.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cloudflare/cfssl v1.4.1 // indirect
+	github.com/compose-spec/compose-go v1.5.1 // indirect
 	github.com/containerd/console v1.0.3 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/daviddengcn/go-colortext v1.0.0 // indirect
+	github.com/distribution/distribution/v3 v3.0.0-20220902125104-0122d7ddaec0 // indirect
 	github.com/dixonwille/wlog/v3 v3.0.1 // indirect
 	github.com/docker/cli v20.10.18+incompatible // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
@@ -44,13 +46,14 @@ require (
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/fvbommel/sortorder v1.0.2 // indirect
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
-	github.com/gofrs/uuid v3.3.0+incompatible // indirect
+	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/gookit/color v1.5.2 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/jinzhu/gorm v1.9.11 // indirect
