@@ -40,7 +40,9 @@ func downServiceRun(ctx context.Context) error {
 	eg, _ := errgroup.WithContext(ctx)
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
-	handleError(err)
+	if err != nil {
+		return err
+	}
 
 	err = removeContainers(ctx, cli)
 	if err != nil {
@@ -89,7 +91,9 @@ func removeContainers(ctx context.Context, cli *client.Client) error {
 	}
 
 	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerFilters})
-	handleError(err)
+	if err != nil {
+		return err
+	}
 
 	for _, container := range containers {
 		container := container

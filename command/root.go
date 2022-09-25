@@ -1,31 +1,45 @@
 package command
 
 import (
-	"log"
+	"os"
 
+	"github.com/docker/compose/v2/pkg/progress"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/utils"
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "dl",
-	Short: "Deploy Local",
-	Long: `Deploy Local — site deployment assistant locally.
+var (
+	rootCmd = &cobra.Command{
+		Use:   "dl",
+		Short: "Deploy Local",
+		Long: `Deploy Local — site deployment assistant locally.
 Complete documentation is available at https://local-deploy.github.io/`,
-}
-
-func handleError(err error) {
-	if err != nil {
-		log.Fatalln(err)
 	}
-}
+	debug bool
+)
 
 // Execute root command
 func Execute() {
-	usageTemplate := usageTemplate()
+	logrus.SetOutput(os.Stdout)
+	logrus.SetFormatter(&logrus.TextFormatter{
+		DisableSorting:         true,
+		DisableTimestamp:       true,
+		DisableLevelTruncation: true,
+	})
+	logrus.SetLevel(logrus.FatalLevel)
 
+	usageTemplate := usageTemplate()
 	rootCmd.SetUsageTemplate(usageTemplate)
 	rootCmd.DisableAutoGenTag = true
+	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Show more output")
+
+	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		if debug {
+			logrus.SetLevel(logrus.DebugLevel)
+			progress.Mode = "plain"
+		}
+	}
 
 	rootCmd.AddCommand(
 		envCommand(),

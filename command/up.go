@@ -14,6 +14,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/pterm/pterm"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/helper"
 	"github.com/varrcan/dl/project"
@@ -65,6 +66,7 @@ func upRun() {
 
 	Args = append(Args, preArgs...)
 
+	logrus.Infof("Run command: %s, args: %s", bin, Args)
 	cmdCompose := &exec.Cmd{
 		Path:   bin,
 		Dir:    project.Env.GetString("PWD"),

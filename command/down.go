@@ -6,6 +6,7 @@ import (
 	"os/exec"
 
 	"github.com/pterm/pterm"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/helper"
 	"github.com/varrcan/dl/project"
@@ -39,6 +40,7 @@ func downRun() {
 
 	Args = append(Args, preArgs...)
 
+	logrus.Infof("Run command: %s, args: %s", bin, Args)
 	cmdCompose := &exec.Cmd{
 		Path:   bin,
 		Dir:    project.Env.GetString("PWD"),

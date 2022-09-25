@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/project"
 )
@@ -37,9 +38,11 @@ func runBash() {
 
 	site := project.Env.GetString("HOST_NAME")
 	container := site + "_php"
-	var root string
+	logrus.Infof("Use container name %s", container)
 
+	var root string
 	if bashRoot {
+		logrus.Info("Login as root user")
 		root = "--user root "
 	}
 
@@ -52,5 +55,8 @@ func runBash() {
 		Stdin:  os.Stdin,
 	}
 
-	_ = cmdCompose.Run()
+	err := cmdCompose.Run()
+	if err != nil {
+		logrus.Error(err)
+	}
 }
