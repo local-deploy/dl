@@ -14,6 +14,7 @@ import (
 	"github.com/melbahja/goph"
 	"github.com/pkg/sftp"
 	"github.com/pterm/pterm"
+	"github.com/sirupsen/logrus"
 	"github.com/varrcan/dl/helper"
 	"github.com/varrcan/dl/utils/disk"
 	"golang.org/x/crypto/ssh"
@@ -138,6 +139,7 @@ func (c SshClient) cleanRemote(remotePath string) (err error) {
 		}
 	}(ftp)
 
+	logrus.Infof("Delete file: %s", remotePath)
 	err = ftp.Remove(remotePath)
 
 	return err

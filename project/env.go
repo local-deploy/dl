@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/pterm/pterm"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/varrcan/dl/helper"
 )
@@ -29,6 +30,7 @@ var phpImagesVersion = map[string]string{
 
 // LoadEnv Get variables from .env file
 func LoadEnv() {
+	logrus.Info("Loading ENV variables")
 	Env = viper.New()
 
 	Env.AddConfigPath("./")

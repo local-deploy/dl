@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/docker/compose/v2/pkg/progress"
+	"github.com/sirupsen/logrus"
 	"github.com/varrcan/dl/helper"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -41,6 +42,7 @@ func (c SshClient) CopyFiles(ctx context.Context, override []string) {
 		path = strings.Join(override, " ")
 	}
 
+	logrus.Infof("Download path from server: %s", path)
 	err = c.packFiles(ctx, path)
 
 	if err != nil {
@@ -73,11 +75,7 @@ func (c SshClient) CopyFiles(ctx context.Context, override []string) {
 func (c SshClient) packFiles(ctx context.Context, path string) error {
 	w := progress.ContextWriter(ctx)
 
-	w.Event(progress.Event{
-		ID:       "Archive files",
-		ParentID: "Files",
-		Status:   progress.Working,
-	})
+	w.Event(progress.Event{ID: "Archive files", ParentID: "Files", Status: progress.Working})
 
 	excludeTarString := formatIgnoredPath()
 	tarCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&",
@@ -88,17 +86,14 @@ func (c SshClient) packFiles(ctx context.Context, path string) error {
 		excludeTarString,
 		path,
 	}, " ")
+	logrus.Infof("Run archiving files: %s", tarCmd)
 	_, err := c.Run(tarCmd)
 
 	if err != nil {
 		return err
 	}
 
-	w.Event(progress.Event{
-		ID:       "Archive files",
-		ParentID: "Files",
-		Status:   progress.Done,
-	})
+	w.Event(progress.Event{ID: "Archive files", ParentID: "Files", Status: progress.Done})
 
 	return nil
 }
@@ -113,6 +108,7 @@ func formatIgnoredPath() string {
 	}
 
 	excludedPath := strings.Split(strings.TrimSpace(excluded), ",")
+	logrus.Infof("Ignored path: %s", excluded)
 	for _, value := range excludedPath {
 		ignoredPath = append(ignoredPath, "--exclude="+value)
 	}
@@ -126,12 +122,9 @@ func (c SshClient) downloadArchive(ctx context.Context) error {
 	serverPath := filepath.Join(c.Server.Catalog, "production.tar.gz")
 	localPath := filepath.Join(Env.GetString("PWD"), "production.tar.gz")
 
-	w.Event(progress.Event{
-		ID:       "Download archive",
-		ParentID: "Files",
-		Status:   progress.Working,
-	})
+	w.Event(progress.Event{ID: "Download archive", ParentID: "Files", Status: progress.Working})
 
+	logrus.Infof("Download archive: %s", serverPath)
 	err := c.download(ctx, serverPath, localPath)
 
 	if err != nil {
@@ -145,11 +138,7 @@ func (c SshClient) downloadArchive(ctx context.Context) error {
 		return err
 	}
 
-	w.Event(progress.Event{
-		ID:       "Download archive",
-		ParentID: "Files",
-		Status:   progress.Done,
-	})
+	w.Event(progress.Event{ID: "Download archive", ParentID: "Files", Status: progress.Done})
 
 	return err
 }
@@ -162,6 +151,7 @@ func extractArchive(ctx context.Context, path string) error {
 
 	localPath := Env.GetString("PWD")
 	archive := filepath.Join(localPath, "production.tar.gz")
+	logrus.Infof("Extract archive local path: %s", archive)
 
 	// TODO: rewrite to Go
 	outTar, err := exec.Command("tar", "-xzf", archive, "-C", localPath).CombinedOutput()
@@ -170,6 +160,7 @@ func extractArchive(ctx context.Context, path string) error {
 		return err
 	}
 
+	logrus.Infof("Delete archive path: %s", archive)
 	outRm, err := exec.Command("rm", "-f", archive).CombinedOutput()
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Extract archive", fmt.Sprint(string(outRm))))
@@ -178,6 +169,7 @@ func extractArchive(ctx context.Context, path string) error {
 
 	s := strings.Split(path, " ")
 	for _, dir := range s {
+		logrus.Infof("Run chmod 775: %s", dir)
 		err = helper.ChmodR(dir, 0775)
 		if err != nil {
 			w.Event(progress.ErrorMessageEvent("Extract archive", fmt.Sprint(err)))
@@ -199,6 +191,7 @@ func (a *callMethod) BitrixAccess() {
 	mysqlUser := Env.GetString("MYSQL_USER")
 	mysqlPassword := Env.GetString("MYSQL_PASSWORD")
 
+	logrus.Infof("Replacing accesses in: %s", settingsFile)
 	err := exec.Command("sed", "-i", "-e", `/'debug' => /c 'debug' => true,`,
 		"-e", `/'host' => /c 'host' => 'db',`,
 		"-e", `/'database' => /c 'database' => '`+mysqlDB+`',`,
@@ -209,6 +202,7 @@ func (a *callMethod) BitrixAccess() {
 		fmt.Println(err)
 	}
 
+	logrus.Infof("Replacing accesses in: %s", dbconnFile)
 	err = exec.Command("sed", "-i", "-e", `/$DBHost /c $DBHost = \"db\";`,
 		"-e", `/$DBLogin /c $DBLogin = \"`+mysqlUser+`\";`,
 		"-e", `/$DBPassword /c $DBPassword = \"`+mysqlPassword+`\";`,
@@ -230,6 +224,7 @@ func (a *callMethod) WordpressAccess() {
 	mysqlUser := Env.GetString("MYSQL_USER")
 	mysqlPassword := Env.GetString("MYSQL_PASSWORD")
 
+	logrus.Infof("Replacing accesses in: %s", settingsFile)
 	err = exec.Command("sed", "-i",
 		"-e", `/'DB_HOST'/c define('DB_HOST', 'db');`,
 		"-e", `/'DB_NAME'/c define('DB_NAME', '`+mysqlDB+`');`,

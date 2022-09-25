@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/docker/compose/v2/pkg/progress"
+	"github.com/sirupsen/logrus"
 )
 
 type dbSettings struct {
@@ -29,6 +30,7 @@ func (c SshClient) DumpDb(ctx context.Context) {
 	mysqlLogin := Env.GetString("MYSQL_LOGIN_SRV")
 	mysqlPassword := Env.GetString("MYSQL_PASSWORD_SRV")
 	if len(mysqlDataBase) > 0 && len(mysqlLogin) > 0 && len(mysqlPassword) > 0 {
+		logrus.Info("Manual database access settings are used")
 		excludedTables := strings.Split(strings.TrimSpace(Env.GetString("EXCLUDED_TABLES")), ",")
 
 		db = &dbSettings{
@@ -40,6 +42,7 @@ func (c SshClient) DumpDb(ctx context.Context) {
 			ExcludedTables: excludedTables,
 		}
 	} else {
+		logrus.Info("Attempt to access database")
 		switch c.Server.FwType {
 		case "bitrix":
 			db, err = c.accessBitrixDb()
@@ -84,12 +87,14 @@ echo $settings["connections"]["value"]["default"]["database"]."\n";
 echo $settings["connections"]["value"]["default"]["login"]."\n";
 echo $settings["connections"]["value"]["default"]["password"]."\n";'`,
 	}, " ")
+	logrus.Infof("Run command: %s", catCmd)
 	cat, err := c.Run(catCmd)
 	if err != nil {
 		return nil, err
 	}
 
 	dbArray := strings.Split(strings.TrimSpace(string(cat)), "\n")
+	logrus.Infof("Received variables: %s", dbArray)
 	if len(dbArray) != 4 {
 		return nil, errors.New("failed to define DB variables, please specify accesses manually")
 	}
@@ -110,12 +115,14 @@ func (c SshClient) accessWpDb() (*dbSettings, error) {
 	catCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&",
 		`$(which php) -r 'error_reporting(0); define("SHORTINIT",true); $settings = include "wp-config.php"; echo DB_HOST."\n"; echo DB_NAME."\n"; echo DB_USER."\n"; echo DB_PASSWORD."\n";'`,
 	}, " ")
+	logrus.Infof("Run command: %s", catCmd)
 	cat, err := c.Run(catCmd)
 	if err != nil {
 		return nil, err
 	}
 
 	dbArray := strings.Split(strings.TrimSpace(string(cat)), "\n")
+	logrus.Infof("Received variables: %s", dbArray)
 	if len(dbArray) != 4 {
 		return nil, errors.New("failed to define DB variables, please specify accesses manually")
 	}
@@ -138,10 +145,11 @@ func (c SshClient) accessLaravelDb() (*dbSettings, error) {
 		`echo $DB_USERNAME`, "&&",
 		`echo $DB_PASSWORD`,
 	}, " ")
+	logrus.Infof("Run command: %s", catCmd)
 	cat, err := c.Run(catCmd)
 
 	dbArray := strings.Split(strings.TrimSpace(string(cat)), "\n")
-
+	logrus.Infof("Received variables: %s", dbArray)
 	if len(dbArray) != 4 {
 		return nil, errors.New("failed to define DB variables, please specify accesses manually")
 	}
@@ -164,6 +172,7 @@ func (c SshClient) mysqlDump(ctx context.Context, db *dbSettings) error {
 
 	port := db.Port
 	if len(port) == 0 {
+		logrus.Info("Port not set, standard port 3306 is used")
 		port = "3306"
 	}
 
@@ -197,6 +206,7 @@ func (c SshClient) mysqlDump(ctx context.Context, db *dbSettings) error {
 		"|",
 		"gzip >> " + c.Server.Catalog + "/production.sql.gz",
 	}, " ")
+	logrus.Infof("Run command: %s", dumpCmd)
 	_, err := c.Run(dumpCmd)
 
 	if err != nil {
@@ -232,6 +242,7 @@ func (c SshClient) downloadDump(ctx context.Context) error {
 	serverPath := filepath.Join(c.Server.Catalog, "production.sql.gz")
 	localPath := filepath.Join(Env.GetString("PWD"), "production.sql.gz")
 
+	logrus.Infof("Download dump: %s", serverPath)
 	err := c.download(ctx, serverPath, localPath)
 
 	if err != nil {
@@ -270,7 +281,6 @@ func (c SshClient) importDb(ctx context.Context) {
 	}
 
 	// TODO: переписать на sdk
-
 	localPath := filepath.Join(Env.GetString("PWD"), "production.sql.gz")
 	site := Env.GetString("HOST_NAME")
 	siteDB := site + "_db"
@@ -280,7 +290,9 @@ func (c SshClient) importDb(ctx context.Context) {
 	mysqlPassword := Env.GetString("MYSQL_PASSWORD")
 	mysqlRootPassword := Env.GetString("MYSQL_ROOT_PASSWORD")
 
-	outImport, err := exec.Command("bash", "-c", gunzip+" < "+localPath+" | "+docker+" exec -i "+siteDB+" /usr/bin/mysql --user=root --password="+mysqlRootPassword+" "+mysqlDB+"").CombinedOutput() //nolint:gosec
+	commandImport := gunzip + " < " + localPath + " | " + docker + " exec -i " + siteDB + " /usr/bin/mysql --user=root --password=" + mysqlRootPassword + " " + mysqlDB + ""
+	logrus.Infof("Run command: %s", commandImport)
+	outImport, err := exec.Command("bash", "-c", commandImport).CombinedOutput() //nolint:gosec
 	if err != nil {
 		w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Error, Text: string(outImport)})
 		return
@@ -296,22 +308,21 @@ UPDATE b_lang SET b_lang.DOC_ROOT='' WHERE 1=(SELECT DOC_ROOT FROM (SELECT COUNT
 INSERT INTO b_lang_domain VALUES ('s1', '` + local + `');
 INSERT INTO b_lang_domain VALUES ('s1', '` + nip + `');"`
 
-		outUpdate, err := exec.Command("bash", "-c", "echo "+strSQL+" | "+docker+" exec -i "+siteDB+" /usr/bin/mysql --user="+mysqlUser+" --password="+mysqlPassword+" --host=db "+mysqlDB+"").CombinedOutput() //nolint:gosec
+		commandUpdate := "echo " + strSQL + " | " + docker + " exec -i " + siteDB + " /usr/bin/mysql --user=" + mysqlUser + " --password=" + mysqlPassword + " --host=db " + mysqlDB + ""
+		logrus.Infof("Run command: %s", commandUpdate)
+		outUpdate, err := exec.Command("bash", "-c", commandUpdate).CombinedOutput() //nolint:gosec
 		if err != nil {
 			w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Error, Text: string(outUpdate)})
 			return
 		}
 	}
 
+	logrus.Infof("Delete dump: %s", localPath)
 	err = exec.Command("rm", localPath).Run()
 
 	if err != nil {
 		w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Error, Text: fmt.Sprint(err)})
 	}
 
-	w.Event(progress.Event{
-		ID:       "Import database",
-		ParentID: "Database",
-		Status:   progress.Done,
-	})
+	w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Done})
 }

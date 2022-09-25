@@ -14,6 +14,7 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/pterm/pterm"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/helper"
 	"github.com/varrcan/dl/project"
@@ -129,7 +130,7 @@ func deployService(ctx context.Context) error {
 }
 
 func getClient() (c *project.SshClient, err error) {
-	c, err = project.NewClient(&project.Server{
+	server := &project.Server{
 		Addr:             project.Env.GetString("SERVER"),
 		Key:              project.Env.GetString("SSH_KEY"),
 		UseKeyPassphrase: project.Env.GetBool("ASK_KEY_PASSPHRASE"),
@@ -137,8 +138,9 @@ func getClient() (c *project.SshClient, err error) {
 		User:             project.Env.GetString("USER_SRV"),
 		Port:             project.Env.GetUint("PORT_SRV"),
 		Catalog:          project.Env.GetString("CATALOG_SRV"),
-	})
-
+	}
+	logrus.Infof("SSH client connect %v", fmt.Sprint(server))
+	c, err = project.NewClient(server)
 	return
 }
 
@@ -159,6 +161,7 @@ func detectFw() (string, error) {
 		return "", err
 	}
 
+	logrus.Info("Detect Framework")
 	if strings.Contains(string(out), "bitrix") {
 		fmt.Println("Bitrix CMS detected")
 		return "bitrix", nil
@@ -196,6 +199,7 @@ func upDbContainer() error {
 	containerExists, err := cli.ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter})
 
 	if len(containerExists) == 0 {
+		logrus.Info("db container not running")
 		bin, option := helper.GetCompose()
 		Args := []string{bin}
 		preArgs := []string{"-p", project.Env.GetString("NETWORK_NAME"), "up", "-d", "db"}
@@ -206,6 +210,7 @@ func upDbContainer() error {
 
 		Args = append(Args, preArgs...)
 
+		logrus.Infof("Run command: %s, args: %s", bin, Args)
 		cmdCompose := &exec.Cmd{
 			Path: bin,
 			Dir:  project.Env.GetString("PWD"),
