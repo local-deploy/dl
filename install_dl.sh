@@ -101,7 +101,7 @@ fi
 
 case ":$PATH:" in
 *:$HOME/.local/bin:*) ;;
-*) printf "\nPATH=\"\$HOME/.local/bin:\$PATH\"" >>"$HOME/.zshrc" && PATH="$PATH:$HOME/.local/bin" ;;
+*) printf "\nPATH=\"\$HOME/.local/bin:\$PATH\"" >>"$HOME/$SHELL_RC" && PATH="$PATH:$HOME/.local/bin" ;;
 esac
 
 mv "bin/$BIN" "$HOME/.local/bin/dl"
