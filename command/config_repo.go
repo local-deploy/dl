@@ -1,10 +1,9 @@
 package command
 
 import (
-	"fmt"
 	"log"
 
-	"github.com/dixonwille/wmenu/v5"
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -23,27 +22,15 @@ func configRepoCommand() *cobra.Command {
 }
 
 func configRepoRun() {
-	menu := wmenu.NewMenu("Select application repository source:")
-	menu.LoopOnInvalid()
+	currentRepo := viper.GetString("repo")
+	options := []string{"ghcr.io", "quay.io"}
+	selectedOption, _ := pterm.DefaultInteractiveSelect.
+		WithOptions(options).
+		WithDefaultOption(currentRepo).
+		Show("Select application repository source")
+	pterm.Printfln("Selected repo: %s", pterm.Green(selectedOption))
 
-	menu.Action(func(opts []wmenu.Opt) error { fmt.Println(opts[0].Value); return nil })
-
-	locale := viper.GetString("repo")
-
-	menu.Option("ghcr.io", "ghcr.io", locale == "ghcr.io", func(opt wmenu.Opt) error {
-		saveRepoConfig(opt.Value)
-		return nil
-	})
-
-	menu.Option("quay.io", "quay.io", locale == "quay.io", func(opt wmenu.Opt) error {
-		saveRepoConfig(opt.Value)
-		return nil
-	})
-
-	err := menu.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
+	saveRepoConfig(selectedOption)
 }
 
 func saveRepoConfig(lang interface{}) {
@@ -51,12 +38,5 @@ func saveRepoConfig(lang interface{}) {
 	err := viper.WriteConfig()
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	switch lang {
-	case "ghcr.io":
-		fmt.Println("Selected ghcr.io")
-	case "quay.io":
-		fmt.Println("Selected quay.io")
 	}
 }

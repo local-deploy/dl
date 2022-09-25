@@ -3,7 +3,7 @@ module github.com/varrcan/dl
 go 1.18
 
 require (
-	github.com/dixonwille/wmenu/v5 v5.1.0
+	github.com/docker/cli v20.10.18+incompatible
 	github.com/docker/compose/v2 v2.11.1
 	github.com/docker/docker v20.10.18+incompatible
 	github.com/docker/go-connections v0.4.0
@@ -11,6 +11,7 @@ require (
 	github.com/melbahja/goph v1.3.0
 	github.com/pkg/sftp v1.13.5
 	github.com/pterm/pterm v0.12.46
+	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.13.0
 	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90
@@ -36,7 +37,6 @@ require (
 	github.com/daviddengcn/go-colortext v1.0.0 // indirect
 	github.com/distribution/distribution/v3 v3.0.0-20220902125104-0122d7ddaec0 // indirect
 	github.com/dixonwille/wlog/v3 v3.0.1 // indirect
-	github.com/docker/cli v20.10.18+incompatible // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.6.4 // indirect
 	github.com/docker/go v1.5.1-1.0.20160303222718-d30aec9fd63c // indirect
@@ -46,7 +46,6 @@ require (
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/fvbommel/sortorder v1.0.2 // indirect
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
-	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
@@ -82,7 +81,6 @@ require (
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/rivo/uniseg v0.4.2 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spf13/afero v1.9.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
