@@ -22,6 +22,7 @@ Complete documentation is available at https://local-deploy.github.io/
 * [dl deploy](dl_deploy.md)     - Downloading db and files from the production server
 * [dl down](dl_down.md)     - Down project
 * [dl env](dl_env.md)     - Create env file
+* [dl ps](dl_ps.md)     - List containers
 * [dl recreate](dl_recreate.md)     - Recreate containers
 * [dl self-update](dl_self-update.md)     - Update dl
 * [dl service](dl_service.md)     - Local services configuration
