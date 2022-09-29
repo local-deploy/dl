@@ -20,21 +20,39 @@ if [[ $EUID -eq 0 ]]; then
   exit 1
 fi
 
+# check docker
 if ! docker --version >/dev/null 2>&1; then
   printf "${YELLOW}Docker is required for dl. Please see https://docs.docker.com/engine/install/ ${RESET}\n"
   exit 1
 fi
 
+if ! docker-compose --version >/dev/null 2>&1; then
+  DOCKER_LEGACY=false
+fi
 if ! docker compose version >/dev/null 2>&1; then
+  DOCKER_PLUGIN=false
+fi
+
+# check docker compose
+if [[ $DOCKER_LEGACY = false ]] && [[ $DOCKER_PLUGIN = false ]]; then
   printf "${YELLOW}docker compose is required for dl. Please see https://docs.docker.com/compose/install/ ${RESET}\n"
   exit 1
+fi
+
+# check docker-compose version
+if [[ $DOCKER_PLUGIN = false ]] && [[ $DOCKER_LEGACY != false ]]; then
+  DOCKER_COMPOSE_LEGACY_MAJOR=$(docker-compose --version --short | cut -d'.' -f 1)
+  if [[ "${DOCKER_COMPOSE_LEGACY_MAJOR}" -eq 1 ]]; then
+    printf "${YELLOW}docker compose is required version 2. Please update https://docs.docker.com/compose/install/ ${RESET}\n"
+    exit 1
+  fi
 fi
 
 # check architecture
 architecture=""
 case $(uname -m) in
-    x86_64 | amd64) architecture="amd64" ;;
-    arm64 | aarch64 | armv8b | armv8l | aarch64_be)  architecture="arm64" ;;
+x86_64 | amd64) architecture="amd64" ;;
+arm64 | aarch64 | armv8b | armv8l | aarch64_be) architecture="arm64" ;;
 esac
 
 if [[ $architecture == "" ]]; then
@@ -44,8 +62,8 @@ fi
 # check OS
 os=""
 case $(uname) in
-    Linux)  os="linux" ;;
-    Darwin) os="darwin" ;;
+Linux) os="linux" ;;
+Darwin) os="darwin" ;;
 esac
 
 if [[ $os == "" ]]; then
@@ -53,7 +71,6 @@ if [[ $os == "" ]]; then
 fi
 
 BIN="dl_${os}_${architecture}"
-
 
 case $SHELL in
 */zsh)
