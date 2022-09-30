@@ -4,6 +4,7 @@ server {
 
     server_name ${VIRTUAL_HOST};
     add_header Strict-Transport-Security "max-age=31536000" always;
+    client_max_body_size 200M;
 
     charset utf-8;
 
