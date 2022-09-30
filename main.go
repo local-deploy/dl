@@ -10,7 +10,7 @@ import (
 	"github.com/varrcan/dl/helper"
 )
 
-var version = "0.4.0"
+var version = "0.4.1"
 
 func main() {
 	pterm.ThemeDefault.SecondaryStyle = pterm.Style{pterm.FgDefault, pterm.BgDefault}
