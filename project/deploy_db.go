@@ -11,12 +11,15 @@ import (
 
 	"github.com/docker/compose/v2/pkg/progress"
 	"github.com/sirupsen/logrus"
+	"github.com/varrcan/dl/helper"
 )
 
 type dbSettings struct {
 	Host, DataBase, Login, Password, Port string
 	ExcludedTables                        []string
 }
+
+var remotePhpPath string
 
 // DumpDb Database import from server
 func (c SshClient) DumpDb(ctx context.Context) {
@@ -42,6 +45,8 @@ func (c SshClient) DumpDb(ctx context.Context) {
 			ExcludedTables: excludedTables,
 		}
 	} else {
+		c.checkPhpAvailable()
+
 		logrus.Info("Attempt to access database")
 		switch c.Server.FwType {
 		case "bitrix":
@@ -79,21 +84,48 @@ func (c SshClient) DumpDb(ctx context.Context) {
 	})
 }
 
+// checkPhpAvailable It possible that PHP not installed on the server in the host system. For example, through docker.
+func (c SshClient) checkPhpAvailable() {
+	logrus.Info("Check if PHP available")
+	phpCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&", "which php"}, " ")
+	logrus.Infof("Run command: %s", phpCmd)
+	binary, err := c.Run(phpCmd)
+	if err == nil {
+		remotePhpPath = string(binary)
+		logrus.Infof("PHP available: %s", remotePhpPath)
+		return
+	}
+	logrus.Info("PHP not available")
+}
+
 // accessBitrixDb Attempt to determine database accesses
 func (c SshClient) accessBitrixDb() (*dbSettings, error) {
-	catCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&",
-		`$(which php) -r '$settings = include "bitrix/.settings.php"; echo $settings["connections"]["value"]["default"]["host"]."\n";
+	var catCmd string
+	if len(remotePhpPath) > 0 {
+		// A more precise way to define variables
+		catCmd = strings.Join([]string{"cd", c.Server.Catalog, "&&",
+			`$(which php) -r '$settings = include "bitrix/.settings.php"; echo $settings["connections"]["value"]["default"]["host"]."\n";
 echo $settings["connections"]["value"]["default"]["database"]."\n";
 echo $settings["connections"]["value"]["default"]["login"]."\n";
 echo $settings["connections"]["value"]["default"]["password"]."\n";'`,
-	}, " ")
+		}, " ")
+	} else {
+		// Defining variables with grep
+		catCmd = strings.Join([]string{"cd", c.Server.Catalog, "&&",
+			`cat bitrix/.settings.php | grep "'host' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`, "&&",
+			`cat bitrix/.settings.php | grep "'database' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`, "&&",
+			`cat bitrix/.settings.php | grep "'login' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`, "&&",
+			`cat bitrix/.settings.php | grep "'password' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`,
+		}, " ")
+	}
+
 	logrus.Infof("Run command: %s", catCmd)
 	cat, err := c.Run(catCmd)
 	if err != nil {
 		return nil, err
 	}
 
-	dbArray := strings.Split(strings.TrimSpace(string(cat)), "\n")
+	dbArray := helper.CleanSlice(strings.Split(strings.TrimSpace(string(cat)), "\n"))
 	logrus.Infof("Received variables: %s", dbArray)
 	if len(dbArray) != 4 {
 		return nil, errors.New("failed to define DB variables, please specify accesses manually")
