@@ -213,7 +213,7 @@ func extractArchive(archivePath string) error {
 			}
 
 		default:
-			return errors.New(pterm.Sprint("extract archive failed. Unknown type %s in %s", header.Typeflag, header.Name))
+			return errors.New(fmt.Sprintf("extract archive failed. Unknown type %x in %s", header.Typeflag, header.Name))
 		}
 	}
 
