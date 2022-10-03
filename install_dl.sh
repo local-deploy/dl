@@ -116,10 +116,9 @@ if [ ! -d "$HOME/.config/dl" ]; then
   mkdir -p "$HOME/.config/dl/config-files"
 fi
 
-case ":$PATH:" in
-*:$HOME/.local/bin:*) ;;
-*) printf "\nPATH=\"\$HOME/.local/bin:\$PATH\"" >>"$HOME/$SHELL_RC" && PATH="$PATH:$HOME/.local/bin" ;;
-esac
+if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
+  printf "\nPATH=\"\$HOME/.local/bin:\$PATH\"" >>"$HOME/$SHELL_RC" && PATH="$PATH:$HOME/.local/bin"
+fi
 
 mv "bin/$BIN" "$HOME/.local/bin/dl"
 mv "config-files" "$HOME/.config/dl/"
@@ -129,11 +128,6 @@ chmod +x "$HOME/.local/bin/dl"
 printf "${GREEN}Remove temp files${RESET}\n"
 
 rm -f ${TMP_DIR}$TARBALL
-
-#if command -v mkcert >/dev/null; then
-#  printf "${YELLOW}Running mkcert -install, which may request your sudo password.'.${RESET}\n"
-#  mkcert -install
-#fi
 
 printf "${GREEN}DL is now installed. Run \"dl\" and \"dl version\" to verify your installation and see usage.${RESET}\n"
 
