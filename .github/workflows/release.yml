@@ -29,6 +29,9 @@ jobs:
       - name: Loading dependencies
         run: go mod download
 
+      - name: Test
+        run: go test -v ./...
+
       - name: Build binary
         run: |
           mkdir -p "${{ env.binary_path }}"
