@@ -208,6 +208,11 @@ func (c SshClient) mysqlDump(ctx context.Context, db *dbSettings) error {
 		port = "3306"
 	}
 
+	dump := c.checkMySqlDumpAvailable()
+	if dump != nil {
+		return errors.New("mysqldump not installed, database dump not possible")
+	}
+
 	ignoredTablesString := db.formatIgnoredTables()
 	dumpCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&",
 		"mysqldump",
@@ -247,6 +252,19 @@ func (c SshClient) mysqlDump(ctx context.Context, db *dbSettings) error {
 
 	w.Event(progress.Event{ID: "Create database dump", ParentID: "Database", Status: progress.Done})
 
+	return nil
+}
+
+func (c SshClient) checkMySqlDumpAvailable() error {
+	logrus.Info("Check if mysqldump available")
+	dumpCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&", "which mysqldump"}, " ")
+	logrus.Infof("Run command: %s", dumpCmd)
+	_, err := c.Run(dumpCmd)
+	if err != nil {
+		logrus.Info("mysqldump not available")
+		return err
+	}
+	logrus.Info("mysqldump available")
 	return nil
 }
 
