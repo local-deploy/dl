@@ -12,19 +12,17 @@ import (
 	"github.com/docker/compose/v2/pkg/progress"
 	"github.com/sirupsen/logrus"
 	"github.com/varrcan/dl/helper"
+	"github.com/varrcan/dl/utils/client"
 )
-
-type dbSettings struct {
-	Host, DataBase, Login, Password, Port string
-	ExcludedTables                        []string
-}
 
 var remotePhpPath string
 
 // DumpDb Database import from server
-func (c SshClient) DumpDb(ctx context.Context) {
+func DumpDb(ctx context.Context, client *client.Client) {
 	var db *dbSettings
 	var err error
+
+	c := &sshClient{client}
 
 	w := progress.ContextWriter(ctx)
 	w.Event(progress.Event{ID: "Database", Status: progress.Working})
@@ -48,7 +46,7 @@ func (c SshClient) DumpDb(ctx context.Context) {
 		c.checkPhpAvailable()
 
 		logrus.Info("Attempt to access database")
-		switch c.Server.FwType {
+		switch c.Config.FwType {
 		case "bitrix":
 			db, err = c.accessBitrixDb()
 		case "laravel":
@@ -85,9 +83,9 @@ func (c SshClient) DumpDb(ctx context.Context) {
 }
 
 // checkPhpAvailable It possible that PHP not installed on the server in the host system. For example, through docker.
-func (c SshClient) checkPhpAvailable() {
+func (c sshClient) checkPhpAvailable() {
 	logrus.Info("Check if PHP available")
-	phpCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&", "which php"}, " ")
+	phpCmd := strings.Join([]string{"cd", c.Config.Catalog, "&&", "which php"}, " ")
 	logrus.Infof("Run command: %s", phpCmd)
 	binary, err := c.Run(phpCmd)
 	if err == nil {
@@ -99,11 +97,11 @@ func (c SshClient) checkPhpAvailable() {
 }
 
 // accessBitrixDb Attempt to determine database accesses
-func (c SshClient) accessBitrixDb() (*dbSettings, error) {
+func (c sshClient) accessBitrixDb() (*dbSettings, error) {
 	var catCmd string
 	if len(remotePhpPath) > 0 {
 		// A more precise way to define variables
-		catCmd = strings.Join([]string{"cd", c.Server.Catalog, "&&",
+		catCmd = strings.Join([]string{"cd", c.Config.Catalog, "&&",
 			`$(which php) -r '$settings = include "bitrix/.settings.php"; echo $settings["connections"]["value"]["default"]["host"]."\n";
 echo $settings["connections"]["value"]["default"]["database"]."\n";
 echo $settings["connections"]["value"]["default"]["login"]."\n";
@@ -111,7 +109,7 @@ echo $settings["connections"]["value"]["default"]["password"]."\n";'`,
 		}, " ")
 	} else {
 		// Defining variables with grep
-		catCmd = strings.Join([]string{"cd", c.Server.Catalog, "&&",
+		catCmd = strings.Join([]string{"cd", c.Config.Catalog, "&&",
 			`cat bitrix/.settings.php | grep "'host' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`, "&&",
 			`cat bitrix/.settings.php | grep "'database' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`, "&&",
 			`cat bitrix/.settings.php | grep "'login' =>" | awk '{print $3}' | sed -e 's/^.\{1\}//' | sed 's/^\(.*\).$/\1/' | sed 's/^\(.*\).$/\1/'`, "&&",
@@ -143,8 +141,8 @@ echo $settings["connections"]["value"]["default"]["password"]."\n";'`,
 }
 
 // accessWpDb Attempt to determine database accesses
-func (c SshClient) accessWpDb() (*dbSettings, error) {
-	catCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&",
+func (c sshClient) accessWpDb() (*dbSettings, error) {
+	catCmd := strings.Join([]string{"cd", c.Config.Catalog, "&&",
 		`$(which php) -r 'error_reporting(0); define("SHORTINIT",true); $settings = include "wp-config.php"; echo DB_HOST."\n"; echo DB_NAME."\n"; echo DB_USER."\n"; echo DB_PASSWORD."\n";'`,
 	}, " ")
 	logrus.Infof("Run command: %s", catCmd)
@@ -170,8 +168,8 @@ func (c SshClient) accessWpDb() (*dbSettings, error) {
 	}, err
 }
 
-func (c SshClient) accessLaravelDb() (*dbSettings, error) {
-	catCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&", "export $(grep -v '^#' .env | xargs)", "&&",
+func (c sshClient) accessLaravelDb() (*dbSettings, error) {
+	catCmd := strings.Join([]string{"cd", c.Config.Catalog, "&&", "export $(grep -v '^#' .env | xargs)", "&&",
 		`echo $DB_HOST`, "&&",
 		`echo $DB_DATABASE`, "&&",
 		`echo $DB_USERNAME`, "&&",
@@ -198,7 +196,7 @@ func (c SshClient) accessLaravelDb() (*dbSettings, error) {
 }
 
 // mysqlDump Create database dump
-func (c SshClient) mysqlDump(ctx context.Context, db *dbSettings) error {
+func (c sshClient) mysqlDump(ctx context.Context, db *dbSettings) error {
 	w := progress.ContextWriter(ctx)
 	w.Event(progress.Event{ID: "Create database dump", ParentID: "Database", Status: progress.Working})
 
@@ -214,7 +212,7 @@ func (c SshClient) mysqlDump(ctx context.Context, db *dbSettings) error {
 	}
 
 	ignoredTablesString := db.formatIgnoredTables()
-	dumpCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&",
+	dumpCmd := strings.Join([]string{"cd", c.Config.Catalog, "&&",
 		"mysqldump",
 		"--host=" + db.Host,
 		"--port=" + port,
@@ -226,7 +224,7 @@ func (c SshClient) mysqlDump(ctx context.Context, db *dbSettings) error {
 		"--no-tablespaces",
 		db.DataBase,
 		"|",
-		"gzip > " + c.Server.Catalog + "/production.sql.gz",
+		"gzip > " + c.Config.Catalog + "/production.sql.gz",
 		"&&",
 		"mysqldump",
 		"--host=" + db.Host,
@@ -241,7 +239,7 @@ func (c SshClient) mysqlDump(ctx context.Context, db *dbSettings) error {
 		ignoredTablesString,
 		db.DataBase,
 		"|",
-		"gzip >> " + c.Server.Catalog + "/production.sql.gz",
+		"gzip >> " + c.Config.Catalog + "/production.sql.gz",
 	}, " ")
 	logrus.Infof("Run command: %s", dumpCmd)
 	_, err := c.Run(dumpCmd)
@@ -255,9 +253,9 @@ func (c SshClient) mysqlDump(ctx context.Context, db *dbSettings) error {
 	return nil
 }
 
-func (c SshClient) checkMySqlDumpAvailable() error {
+func (c sshClient) checkMySqlDumpAvailable() error {
 	logrus.Info("Check if mysqldump available")
-	dumpCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&", "which mysqldump"}, " ")
+	dumpCmd := strings.Join([]string{"cd", c.Config.Catalog, "&&", "which mysqldump"}, " ")
 	logrus.Infof("Run command: %s", dumpCmd)
 	_, err := c.Run(dumpCmd)
 	if err != nil {
@@ -284,23 +282,23 @@ func (d dbSettings) formatIgnoredTables() string {
 }
 
 // downloadDump Downloading a dump and deleting an archive from the server
-func (c SshClient) downloadDump(ctx context.Context) error {
+func (c sshClient) downloadDump(ctx context.Context) error {
 	w := progress.ContextWriter(ctx)
 
 	w.Event(progress.Event{ID: "Download database dump", ParentID: "Database", Status: progress.Working})
 
-	serverPath := filepath.Join(c.Server.Catalog, "production.sql.gz")
+	serverPath := filepath.Join(c.Config.Catalog, "production.sql.gz")
 	localPath := filepath.Join(Env.GetString("PWD"), "production.sql.gz")
 
 	logrus.Infof("Download dump: %s", serverPath)
-	err := c.download(ctx, serverPath, localPath)
+	err := c.Download(ctx, serverPath, localPath)
 
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Download error", fmt.Sprint(err)))
 		return err
 	}
 
-	err = c.cleanRemote(serverPath)
+	err = c.CleanRemote(serverPath)
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("File deletion error", fmt.Sprint(err)))
 		return err
@@ -312,7 +310,7 @@ func (c SshClient) downloadDump(ctx context.Context) error {
 }
 
 // importDb Importing a database into a local container
-func (c SshClient) importDb(ctx context.Context) {
+func (c sshClient) importDb(ctx context.Context) {
 	var err error
 
 	w := progress.ContextWriter(ctx)
@@ -348,7 +346,7 @@ func (c SshClient) importDb(ctx context.Context) {
 		return
 	}
 
-	if c.Server.FwType == "bitrix" {
+	if c.Config.FwType == "bitrix" {
 		local := Env.GetString("LOCAL_DOMAIN")
 		nip := Env.GetString("NIP_DOMAIN")
 

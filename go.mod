@@ -8,7 +8,6 @@ require (
 	github.com/docker/docker v20.10.18+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/google/go-github/v41 v41.0.0
-	github.com/melbahja/goph v1.3.0
 	github.com/pkg/sftp v1.13.5
 	github.com/pterm/pterm v0.12.46
 	github.com/sirupsen/logrus v1.9.0

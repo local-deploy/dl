@@ -12,24 +12,24 @@ import (
 	"github.com/docker/compose/v2/pkg/progress"
 	"github.com/sirupsen/logrus"
 	"github.com/varrcan/dl/helper"
+	"github.com/varrcan/dl/utils/client"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
 
-type callMethod struct{}
-
 // CopyFiles Copying files from the server
-func (c SshClient) CopyFiles(ctx context.Context, override []string) {
+func CopyFiles(ctx context.Context, client *client.Client, override []string) {
 	var (
 		err  error
 		path string
 	)
 
-	w := progress.ContextWriter(ctx)
+	c := &sshClient{client}
 
+	w := progress.ContextWriter(ctx)
 	w.Event(progress.Event{ID: "Files", Status: progress.Working})
 
-	switch c.Server.FwType {
+	switch client.Config.FwType {
 	case "bitrix":
 		path = "bitrix"
 	case "wordpress":
@@ -65,20 +65,20 @@ func (c SshClient) CopyFiles(ctx context.Context, override []string) {
 	var a callMethod
 	reflect.
 		ValueOf(&a).
-		MethodByName(cases.Title(language.Und, cases.NoLower).String(c.Server.FwType + "Access")).
+		MethodByName(cases.Title(language.Und, cases.NoLower).String(client.Config.FwType + "Access")).
 		Call([]reflect.Value{})
 
 	w.Event(progress.Event{ID: "Files", Status: progress.Done})
 }
 
 // packFiles Add files to archive
-func (c SshClient) packFiles(ctx context.Context, path string) error {
+func (c sshClient) packFiles(ctx context.Context, path string) error {
 	w := progress.ContextWriter(ctx)
 
 	w.Event(progress.Event{ID: "Archive files", ParentID: "Files", Status: progress.Working})
 
 	excludeTarString := formatIgnoredPath()
-	tarCmd := strings.Join([]string{"cd", c.Server.Catalog, "&&",
+	tarCmd := strings.Join([]string{"cd", c.Config.Catalog, "&&",
 		"tar",
 		"--dereference",
 		"-zcf",
@@ -116,23 +116,23 @@ func formatIgnoredPath() string {
 	return strings.Join(ignoredPath, " ")
 }
 
-func (c SshClient) downloadArchive(ctx context.Context) error {
+func (c sshClient) downloadArchive(ctx context.Context) error {
 	w := progress.ContextWriter(ctx)
 
-	serverPath := filepath.Join(c.Server.Catalog, "production.tar.gz")
+	serverPath := filepath.Join(c.Config.Catalog, "production.tar.gz")
 	localPath := filepath.Join(Env.GetString("PWD"), "production.tar.gz")
 
 	w.Event(progress.Event{ID: "Download archive", ParentID: "Files", Status: progress.Working})
 
 	logrus.Infof("Download archive: %s", serverPath)
-	err := c.download(ctx, serverPath, localPath)
+	err := c.Download(ctx, serverPath, localPath)
 
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Download error", fmt.Sprint(err)))
 		return err
 	}
 
-	err = c.cleanRemote(serverPath)
+	err = c.CleanRemote(serverPath)
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("File deletion error", fmt.Sprint(err)))
 		return err
