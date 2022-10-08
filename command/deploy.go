@@ -12,12 +12,13 @@ import (
 	"github.com/docker/compose/v2/pkg/progress"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/client"
+	dockerClient "github.com/docker/docker/client"
 	"github.com/pterm/pterm"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/helper"
 	"github.com/varrcan/dl/project"
+	"github.com/varrcan/dl/utils/client"
 )
 
 var (
@@ -25,7 +26,7 @@ var (
 	files         bool
 	override      []string
 	pullWaitGroup sync.WaitGroup
-	sshClient     *project.SshClient
+	sshClient     *client.Client
 )
 
 func deployCommand() *cobra.Command {
@@ -69,7 +70,7 @@ func deployRun() error {
 
 // showProjectInfo Display specific FW info
 func showSpecificInfo() {
-	if sshClient.Server.FwType == "wordpress" {
+	if sshClient.Config.FwType == "wordpress" {
 		n := project.Env.GetString("NIP_DOMAIN")
 		pterm.Println()
 		pterm.FgYellow.Println("Please specify the domain in the wp-config.php file:")
@@ -91,14 +92,14 @@ func deployService(ctx context.Context) error {
 	}
 
 	// Defer closing the network connection.
-	defer func(client *project.SshClient) {
+	defer func(client *client.Client) {
 		err = client.Close()
 		if err != nil {
 			return
 		}
 	}(sshClient)
 
-	sshClient.Server.FwType, err = detectFw()
+	sshClient.Config.FwType, err = detectFw()
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Detect FW", fmt.Sprint(err)))
 		return err
@@ -111,7 +112,7 @@ func deployService(ctx context.Context) error {
 
 	if files {
 		pullWaitGroup.Add(1)
-		go startFiles(ctx)
+		go startFiles(ctx, sshClient)
 	}
 
 	if database {
@@ -121,7 +122,7 @@ func deployService(ctx context.Context) error {
 			os.Exit(1)
 		}
 		pullWaitGroup.Add(1)
-		go startDump(ctx)
+		go startDump(ctx, sshClient)
 	}
 
 	pullWaitGroup.Wait()
@@ -129,8 +130,8 @@ func deployService(ctx context.Context) error {
 	return err
 }
 
-func getClient() (c *project.SshClient, err error) {
-	server := &project.Server{
+func getClient() (c *client.Client, err error) {
+	server := &client.Config{
 		Addr:             project.Env.GetString("SERVER"),
 		Key:              project.Env.GetString("SSH_KEY"),
 		UseKeyPassphrase: project.Env.GetBool("ASK_KEY_PASSPHRASE"),
@@ -140,22 +141,22 @@ func getClient() (c *project.SshClient, err error) {
 		Catalog:          project.Env.GetString("CATALOG_SRV"),
 	}
 	logrus.Infof("SSH client connect %v", fmt.Sprint(server))
-	c, err = project.NewClient(server)
+	c, err = client.NewClient(server)
 	return
 }
 
-func startFiles(ctx context.Context) {
+func startFiles(ctx context.Context, c *client.Client) {
 	defer pullWaitGroup.Done()
-	sshClient.CopyFiles(ctx, override)
+	project.CopyFiles(ctx, c, override)
 }
 
-func startDump(ctx context.Context) {
+func startDump(ctx context.Context, c *client.Client) {
 	defer pullWaitGroup.Done()
-	sshClient.DumpDb(ctx)
+	project.DumpDb(ctx, c)
 }
 
 func detectFw() (string, error) {
-	ls := strings.Join([]string{"cd", sshClient.Server.Catalog, "&&", "ls"}, " ")
+	ls := strings.Join([]string{"cd", sshClient.Config.Catalog, "&&", "ls"}, " ")
 	out, err := sshClient.Run(ls)
 	if err != nil {
 		return "", err
@@ -187,7 +188,7 @@ func upDbContainer() error {
 
 	w.Event(progress.StartingEvent("Starting db container"))
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithAPIVersionNegotiation())
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Failed to connect to socket", fmt.Sprint(err)))
 		return nil
