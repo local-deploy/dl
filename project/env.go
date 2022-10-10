@@ -94,14 +94,6 @@ func setDefaultEnv() {
 func setComposeFiles() {
 	var files []string
 	confDir, _ := helper.ConfigDir()
-	phpVersion := Env.GetString("PHP_VERSION")
-
-	if len(phpVersion) == 0 {
-		pterm.FgRed.Printfln("The PHP_VERSION variable is not defined! Please initialize .env file.")
-		os.Exit(1)
-	}
-
-	Env.SetDefault("PHP_IMAGE_VERSION", phpImagesVersion[phpVersion])
 
 	images := map[string]string{
 		"mysql":     confDir + "/config-files/docker-compose-mysql.yaml",
@@ -111,9 +103,13 @@ func setComposeFiles() {
 		"memcached": confDir + "/config-files/docker-compose-memcached.yaml",
 	}
 
-	for imageType, imageComposeFile := range images {
-		if strings.Contains(phpVersion, imageType) {
-			files = append(files, imageComposeFile)
+	phpVersion := Env.GetString("PHP_VERSION")
+	if len(phpVersion) > 0 {
+		Env.SetDefault("PHP_IMAGE_VERSION", phpImagesVersion[phpVersion])
+		for imageType, imageComposeFile := range images {
+			if strings.Contains(phpVersion, imageType) {
+				files = append(files, imageComposeFile)
+			}
 		}
 	}
 
