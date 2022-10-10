@@ -14,7 +14,7 @@ server {
     location / {
         root $root_path;
         index index.php index.html;
-        try_files $uri $uri/ /index.php?$args /bitrix/urlrewrite.php?$args;
+        try_files $uri $uri/ /index.php?$args /bitrix/urlrewrite.php?$args /bitrix/routing_index.php?$args;
     }
 
     location ~ \.php$ {
