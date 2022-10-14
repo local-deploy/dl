@@ -61,6 +61,11 @@ func DumpDb(ctx context.Context, client *client.Client) {
 		}
 	}
 
+	if len(db.Port) == 0 {
+		logrus.Info("Port not set, standard port 3306 is used")
+		db.Port = "3306"
+	}
+
 	err = c.mysqlDump(ctx, db)
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Failed to create database dump", fmt.Sprint(err)))
@@ -200,42 +205,23 @@ func (c sshClient) mysqlDump(ctx context.Context, db *dbSettings) error {
 	w := progress.ContextWriter(ctx)
 	w.Event(progress.Event{ID: "Create database dump", ParentID: "Database", Status: progress.Working})
 
-	port := db.Port
-	if len(port) == 0 {
-		logrus.Info("Port not set, standard port 3306 is used")
-		port = "3306"
-	}
-
 	dump := c.checkMySqlDumpAvailable()
 	if dump != nil {
 		return errors.New("mysqldump not installed, database dump not possible")
 	}
 
 	ignoredTablesString := db.formatIgnoredTables()
+	dumpTablesParams := db.dumpTablesParams()
+	dumpDataParams := db.dumpDataParams()
 	dumpCmd := strings.Join([]string{"cd", c.Config.Catalog, "&&",
 		"mysqldump",
-		"--host=" + db.Host,
-		"--port=" + port,
-		"--user=" + db.Login,
-		"--password=" + strconv.Quote(db.Password),
-		"--single-transaction=1",
-		"--lock-tables=false",
-		"--no-data",
-		"--no-tablespaces",
+		dumpTablesParams,
 		db.DataBase,
 		"|",
 		"gzip > " + c.Config.Catalog + "/production.sql.gz",
 		"&&",
 		"mysqldump",
-		"--host=" + db.Host,
-		"--port=" + port,
-		"--user=" + db.Login,
-		"--password=" + strconv.Quote(db.Password),
-		"--single-transaction=1",
-		"--force",
-		"--lock-tables=false",
-		"--no-tablespaces",
-		"--no-create-info",
+		dumpDataParams,
 		ignoredTablesString,
 		db.DataBase,
 		"|",
@@ -264,6 +250,47 @@ func (c sshClient) checkMySqlDumpAvailable() error {
 	}
 	logrus.Info("mysqldump available")
 	return nil
+}
+
+func (d dbSettings) dumpTablesParams() string {
+	params := []string{
+		"--host=" + d.Host,
+		"--port=" + d.Port,
+		"--user=" + d.Login,
+		"--password=" + strconv.Quote(d.Password),
+		"--single-transaction=1",
+		"--lock-tables=false",
+		"--no-data",
+		"--no-tablespaces",
+	}
+
+	mysqlVersion := Env.GetString("MYSQL_VERSION")
+	if mysqlVersion == "8.0" {
+		params = append(params, "--column-statistics=0")
+	}
+
+	return strings.Join(params, " ")
+}
+
+func (d dbSettings) dumpDataParams() string {
+	params := []string{
+		"--host=" + d.Host,
+		"--port=" + d.Port,
+		"--user=" + d.Login,
+		"--password=" + strconv.Quote(d.Password),
+		"--single-transaction=1",
+		"--force",
+		"--lock-tables=false",
+		"--no-tablespaces",
+		"--no-create-info",
+	}
+
+	mysqlVersion := Env.GetString("MYSQL_VERSION")
+	if mysqlVersion == "8.0" {
+		params = append(params, "--column-statistics=0")
+	}
+
+	return strings.Join(params, " ")
 }
 
 // formatIgnoredTables Exclude tables from dump
