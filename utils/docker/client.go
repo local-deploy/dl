@@ -22,10 +22,10 @@ func NewClient() (*Client, error) {
 }
 
 func getContainerProgressName(c types.Container) string {
-	return "Container " + getCanonicalContainerName(c)
+	return "Container " + GetCanonicalContainerName(c)
 }
 
-func getCanonicalContainerName(c types.Container) string {
+func GetCanonicalContainerName(c types.Container) string {
 	if len(c.Names) == 0 {
 		return c.ID[:12]
 	}
