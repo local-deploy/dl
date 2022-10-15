@@ -51,10 +51,10 @@ func downServiceRun(ctx context.Context) error {
 
 	if isNet(cli) && len(source) == 0 {
 		eg.Go(func() error {
-			eventName := fmt.Sprintf("Network %q", localNetworkName)
+			eventName := fmt.Sprintf("Network %q", servicesNetworkName)
 			w.Event(progress.RemovingEvent(eventName))
 
-			netFilters := filters.NewArgs(filters.Arg("name", localNetworkName))
+			netFilters := filters.NewArgs(filters.Arg("name", servicesNetworkName))
 			list, err := cli.NetworkList(ctx, types.NetworkListOptions{Filters: netFilters})
 			err = cli.NetworkRemove(ctx, list[0].ID)
 
