@@ -5,6 +5,7 @@ import (
 	"github.com/docker/docker/client"
 )
 
+// Container contains container data needed to run
 type Container struct {
 	Name       string
 	Image      string
@@ -20,8 +21,10 @@ type Container struct {
 	AddNetwork string
 }
 
+// Containers container array
 type Containers []Container
 
+// Client docker client
 type Client struct {
 	*client.Client
 }

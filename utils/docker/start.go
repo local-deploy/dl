@@ -12,6 +12,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// StartContainers running docker containers
 func (cli *Client) StartContainers(ctx context.Context, containers Containers, restart bool) error {
 	w := progress.ContextWriter(ctx)
 	eg, _ := errgroup.WithContext(ctx)
@@ -99,7 +100,7 @@ func (cli *Client) StartContainers(ctx context.Context, containers Containers, r
 			w.Event(progress.StartedEvent(eventName))
 
 			if len(localContainer.AddNetwork) > 0 {
-				err = cli.AddContainerToNetwork(ctx, resp.ID, localContainer.AddNetwork)
+				err = cli.addContainerToNetwork(ctx, resp.ID, localContainer.AddNetwork)
 			}
 
 			return nil
