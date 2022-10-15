@@ -118,6 +118,14 @@ func getServicesContainer() []docker.Container {
 		},
 	}
 
+	if len(source) > 0 {
+		for _, con := range containers {
+			if con.Name == source {
+				return []docker.Container{con}
+			}
+		}
+	}
+
 	return containers
 }
 

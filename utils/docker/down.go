@@ -17,9 +17,6 @@ func (cli *Client) RemoveContainers(ctx context.Context, containers Containers) 
 
 	containerFilters := filters.NewArgs()
 	for _, container := range containers {
-		// if len(source) > 0 && source != container.Name {
-		// 	continue
-		// }
 		containerFilters.Add("name", container.Name)
 	}
 
