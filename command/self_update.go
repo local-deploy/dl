@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -254,8 +253,8 @@ func copyBin() error {
 		}
 	}
 
-	bytesRead, err := ioutil.ReadFile(tmpBinPath)
-	err = ioutil.WriteFile(binPath, bytesRead, 0775) //nolint:gosec
+	bytesRead, err := os.ReadFile(tmpBinPath)
+	err = os.WriteFile(binPath, bytesRead, 0775) //nolint:gosec
 	if err != nil {
 		return err
 	}
@@ -306,11 +305,11 @@ func copyConfigFiles() error {
 		if info.IsDir() {
 			return os.Mkdir(filepath.Join(configFilesDir, relPath), 0755)
 		} else {
-			var data, err = ioutil.ReadFile(filepath.Join(tmpConfigFiles, relPath))
+			var data, err = os.ReadFile(filepath.Join(tmpConfigFiles, relPath))
 			if err != nil {
 				return err
 			}
-			return ioutil.WriteFile(filepath.Join(configFilesDir, relPath), data, 0644) //nolint:gosec
+			return os.WriteFile(filepath.Join(configFilesDir, relPath), data, 0644) //nolint:gosec
 		}
 	})
 
