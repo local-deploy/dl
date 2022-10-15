@@ -2,7 +2,6 @@ package command
 
 import (
 	"bufio"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -101,13 +100,13 @@ func copyEnv() bool {
 	}
 
 	dest := filepath.Join(currentDir, ".env")
-	bytesRead, err := ioutil.ReadFile(src)
+	bytesRead, err := os.ReadFile(src)
 	if err != nil {
 		pterm.FgRed.Println(err)
 		return false
 	}
 
-	err = ioutil.WriteFile(dest, bytesRead, 0644) //nolint:gosec
+	err = os.WriteFile(dest, bytesRead, 0644) //nolint:gosec
 	if err != nil {
 		pterm.FgRed.Println(err)
 

@@ -5,24 +5,11 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/integration/network"
 	"github.com/spf13/cobra"
+	"github.com/varrcan/dl/utils/docker"
 )
 
-// localServicesContainer list of container names of the local stack
-type localServicesContainer struct {
-	Name       string
-	Image      string
-	Version    string
-	Cmd        []string
-	Volumes    map[string]struct{}
-	Entrypoint []string
-	Labels     map[string]string
-	Ports      []string
-	Mounts     []mount.Mount
-	Env        []string
-}
-
 var source string
-var localNetworkName = "dl_default"
+var servicesNetworkName = "dl_default"
 
 var serviceCmd = &cobra.Command{
 	Use:       "service",
@@ -42,8 +29,8 @@ func serviceCommand() *cobra.Command {
 }
 
 // getServicesContainer local services containers
-func getServicesContainer() []localServicesContainer {
-	containers := []localServicesContainer{
+func getServicesContainer() []docker.Container {
+	containers := []docker.Container{
 		{
 			Name:    "traefik",
 			Image:   "traefik",
@@ -77,7 +64,8 @@ func getServicesContainer() []localServicesContainer {
 					ReadOnly: true,
 				},
 			},
-			Env: nil,
+			Env:     nil,
+			Network: servicesNetworkName,
 		},
 		{
 			Name:       "mail",
@@ -93,7 +81,8 @@ func getServicesContainer() []localServicesContainer {
 				"traefik.http.routers.mail.rule":                      "Host(`mail.localhost`) || HostRegexp(`mail.{ip:.*}.nip.io`)",
 				"traefik.http.services.mail.loadbalancer.server.port": "8025",
 			},
-			Ports: []string{"0.0.0.0:1025:1025"},
+			Ports:   []string{"0.0.0.0:1025:1025"},
+			Network: servicesNetworkName,
 		},
 		{
 			Name:    "portainer",
@@ -125,20 +114,23 @@ func getServicesContainer() []localServicesContainer {
 					ReadOnly: false,
 				},
 			},
+			Network: servicesNetworkName,
 		},
+	}
+
+	if len(source) > 0 {
+		for _, con := range containers {
+			if con.Name == source {
+				return []docker.Container{con}
+			}
+		}
 	}
 
 	return containers
 }
 
 func isNet(cli client.NetworkAPIClient) bool {
-	net := network.IsNetworkAvailable(cli, localNetworkName)
-
-	return net().Success()
-}
-
-func isNotNet(cli client.NetworkAPIClient) bool {
-	net := network.IsNetworkNotAvailable(cli, localNetworkName)
+	net := network.IsNetworkAvailable(cli, servicesNetworkName)
 
 	return net().Success()
 }

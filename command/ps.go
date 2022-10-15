@@ -4,16 +4,15 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/docker/cli/cli/command/formatter"
 	"github.com/docker/compose/v2/pkg/api"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/client"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/project"
+	"github.com/varrcan/dl/utils/docker"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -57,7 +56,7 @@ func runPs() error {
 	project.LoadEnv()
 	ctx := context.Background()
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, err := docker.NewClient()
 	if err != nil {
 		pterm.Fatal.Printfln("Failed to connect to socket")
 		return err
@@ -87,7 +86,7 @@ func runPs() error {
 	return err
 }
 
-func getProjectContainers(ctx context.Context, cli *client.Client, projectName string) ([]containerSummary, error) {
+func getProjectContainers(ctx context.Context, cli *docker.Client, projectName string) ([]containerSummary, error) {
 	containerFilter := filters.NewArgs(filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, projectName)))
 	containers, _ := cli.ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter, All: true})
 
@@ -141,7 +140,7 @@ func getProjectContainers(ctx context.Context, cli *client.Client, projectName s
 
 			summary[i] = containerSummary{
 				ID:         container.ID,
-				Name:       getCanonicalContainerName(container),
+				Name:       docker.GetCanonicalContainerName(container),
 				State:      container.State,
 				Health:     health,
 				ExitCode:   exitCode,
@@ -152,18 +151,6 @@ func getProjectContainers(ctx context.Context, cli *client.Client, projectName s
 		})
 	}
 	return summary, eg.Wait()
-}
-
-func getCanonicalContainerName(c types.Container) string {
-	if len(c.Names) == 0 {
-		return c.ID[:12]
-	}
-	for _, name := range c.Names {
-		if strings.LastIndex(name, "/") == 0 {
-			return name[1:]
-		}
-	}
-	return c.Names[0][1:]
 }
 
 func displayablePorts(c containerSummary) string {

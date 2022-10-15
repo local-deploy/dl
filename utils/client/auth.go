@@ -2,7 +2,6 @@ package client
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 
@@ -55,7 +54,7 @@ func GetSigner(prvFile string, passphrase string) (ssh.Signer, error) {
 		signer ssh.Signer
 	)
 
-	privateKey, err := ioutil.ReadFile(prvFile)
+	privateKey, err := os.ReadFile(prvFile)
 	if err != nil {
 		return nil, err
 	} else if passphrase != "" {
