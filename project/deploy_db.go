@@ -338,10 +338,7 @@ func (c sshClient) downloadDump(ctx context.Context) error {
 
 // importDb Importing a database into a local container
 func (c sshClient) importDb(ctx context.Context) {
-	var err error
-
 	w := progress.ContextWriter(ctx)
-
 	w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Working})
 
 	docker, err := exec.LookPath("docker")
@@ -365,12 +362,11 @@ func (c sshClient) importDb(ctx context.Context) {
 	mysqlPassword := Env.GetString("MYSQL_PASSWORD")
 	mysqlRootPassword := Env.GetString("MYSQL_ROOT_PASSWORD")
 
-	commandImport := gunzip + " < " + localPath + " | " + docker + " exec -i " + siteDB + " /usr/bin/mysql --user=root --password=" + mysqlRootPassword + " " + mysqlDB + ""
+	commandImport := gunzip + " < " + "production.sql.gz" + " | " + docker + " exec -i " + siteDB + " /usr/bin/mysql --user=root --password=" + mysqlRootPassword + " " + mysqlDB + ""
 	logrus.Infof("Run command: %s", commandImport)
 	outImport, err := exec.Command("bash", "-c", commandImport).CombinedOutput() //nolint:gosec
 	if err != nil {
 		w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Error, Text: string(outImport)})
-		return
 	}
 
 	if c.Config.FwType == "bitrix" {

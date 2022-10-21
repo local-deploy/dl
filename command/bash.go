@@ -47,6 +47,7 @@ func runBash() {
 	}
 
 	// TODO: rewrite to api
+	// github.com/docker/cli@v20.10.18+incompatible/cli/command/container/exec.go
 	cmdCompose := &exec.Cmd{
 		Path:   bash,
 		Args:   []string{bash, "-c", docker + " exec -it " + root + container + " /bin/bash"},
