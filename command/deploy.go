@@ -5,20 +5,17 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 	"sync"
 
 	"github.com/docker/compose/v2/pkg/progress"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/filters"
-	dockerClient "github.com/docker/docker/client"
 	"github.com/pterm/pterm"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/varrcan/dl/helper"
 	"github.com/varrcan/dl/project"
 	"github.com/varrcan/dl/utils/client"
+	"github.com/varrcan/dl/utils/docker"
+	"github.com/varrcan/dl/utils/teleport"
 )
 
 var (
@@ -85,6 +82,12 @@ func deployService(ctx context.Context) error {
 
 	var err error
 
+	if len(project.Env.GetString("TELEPORT")) > 0 {
+		sshClient = &client.Client{Config: &client.Config{FwType: "bitrix"}}
+		fmt.Println("Deploy using Teleport")
+		return teleport.DeployTeleport(ctx, database, files, override)
+	}
+
 	sshClient, err = getClient()
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Failed to connect", fmt.Sprint(err)))
@@ -116,7 +119,7 @@ func deployService(ctx context.Context) error {
 	}
 
 	if database {
-		err = upDbContainer()
+		err = docker.UpDbContainer()
 		if err != nil {
 			w.Event(progress.ErrorMessageEvent("Import failed", fmt.Sprint(err)))
 			os.Exit(1)
@@ -179,54 +182,4 @@ func detectFw() (string, error) {
 	}
 
 	return "", errors.New("failed determine the Framework, please specify accesses manually https://clck.ru/uAGwX")
-}
-
-// upDbContainer Run db container before dump
-func upDbContainer() error {
-	ctx := context.Background()
-	w := progress.ContextWriter(ctx)
-
-	w.Event(progress.StartingEvent("Starting db container"))
-
-	cli, err := dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithAPIVersionNegotiation())
-	if err != nil {
-		w.Event(progress.ErrorMessageEvent("Failed to connect to socket", fmt.Sprint(err)))
-		return nil
-	}
-
-	site := project.Env.GetString("HOST_NAME")
-	var siteDb = site + "_db"
-	containerFilter := filters.NewArgs(filters.Arg("name", siteDb))
-	containerExists, err := cli.ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter})
-
-	if len(containerExists) == 0 {
-		logrus.Info("db container not running")
-		bin, option := helper.GetCompose()
-		Args := []string{bin}
-		preArgs := []string{"-p", project.Env.GetString("NETWORK_NAME"), "up", "-d", "db"}
-
-		if len(option) > 0 {
-			Args = append(Args, option)
-		}
-
-		Args = append(Args, preArgs...)
-
-		logrus.Infof("Run command: %s, args: %s", bin, Args)
-		cmdCompose := &exec.Cmd{
-			Path: bin,
-			Dir:  project.Env.GetString("PWD"),
-			Args: Args,
-			Env:  project.CmdEnv(),
-		}
-
-		err = cmdCompose.Run()
-		if err != nil {
-			return err
-		}
-
-		w.Event(progress.StartedEvent("Starting db container"))
-
-		return nil
-	}
-	return nil
 }

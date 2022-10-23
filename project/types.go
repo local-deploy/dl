@@ -2,13 +2,16 @@ package project
 
 import "github.com/varrcan/dl/utils/client"
 
-type callMethod struct{}
+// CallMethod to dynamically determine the function name
+type CallMethod struct{}
 
-type sshClient struct {
+// SshClient client ssh
+type SshClient struct {
 	*client.Client
 }
 
-type dbSettings struct {
+// DbSettings database settings
+type DbSettings struct {
 	Host, DataBase, Login, Password, Port string
 	ExcludedTables                        []string
 }

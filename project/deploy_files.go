@@ -24,7 +24,7 @@ func CopyFiles(ctx context.Context, client *client.Client, override []string) {
 		path string
 	)
 
-	c := &sshClient{client}
+	c := &SshClient{client}
 
 	w := progress.ContextWriter(ctx)
 	w.Event(progress.Event{ID: "Files", Status: progress.Working})
@@ -56,13 +56,13 @@ func CopyFiles(ctx context.Context, client *client.Client, override []string) {
 		return
 	}
 
-	err = extractArchive(ctx, path)
+	err = ExtractArchive(ctx, path)
 	if err != nil {
 		w.Event(progress.Event{ID: "Files", Status: progress.Error})
 		return
 	}
 
-	var a callMethod
+	var a CallMethod
 	reflect.
 		ValueOf(&a).
 		MethodByName(cases.Title(language.Und, cases.NoLower).String(client.Config.FwType + "Access")).
@@ -72,12 +72,12 @@ func CopyFiles(ctx context.Context, client *client.Client, override []string) {
 }
 
 // packFiles Add files to archive
-func (c sshClient) packFiles(ctx context.Context, path string) error {
+func (c SshClient) packFiles(ctx context.Context, path string) error {
 	w := progress.ContextWriter(ctx)
 
 	w.Event(progress.Event{ID: "Archive files", ParentID: "Files", Status: progress.Working})
 
-	excludeTarString := formatIgnoredPath()
+	excludeTarString := FormatIgnoredPath()
 	tarCmd := strings.Join([]string{"cd", c.Config.Catalog, "&&",
 		"tar",
 		"--dereference",
@@ -98,8 +98,8 @@ func (c sshClient) packFiles(ctx context.Context, path string) error {
 	return nil
 }
 
-// formatIgnoredPath Exclude path from tar
-func formatIgnoredPath() string {
+// FormatIgnoredPath Exclude path from tar
+func FormatIgnoredPath() string {
 	var ignoredPath []string
 
 	excluded := Env.GetString("EXCLUDED_FILES")
@@ -116,7 +116,7 @@ func formatIgnoredPath() string {
 	return strings.Join(ignoredPath, " ")
 }
 
-func (c sshClient) downloadArchive(ctx context.Context) error {
+func (c SshClient) downloadArchive(ctx context.Context) error {
 	w := progress.ContextWriter(ctx)
 
 	serverPath := filepath.Join(c.Config.Catalog, "production.tar.gz")
@@ -132,6 +132,7 @@ func (c sshClient) downloadArchive(ctx context.Context) error {
 		return err
 	}
 
+	logrus.Infof("Delete archive: %s", serverPath)
 	err = c.CleanRemote(serverPath)
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("File deletion error", fmt.Sprint(err)))
@@ -143,7 +144,8 @@ func (c sshClient) downloadArchive(ctx context.Context) error {
 	return err
 }
 
-func extractArchive(ctx context.Context, path string) error {
+// ExtractArchive unzip the archive
+func ExtractArchive(ctx context.Context, path string) error {
 	var err error
 	w := progress.ContextWriter(ctx)
 
@@ -182,7 +184,7 @@ func extractArchive(ctx context.Context, path string) error {
 }
 
 // BitrixAccess Change bitrix database accesses
-func (a *callMethod) BitrixAccess() {
+func (a *CallMethod) BitrixAccess() {
 	localPath := Env.GetString("PWD")
 	settingsFile := filepath.Join(localPath, "bitrix", ".settings.php")
 	dbconnFile := filepath.Join(localPath, "bitrix", "php_interface", "dbconn.php")
@@ -192,11 +194,11 @@ func (a *callMethod) BitrixAccess() {
 	mysqlPassword := Env.GetString("MYSQL_PASSWORD")
 
 	logrus.Infof("Replacing accesses in: %s", settingsFile)
-	err := exec.Command("sed", "-i", "-e", `/'debug' => /c 'debug' => true,`,
-		"-e", `/'host' => /c 'host' => 'db',`,
-		"-e", `/'database' => /c 'database' => '`+mysqlDB+`',`,
-		"-e", `/'login' => /c 'login' => '`+mysqlUser+`',`,
-		"-e", `/'password' => /c 'password' => '`+mysqlPassword+`',`,
+	err := exec.Command("sed", "-i", "-e", `/'debug' *\=> /c 'debug' => true,`,
+		"-e", `/'host' *\=> /c 'host' => 'db',`,
+		"-e", `/'database' *\=> /c 'database' => '`+mysqlDB+`',`,
+		"-e", `/'login' *\=> /c 'login' => '`+mysqlUser+`',`,
+		"-e", `/'password' *\=> /c 'password' => '`+mysqlPassword+`',`,
 		settingsFile).Run()
 	if err != nil {
 		fmt.Println(err)
@@ -215,7 +217,7 @@ func (a *callMethod) BitrixAccess() {
 }
 
 // WordpressAccess Change WordPress database accesses
-func (a *callMethod) WordpressAccess() {
+func (a *CallMethod) WordpressAccess() {
 	var err error
 	localPath := Env.GetString("PWD")
 	settingsFile := filepath.Join(localPath, "wp-config.php")
