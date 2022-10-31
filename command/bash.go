@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -16,9 +17,12 @@ func bashCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "bash",
 		Short: "Login to PHP container",
-		Long:  `Login to PHP container as www-data or root user and start bash shell.`,
+		Long: `Login to PHP container as www-data or root user and start bash shell.
+As the second parameter, you can specify the name or ID of another docker container.
+Default is always the PHP container.`,
+		Example: "dl bash\ndl bash -r\ndl bash site.com_db\ndl bash fcb13f1a3ea7",
 		Run: func(cmd *cobra.Command, args []string) {
-			runBash()
+			runBash(args)
 		},
 		ValidArgs: []string{"--root"},
 	}
@@ -26,37 +30,47 @@ func bashCommand() *cobra.Command {
 	return cmd
 }
 
-func runBash() {
+func runBash(args []string) {
 	project.LoadEnv()
 
-	bash, lookErr := exec.LookPath("bash")
-	docker, lookErr := exec.LookPath("docker")
-	if lookErr != nil {
-		fmt.Println(lookErr)
+	bash, err := exec.LookPath("bash")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	docker, err := exec.LookPath("docker")
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
 
-	site := project.Env.GetString("HOST_NAME")
-	container := site + "_php"
-	logrus.Infof("Use container name %s", container)
+	var command []string
 
-	var root string
 	if bashRoot {
 		logrus.Info("Login as root user")
-		root = "--user root "
+		command = append(command, "--user root")
 	}
 
-	// TODO: rewrite to api
-	// github.com/docker/cli@v20.10.18+incompatible/cli/command/container/exec.go
+	if len(args) > 0 {
+		command = append(command, args[0])
+		logrus.Infof("Use container name %s", args[0])
+	} else {
+		command = append(command, "-w /var/www/html")
+
+		site := project.Env.GetString("HOST_NAME")
+		command = append(command, site+"_php")
+		logrus.Infof("Use container name %s", site+"_php")
+	}
+
 	cmdCompose := &exec.Cmd{
 		Path:   bash,
-		Args:   []string{bash, "-c", docker + " exec -it " + root + container + " /bin/bash"},
+		Args:   []string{bash, "-c", docker + " exec -it " + strings.Join(command, " ") + " /bin/bash"},
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 		Stdin:  os.Stdin,
 	}
 
-	err := cmdCompose.Run()
+	err = cmdCompose.Run()
 	if err != nil {
 		logrus.Error(err)
 	}
