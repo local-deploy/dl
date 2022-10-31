@@ -45,6 +45,7 @@ func Execute() {
 		envCommand(),
 		psCommand(),
 		bashCommand(),
+		execCommand(),
 		completionCommand(),
 		configCommand(),
 		deployCommand(),
