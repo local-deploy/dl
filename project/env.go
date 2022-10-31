@@ -31,16 +31,20 @@ var phpImagesVersion = map[string]string{
 // LoadEnv Get variables from .env file
 func LoadEnv() {
 	logrus.Info("Loading ENV variables")
-	Env = viper.New()
 
+	_, err := os.Stat(".env")
+	if err != nil {
+		pterm.FgRed.Println("Environment file not found. Please run the command: dl env")
+		os.Exit(1)
+	}
+
+	Env = viper.New()
 	Env.AddConfigPath("./")
 	Env.SetConfigFile(".env")
 	Env.SetConfigType("env")
-	err := Env.ReadInConfig()
+	err = Env.ReadInConfig()
 	if err != nil {
-		pterm.FgRed.Printfln(".env file not found. Please run the command: dl env")
-		// TODO: add env file read error
-		logrus.Infoln(err)
+		pterm.FgRed.Println(err)
 		os.Exit(1)
 	}
 
