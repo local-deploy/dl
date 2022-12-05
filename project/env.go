@@ -72,8 +72,12 @@ func setDefaultEnv() {
 	Env.SetDefault("NETWORK_NAME", res)
 
 	confDir, _ := helper.ConfigDir()
-	configNginxFile := filepath.Join(confDir, "config-files", "default.conf.template")
-	Env.SetDefault("NGINX_CONF", configNginxFile)
+	Env.SetDefault("NGINX_CONF", filepath.Join(confDir, "config-files", "default.conf.template"))
+
+	customConfig := Env.GetString("NGINX_CONF")
+	if len(customConfig) > 0 {
+		Env.Set("NGINX_CONF", getNginxConf())
+	}
 
 	Env.SetDefault("REDIS", false)
 	Env.SetDefault("REDIS_PASSWORD", "pass")
@@ -135,6 +139,23 @@ func setComposeFiles() {
 
 	containers := strings.Join(files, ":")
 	Env.SetDefault("COMPOSE_FILE", containers)
+}
+
+func getNginxConf() string {
+	var configNginxFile string
+
+	customConfig := Env.GetString("NGINX_CONF")
+	dir, _ := os.Getwd()
+
+	if filepath.IsAbs(customConfig) {
+		configNginxFile = customConfig
+	} else {
+		configNginxFile = filepath.Join(dir, customConfig)
+	}
+
+	fmt.Println(configNginxFile)
+
+	return configNginxFile
 }
 
 // CmdEnv Getting variables in the "key=value" format
