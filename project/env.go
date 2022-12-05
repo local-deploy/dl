@@ -153,8 +153,6 @@ func getNginxConf() string {
 		configNginxFile = filepath.Join(dir, customConfig)
 	}
 
-	fmt.Println(configNginxFile)
-
 	return configNginxFile
 }
 
