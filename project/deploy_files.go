@@ -160,6 +160,14 @@ func ExtractArchive(ctx context.Context, path string) error {
 	archive := filepath.Join(localPath, "production.tar.gz")
 	logrus.Infof("Extract archive local path: %s", archive)
 
+	_, err = os.Stat(destinationPath)
+	if err != nil {
+		if err := os.MkdirAll(destinationPath, 0o775); err != nil {
+			w.Event(progress.ErrorMessageEvent("Extract archive", fmt.Sprint(err)))
+			return err
+		}
+	}
+
 	// TODO: rewrite to Go
 	outTar, err := exec.Command("tar", "-xzf", archive, "-C", destinationPath).CombinedOutput()
 	if err != nil {
@@ -177,7 +185,8 @@ func ExtractArchive(ctx context.Context, path string) error {
 	s := strings.Split(path, " ")
 	for _, dir := range s {
 		logrus.Infof("Run chmod 775: %s", dir)
-		err = helper.ChmodR(dir, 0775)
+		chmodDir := filepath.Join(destinationPath, dir)
+		err = helper.ChmodR(chmodDir, 0775)
 		if err != nil {
 			w.Event(progress.ErrorMessageEvent("Extract archive", fmt.Sprint(err)))
 			return err
