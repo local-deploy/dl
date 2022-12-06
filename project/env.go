@@ -20,7 +20,7 @@ var Env *viper.Viper
 var phpImagesVersion = map[string]string{
 	"7.3-apache": "1.1.2",
 	"7.3-fpm":    "1.0.2",
-	"7.4-apache": "1.0.4",
+	"7.4-apache": "1.0.5",
 	"7.4-fpm":    "1.0.2",
 	"8.0-apache": "1.0.4",
 	"8.0-fpm":    "1.0.3",
