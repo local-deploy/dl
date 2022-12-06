@@ -92,11 +92,8 @@ func GetCompose() (string, string) {
 // isComposePlugin check if docker compose installed as a plugin
 func isComposePlugin() bool {
 	_, err := exec.Command("docker", "compose").CombinedOutput()
-	if err != nil {
-		return false
-	}
 
-	return true
+	return err == nil
 }
 
 // CleanSlice delete an empty value in a slice

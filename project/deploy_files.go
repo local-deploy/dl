@@ -152,11 +152,16 @@ func ExtractArchive(ctx context.Context, path string) error {
 	w.Event(progress.Event{ID: "Extract archive", ParentID: "Files", Status: progress.Working})
 
 	localPath := Env.GetString("PWD")
+	backPath := Env.GetString("BACKEND_ROOT")
+	destinationPath := localPath
+	if len(backPath) > 0 {
+		destinationPath = filepath.Join(localPath, backPath)
+	}
 	archive := filepath.Join(localPath, "production.tar.gz")
 	logrus.Infof("Extract archive local path: %s", archive)
 
 	// TODO: rewrite to Go
-	outTar, err := exec.Command("tar", "-xzf", archive, "-C", localPath).CombinedOutput()
+	outTar, err := exec.Command("tar", "-xzf", archive, "-C", destinationPath).CombinedOutput()
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Extract archive", fmt.Sprint(string(outTar))))
 		return err
