@@ -200,8 +200,13 @@ func ExtractArchive(ctx context.Context, path string) error {
 // BitrixAccess Change bitrix database accesses
 func (a *CallMethod) BitrixAccess() {
 	localPath := Env.GetString("PWD")
-	settingsFile := filepath.Join(localPath, "bitrix", ".settings.php")
-	dbconnFile := filepath.Join(localPath, "bitrix", "php_interface", "dbconn.php")
+	backPath := Env.GetString("BACKEND_ROOT")
+	destinationPath := localPath
+	if len(backPath) > 0 {
+		destinationPath = filepath.Join(localPath, backPath)
+	}
+	settingsFile := filepath.Join(destinationPath, "bitrix", ".settings.php")
+	dbconnFile := filepath.Join(destinationPath, "bitrix", "php_interface", "dbconn.php")
 
 	mysqlDB := Env.GetString("MYSQL_DATABASE")
 	mysqlUser := Env.GetString("MYSQL_USER")
