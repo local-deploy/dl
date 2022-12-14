@@ -166,6 +166,15 @@ func CmdEnv() []string {
 		env = append(env, strings.ToUpper(key)+"="+value)
 	}
 
+	// Fix for macOS
+	systemPath, exists := os.LookupEnv("PATH")
+	if exists {
+		env = append(env, "PATH="+systemPath)
+	}
+
+	systemUser, _ := os.LookupEnv("USER")
+	env = append(env, "USER="+systemUser)
+
 	return env
 }
 
