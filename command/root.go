@@ -6,7 +6,6 @@ import (
 	"github.com/docker/compose/v2/pkg/progress"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/varrcan/dl/utils"
 )
 
 var (
@@ -59,9 +58,6 @@ func Execute() {
 	)
 
 	cobra.CheckErr(rootCmd.Execute())
-
-	// check for new version
-	utils.CheckUpdates()
 }
 
 // usageTemplate returns usage template for the command.

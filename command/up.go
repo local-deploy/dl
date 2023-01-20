@@ -18,6 +18,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/varrcan/dl/helper"
 	"github.com/varrcan/dl/project"
+	"github.com/varrcan/dl/utils"
 )
 
 func upCommand() *cobra.Command {
@@ -28,6 +29,8 @@ func upCommand() *cobra.Command {
 Analogue of the "docker-compose up -d" command.`,
 		Run: func(cmd *cobra.Command, args []string) {
 			upRun()
+			// check for new version
+			utils.CheckUpdates()
 		},
 	}
 	return cmd
@@ -35,6 +38,10 @@ Analogue of the "docker-compose up -d" command.`,
 
 func upRun() {
 	project.LoadEnv()
+
+	if !helper.WpdeployCheck() {
+		return
+	}
 
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
