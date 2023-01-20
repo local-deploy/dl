@@ -66,7 +66,7 @@ func selfUpdateRun(ctx context.Context) (string, error) {
 	tmpPath := filepath.Join(os.TempDir(), release.AssetsName)
 
 	w.Event(progress.Event{ID: "Downloading release", ParentID: "Update", Status: progress.Working})
-	err = downloadRelease(tmpPath, release.AssetsUrl)
+	err = downloadRelease(tmpPath, release.AssetsURL)
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Downloading release", fmt.Sprintf("Failed to download release: %s", err)))
 		return "", nil
