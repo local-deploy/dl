@@ -8,6 +8,8 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/volume"
 	"github.com/spf13/cobra"
+	"github.com/varrcan/dl/helper"
+	"github.com/varrcan/dl/utils"
 	"github.com/varrcan/dl/utils/docker"
 )
 
@@ -25,6 +27,9 @@ func upServiceCommand() *cobra.Command {
 				return err
 			}
 
+			// check for new version
+			utils.CheckUpdates()
+
 			return nil
 		},
 		ValidArgs: []string{"--service", "--restart"},
@@ -36,6 +41,10 @@ func upServiceCommand() *cobra.Command {
 
 func upServiceRun(ctx context.Context) error {
 	w := progress.ContextWriter(ctx)
+
+	if !helper.WpdeployCheck() {
+		return nil
+	}
 
 	serviceContainers := getServicesContainer()
 	cli, err := docker.NewClient()

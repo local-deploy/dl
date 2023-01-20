@@ -24,10 +24,6 @@ func main() {
 		return
 	}
 
-	if !helper.WpdeployCheck() {
-		return
-	}
-
 	if !helper.IsConfigFileExists() {
 		firstStart()
 	}
