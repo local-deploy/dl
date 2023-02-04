@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -23,6 +24,7 @@ import (
 )
 
 var noConfig bool
+var tag string
 
 func selfUpdateCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -30,6 +32,7 @@ func selfUpdateCommand() *cobra.Command {
 		Aliases: []string{"upgrade"},
 		Short:   "Update dl",
 		Long:    `Downloading the latest version of the app.`,
+		Example: "dl self-update\ndl self-update -n\ndl self-update --tag 0.5.2",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
 			tag, err := progress.RunWithStatus(ctx, selfUpdateRun)
@@ -45,6 +48,7 @@ func selfUpdateCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().BoolVarP(&noConfig, "no-overwrite", "n", false, "Do not overwrite configuration files")
+	cmd.Flags().StringVarP(&tag, "tag", "t", "", "Download the specified version")
 	return cmd
 }
 
@@ -52,15 +56,31 @@ func selfUpdateRun(ctx context.Context) (string, error) {
 	w := progress.ContextWriter(ctx)
 
 	w.Event(progress.Event{ID: "Update", Status: progress.Working})
-	w.Event(progress.Event{ID: "Getting the latest release", ParentID: "Update", Status: progress.Working})
+	w.Event(progress.Event{ID: "Getting the release", ParentID: "Update", Status: progress.Working})
 
-	release, err := github.GetLatestRelease("local-deploy", "dl")
-	if err != nil {
-		w.Event(progress.ErrorMessageEvent("Getting the latest release", fmt.Sprintf("Failed to get release: %s", err)))
-		return "", nil
+	var release *github.Release
+	var err error
+	if len(tag) > 0 {
+		var rxTag, _ = regexp.MatchString("^\\d.\\d.\\d+$", tag)
+		if !rxTag {
+			w.Event(progress.ErrorMessageEvent("Getting the release", fmt.Sprint("Incorrect release format")))
+			return "", nil
+		}
+
+		release, err = github.GetRelease("local-deploy", "dl", tag)
+		if err != nil {
+			w.Event(progress.ErrorMessageEvent("Getting the release", fmt.Sprintf("Failed to get release: %s", err)))
+			return "", nil
+		}
+	} else {
+		release, err = github.GetLatestRelease("local-deploy", "dl")
+		if err != nil {
+			w.Event(progress.ErrorMessageEvent("Getting the release", fmt.Sprintf("Failed to get release: %s", err)))
+			return "", nil
+		}
 	}
 
-	w.Event(progress.Event{ID: "Getting the latest release", ParentID: "Update", Status: progress.Done})
+	w.Event(progress.Event{ID: "Getting the release", ParentID: "Update", Status: progress.Done})
 
 	time.Sleep(time.Second)
 	tmpPath := filepath.Join(os.TempDir(), release.AssetsName)
@@ -88,7 +108,7 @@ func selfUpdateRun(ctx context.Context) (string, error) {
 		return "", nil
 	}
 
-	if noConfig == false {
+	if !noConfig {
 		err = copyConfigFiles()
 		if err != nil {
 			w.Event(progress.ErrorMessageEvent("Copying files", fmt.Sprint(err)))
@@ -212,7 +232,7 @@ func extractArchive(archivePath string) error {
 			}
 
 		default:
-			return errors.New(fmt.Sprintf("extract archive failed. Unknown type %x in %s", header.Typeflag, header.Name))
+			return fmt.Errorf("extract archive failed. Unknown type %x in %s", header.Typeflag, header.Name)
 		}
 	}
 
@@ -268,7 +288,7 @@ func getSystem() (string, error) {
 	case "linux", "darwin":
 		return system, nil
 	}
-	return "", errors.New(fmt.Sprintf("This installer does not support %s platform at this time", system))
+	return "", fmt.Errorf("This installer does not support %s platform at this time", system)
 }
 
 func getArch() (string, error) {
@@ -278,7 +298,7 @@ func getArch() (string, error) {
 	case "amd64", "arm64":
 		return arch, nil
 	}
-	return "", errors.New(fmt.Sprintf("Your machine architecture %s is not currently supported", arch))
+	return "", fmt.Errorf("Your machine architecture %s is not currently supported", arch)
 }
 
 func copyConfigFiles() error {
@@ -292,9 +312,9 @@ func copyConfigFiles() error {
 		return rm
 	}
 
-	mdir := os.Mkdir(configFilesDir, 0775)
-	if mdir != nil {
-		return mdir
+	mkdir := os.Mkdir(configFilesDir, 0775)
+	if mkdir != nil {
+		return mkdir
 	}
 
 	var err = filepath.Walk(tmpConfigFiles, func(path string, info os.FileInfo, err error) error {

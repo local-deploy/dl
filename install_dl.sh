@@ -85,7 +85,11 @@ case $SHELL in
   ;;
 esac
 
-LATEST_RELEASE=$(curl --silent "https://api.github.com/repos/$GITHUB_REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+if [ "$1" ]; then
+  LATEST_RELEASE=$1
+else
+  LATEST_RELEASE=$(curl --silent "https://api.github.com/repos/$GITHUB_REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+fi
 
 RELEASE_BASE_URL="https://github.com/${GITHUB_REPO}/releases/download/$LATEST_RELEASE"
 TARBALL="dl-$LATEST_RELEASE.tar.gz"
