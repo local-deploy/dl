@@ -15,6 +15,26 @@ type Release struct {
 	Version, AssetsName, AssetsURL, PageURL string
 }
 
+// GetRelease Getting the specified release
+func GetRelease(owner, repo string, tag string) (r *Release, err error) {
+	client := github.NewClient(&http.Client{
+		Timeout: 5 * time.Second,
+	})
+
+	release, _, err := client.Repositories.GetReleaseByTag(context.Background(), owner, repo, tag)
+	if err != nil {
+		return nil, err
+	}
+
+	r = &Release{
+		Version:    *release.TagName,
+		AssetsName: *release.Assets[0].Name,
+		AssetsURL:  *release.Assets[0].BrowserDownloadURL,
+		PageURL:    *release.HTMLURL,
+	}
+	return
+}
+
 // GetLatestRelease Getting the latest release
 func GetLatestRelease(owner, repo string) (r *Release, err error) {
 	client := github.NewClient(&http.Client{
