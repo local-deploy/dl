@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var version = "0.5.5"
+var version = "0.5.6"
 
 func main() {
 	pterm.ThemeDefault.SecondaryStyle = pterm.Style{pterm.FgDefault, pterm.BgDefault}
