@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/docker/compose/v2/pkg/progress"
+	"github.com/local-deploy/dl/project"
 	"github.com/sirupsen/logrus"
-	"github.com/varrcan/dl/project"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )

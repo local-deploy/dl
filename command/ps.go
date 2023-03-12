@@ -9,10 +9,10 @@ import (
 	"github.com/docker/compose/v2/pkg/api"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/local-deploy/dl/project"
+	"github.com/local-deploy/dl/utils/docker"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
-	"github.com/varrcan/dl/project"
-	"github.com/varrcan/dl/utils/docker"
 	"golang.org/x/sync/errgroup"
 )
 

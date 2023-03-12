@@ -5,10 +5,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/local-deploy/dl/helper"
+	"github.com/local-deploy/dl/project"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
-	"github.com/varrcan/dl/helper"
-	"github.com/varrcan/dl/project"
 )
 
 func envCommand() *cobra.Command {

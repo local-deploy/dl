@@ -6,9 +6,9 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/local-deploy/dl/project"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/varrcan/dl/project"
 )
 
 var bashRoot bool

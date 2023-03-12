@@ -7,10 +7,10 @@ import (
 	"io"
 	"os"
 
+	"github.com/local-deploy/dl/utils/disk"
 	"github.com/pkg/sftp"
 	"github.com/pterm/pterm"
 	"github.com/sirupsen/logrus"
-	"github.com/varrcan/dl/utils/disk"
 )
 
 // NewSftp returns new sftp client and error if any.
@@ -39,6 +39,7 @@ func (c Client) CleanRemote(remotePath string) (err error) {
 }
 
 // Download file from remote server
+//
 //goland:noinspection GoUnhandledErrorResult
 func (c Client) Download(ctx context.Context, remotePath, localPath string) (err error) {
 	// w := progress.ContextWriter(ctx)

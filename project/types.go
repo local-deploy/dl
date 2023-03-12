@@ -1,6 +1,6 @@
 package project
 
-import "github.com/varrcan/dl/utils/client"
+import "github.com/local-deploy/dl/utils/client"
 
 // CallMethod to dynamically determine the function name
 type CallMethod struct{}

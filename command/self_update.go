@@ -16,11 +16,11 @@ import (
 	"time"
 
 	"github.com/docker/compose/v2/pkg/progress"
+	"github.com/local-deploy/dl/helper"
+	"github.com/local-deploy/dl/utils/github"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/varrcan/dl/helper"
-	"github.com/varrcan/dl/utils/github"
 )
 
 var noConfig bool

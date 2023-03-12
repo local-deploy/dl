@@ -4,10 +4,10 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/local-deploy/dl/command"
+	"github.com/local-deploy/dl/helper"
 	"github.com/pterm/pterm"
 	"github.com/spf13/viper"
-	"github.com/varrcan/dl/command"
-	"github.com/varrcan/dl/helper"
 )
 
 var version = "0.5.5"

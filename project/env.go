@@ -8,10 +8,10 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/local-deploy/dl/helper"
 	"github.com/pterm/pterm"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/varrcan/dl/helper"
 )
 
 // Env Project variables

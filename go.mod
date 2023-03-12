@@ -1,4 +1,4 @@
-module github.com/varrcan/dl
+module github.com/local-deploy/dl
 
 go 1.19
 

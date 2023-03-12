@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/local-deploy/dl/helper"
 	"github.com/pterm/pterm"
-	"github.com/varrcan/dl/helper"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
 )

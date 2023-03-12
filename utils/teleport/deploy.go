@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/docker/compose/v2/pkg/progress"
-	"github.com/varrcan/dl/utils/docker"
+	"github.com/local-deploy/dl/utils/docker"
 )
 
 var pullWaitGroup sync.WaitGroup

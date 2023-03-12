@@ -13,12 +13,12 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
+	"github.com/local-deploy/dl/helper"
+	"github.com/local-deploy/dl/project"
+	"github.com/local-deploy/dl/utils"
 	"github.com/pterm/pterm"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/varrcan/dl/helper"
-	"github.com/varrcan/dl/project"
-	"github.com/varrcan/dl/utils"
 )
 
 func upCommand() *cobra.Command {

@@ -3,9 +3,9 @@ package utils
 import (
 	"time"
 
+	"github.com/local-deploy/dl/utils/github"
 	"github.com/pterm/pterm"
 	"github.com/spf13/viper"
-	"github.com/varrcan/dl/utils/github"
 )
 
 // CheckUpdates checking for updates every 24 hours

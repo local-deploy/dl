@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/local-deploy/dl/project"
 	"github.com/m7shapan/njson"
-	"github.com/varrcan/dl/project"
 )
 
 type teleport struct {

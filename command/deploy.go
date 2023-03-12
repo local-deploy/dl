@@ -9,13 +9,13 @@ import (
 	"sync"
 
 	"github.com/docker/compose/v2/pkg/progress"
+	"github.com/local-deploy/dl/project"
+	"github.com/local-deploy/dl/utils/client"
+	"github.com/local-deploy/dl/utils/docker"
+	"github.com/local-deploy/dl/utils/teleport"
 	"github.com/pterm/pterm"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/varrcan/dl/project"
-	"github.com/varrcan/dl/utils/client"
-	"github.com/varrcan/dl/utils/docker"
-	"github.com/varrcan/dl/utils/teleport"
 )
 
 var (

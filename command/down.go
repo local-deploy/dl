@@ -5,11 +5,11 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/local-deploy/dl/helper"
+	"github.com/local-deploy/dl/project"
 	"github.com/pterm/pterm"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/varrcan/dl/helper"
-	"github.com/varrcan/dl/project"
 )
 
 func downCommand() *cobra.Command {
