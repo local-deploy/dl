@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/docker/cli v20.10.21+incompatible
 	github.com/docker/compose/v2 v2.14.0
-	github.com/docker/docker v20.10.21+incompatible
+	github.com/docker/docker v20.10.24+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/google/go-github/v41 v41.0.0
 	github.com/m7shapan/njson v1.0.8
