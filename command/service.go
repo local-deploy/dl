@@ -42,7 +42,8 @@ func getServicesContainer() []docker.Container {
 				"--providers.docker.exposedbydefault=false",
 				"--entrypoints.web.address=:80",
 				"--entrypoints.websecure.address=:443",
-				// "--entrypoints.mysql.address=:3306",
+				"--entrypoints.ws.address=:8081",
+				"--entrypoints.wss.address=:8082",
 				"--serversTransport.insecureSkipVerify=true",
 			},
 			Volumes: map[string]struct{}{"/var/run/docker.sock": {}},
@@ -55,7 +56,7 @@ func getServicesContainer() []docker.Container {
 				"traefik.http.middlewares.site-compress.compress":        "true",
 				"traefik.http.routers.traefik.middlewares":               "site-compress",
 			},
-			Ports: []string{"0.0.0.0:80:80", "0.0.0.0:443:443"},
+			Ports: []string{"0.0.0.0:80:80", "0.0.0.0:443:443", "0.0.0.0:8081:8081", "0.0.0.0:8082:8082"},
 			Mounts: []mount.Mount{
 				{
 					Type:     mount.TypeBind,
