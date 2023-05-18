@@ -15,13 +15,14 @@ import (
 
 var version = "0.5.7"
 
+//go:embed config-files/*
+var templates embed.FS
+
 func main() {
 	pterm.ThemeDefault.SecondaryStyle = pterm.Style{pterm.FgDefault, pterm.BgDefault}
 
-	if !helper.IsConfigDirExists() {
-		pterm.FgRed.Printfln("The application has not been initialized. Please run the command:\ncurl -s https://raw.githubusercontent.com/local-deploy/dl/master/install_dl.sh | bash")
-		return
-	}
+	// forwarding file variable to package
+	utils.Templates = templates
 
 	if !dockerCheck() {
 		return
