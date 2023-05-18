@@ -56,8 +56,8 @@ func showEnvMenu() {
 }
 
 func printEnvConfig() {
-	configDir, _ := helper.ConfigDir()
-	src := filepath.Join(configDir, "/config-files/.env.example")
+	templateDir := helper.TemplateDir()
+	src := filepath.Join(templateDir, "/config-files/.env.example")
 
 	file, err := os.Open(src)
 	if err != nil {
@@ -91,12 +91,12 @@ func copyEnv() bool {
 	var src string
 
 	currentDir, _ := os.Getwd()
-	configDir, _ := helper.ConfigDir()
+	templateDir := helper.TemplateDir()
 
 	if project.IsEnvExampleFileExists() {
 		src = filepath.Join(currentDir, ".env.example")
 	} else {
-		src = filepath.Join(configDir, "/config-files/.env.example")
+		src = filepath.Join(templateDir, "/config-files/.env.example")
 	}
 
 	dest := filepath.Join(currentDir, ".env")
