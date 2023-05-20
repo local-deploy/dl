@@ -73,7 +73,7 @@ func setDefaultEnv() {
 	res := re.ReplaceAllString(projectName, "")
 	Env.SetDefault("NETWORK_NAME", res)
 
-	confDir, _ := helper.ConfigDir()
+	confDir := helper.TemplateDir()
 	Env.SetDefault("NGINX_CONF", filepath.Join(confDir, "config-files", "default.conf.template"))
 
 	customConfig := Env.GetString("NGINX_CONF")
@@ -105,14 +105,14 @@ func setDefaultEnv() {
 // setComposeFile Set docker-compose files
 func setComposeFiles() {
 	var files []string
-	confDir, _ := helper.ConfigDir()
+	templateDir := helper.TemplateDir()
 
 	images := map[string]string{
-		"mysql":     confDir + "/config-files/docker-compose-mysql.yaml",
-		"fpm":       confDir + "/config-files/docker-compose-fpm.yaml",
-		"apache":    confDir + "/config-files/docker-compose-apache.yaml",
-		"redis":     confDir + "/config-files/docker-compose-redis.yaml",
-		"memcached": confDir + "/config-files/docker-compose-memcached.yaml",
+		"mysql":     templateDir + "/config-files/docker-compose-mysql.yaml",
+		"fpm":       templateDir + "/config-files/docker-compose-fpm.yaml",
+		"apache":    templateDir + "/config-files/docker-compose-apache.yaml",
+		"redis":     templateDir + "/config-files/docker-compose-redis.yaml",
+		"memcached": templateDir + "/config-files/docker-compose-memcached.yaml",
 	}
 
 	phpVersion := Env.GetString("PHP_VERSION")

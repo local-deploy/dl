@@ -63,7 +63,7 @@ func selfUpdateRun(ctx context.Context) (string, error) {
 	if len(tag) > 0 {
 		var rxTag, _ = regexp.MatchString("^\\d.\\d.\\d+$", tag)
 		if !rxTag {
-			w.Event(progress.ErrorMessageEvent("Getting the release", fmt.Sprint("Incorrect release format")))
+			w.Event(progress.ErrorMessageEvent("Getting the release", fmt.Sprintf("Incorrect release format: %s", tag)))
 			return "", nil
 		}
 
@@ -251,7 +251,7 @@ func copyBin() error {
 		arch   string
 	)
 
-	binPath, _ := helper.BinPath()
+	binPath := helper.BinPath()
 
 	system, err = getSystem()
 	if err != nil {
@@ -302,10 +302,10 @@ func getArch() (string, error) {
 }
 
 func copyConfigFiles() error {
-	confDir, _ := helper.ConfigDir()
+	templateDir := helper.TemplateDir()
 
 	tmpConfigFiles := filepath.Join(os.TempDir(), "dl", "config-files")
-	configFilesDir := filepath.Join(confDir, "config-files")
+	configFilesDir := filepath.Join(templateDir, "config-files")
 
 	rm := os.RemoveAll(configFilesDir)
 	if rm != nil {

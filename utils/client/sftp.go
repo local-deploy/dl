@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/local-deploy/dl/utils/disk"
+	"github.com/local-deploy/dl/utils"
 	"github.com/pkg/sftp"
 	"github.com/pterm/pterm"
 	"github.com/sirupsen/logrus"
@@ -61,10 +61,10 @@ func (c Client) Download(ctx context.Context, remotePath, localPath string) (err
 	}
 	defer ftp.Close()
 
-	localDisk := disk.FreeSpaceHome()
+	localDisk := utils.FreeSpaceHome()
 	if fileInfo.Size() > int64(localDisk.Free) {
-		remoteSize := disk.HumanSize(float64(fileInfo.Size()))
-		localSize := disk.HumanSize(float64(localDisk.Free))
+		remoteSize := utils.HumanSize(float64(fileInfo.Size()))
+		localSize := utils.HumanSize(float64(localDisk.Free))
 		return errors.New(fmt.Sprintf("No disk space. Filesize %s, free space %s", remoteSize, localSize))
 	}
 

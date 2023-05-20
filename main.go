@@ -1,24 +1,28 @@
 package main
 
 import (
+	"embed"
+	"os"
 	"os/exec"
 	"time"
 
 	"github.com/local-deploy/dl/command"
 	"github.com/local-deploy/dl/helper"
+	"github.com/local-deploy/dl/utils"
 	"github.com/pterm/pterm"
 	"github.com/spf13/viper"
 )
 
 var version = "0.5.7"
 
+//go:embed config-files/*
+var templates embed.FS
+
 func main() {
 	pterm.ThemeDefault.SecondaryStyle = pterm.Style{pterm.FgDefault, pterm.BgDefault}
 
-	if !helper.IsConfigDirExists() {
-		pterm.FgRed.Printfln("The application has not been initialized. Please run the command:\ncurl -s https://raw.githubusercontent.com/local-deploy/dl/master/install_dl.sh | bash")
-		return
-	}
+	// forwarding file variable to package
+	utils.Templates = templates
 
 	if !dockerCheck() {
 		return
@@ -34,7 +38,7 @@ func main() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	configDir, _ := helper.ConfigDir()
+	configDir := helper.ConfigDir()
 
 	viper.AddConfigPath(configDir)
 	viper.SetConfigType("yaml")
@@ -43,6 +47,16 @@ func initConfig() {
 	err := viper.ReadInConfig()
 	if err != nil {
 		pterm.FgRed.Printfln("Error config file: %s \n", err)
+		os.Exit(1)
+	}
+
+	if viper.GetString("version") != version {
+		viper.Set("version", version)
+		err = viper.WriteConfig()
+		if err != nil {
+			pterm.FgRed.Printfln("Error config file: %s \n", err)
+			os.Exit(1)
+		}
 	}
 
 	viper.AutomaticEnv()
@@ -50,14 +64,27 @@ func initConfig() {
 
 func firstStart() {
 	err := createConfigFile()
-
 	if err != nil {
 		pterm.FgRed.Printfln("Unable to create config file: %s \n", err)
+		os.Exit(1)
+	}
+
+	if !helper.IsAptInstall() {
+		err = utils.CreateTemplates(true)
+		if err != nil {
+			pterm.FgRed.Printfln("Unable to create template files: %s \n", err)
+			os.Exit(1)
+		}
 	}
 }
 
 func createConfigFile() error {
-	configDir, _ := helper.ConfigDir()
+	configDir := helper.ConfigDir()
+
+	err := helper.CreateDirectory(configDir)
+	if err != nil {
+		return err
+	}
 
 	viper.AddConfigPath(configDir)
 	viper.SetConfigType("yaml")
