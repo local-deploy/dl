@@ -30,7 +30,7 @@ func CheckUpdates() {
 
 func isAvailableNewVersion() bool {
 	currentVersion := viper.GetString("version")
-	release, err := github.GetLatestRelease("local-deploy", "dl")
+	release, err := github.GetRelease("local-deploy", "dl", "")
 	if err != nil {
 		// we don't want an error on a bad request
 		return false

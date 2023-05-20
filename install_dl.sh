@@ -70,8 +70,6 @@ if [[ $os == "" ]]; then
   printf "${RED}Sorry, this installer does not support %s platform at this time${RESET}\n" "$(uname)" && exit 1
 fi
 
-BIN="dl_${os}_${architecture}"
-
 case $SHELL in
 */zsh)
   SHELL_RC=".zshrc"
@@ -92,7 +90,7 @@ else
 fi
 
 RELEASE_BASE_URL="https://github.com/${GITHUB_REPO}/releases/download/$LATEST_RELEASE"
-TARBALL="dl-$LATEST_RELEASE.tar.gz"
+TARBALL="dl-$LATEST_RELEASE-${os}-${architecture}.tar.gz"
 
 printf "${GREEN}Downloading release %s${RESET}\n" "${LATEST_RELEASE}"
 
@@ -103,35 +101,27 @@ printf "${GREEN}Extract archive${RESET}\n"
 cd $TMP_DIR
 tar -xzf "$TARBALL"
 
-if [ -d "$HOME/.config/dl/config-files" ]; then
-  rm -rf "$HOME/.config/dl/config-files"
+if [ -d "$HOME/.config/dl" ]; then
+  rm -rf "$HOME/.config/dl"
 fi
 if [ -f "$HOME/.local/bin/dl" ]; then
   rm -f "$HOME/.local/bin/dl"
 fi
-if [ -f "$HOME/.config/dl/config.yaml" ]; then
-  sed -i "/version/c version: $LATEST_RELEASE" "$HOME"/.config/dl/config.yaml
-fi
 
 if [ ! -d "$HOME/.local/bin" ]; then
   mkdir -p "$HOME/.local/bin"
-fi
-if [ ! -d "$HOME/.config/dl" ]; then
-  mkdir -p "$HOME/.config/dl/config-files"
 fi
 
 if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
   printf "\nPATH=\"\$HOME/.local/bin:\$PATH\"" >>"$HOME/$SHELL_RC" && PATH="$PATH:$HOME/.local/bin"
 fi
 
-mv "bin/$BIN" "$HOME/.local/bin/dl"
-mv "config-files" "$HOME/.config/dl/"
-
+mv dl "$HOME/.local/bin/dl"
 chmod +x "$HOME/.local/bin/dl"
 
 printf "${GREEN}Remove temp files${RESET}\n"
 
-rm -f ${TMP_DIR}$TARBALL
+rm -f "${TMP_DIR}$TARBALL"
 
 printf "${GREEN}DL is now installed. Run \"dl\" and \"dl version\" to verify your installation and see usage.${RESET}\n"
 

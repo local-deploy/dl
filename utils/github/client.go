@@ -2,15 +2,15 @@ package github
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"runtime"
 	"time"
 
 	"github.com/google/go-github/v41/github"
 )
 
 // Release latest release data
-//
-//goland:noinspection GoUnnecessarilyExportedIdentifiers
 type Release struct {
 	Version, AssetsName, AssetsURL, PageURL string
 }
@@ -21,36 +21,66 @@ func GetRelease(owner, repo string, tag string) (r *Release, err error) {
 		Timeout: 5 * time.Second,
 	})
 
-	release, _, err := client.Repositories.GetReleaseByTag(context.Background(), owner, repo, tag)
+	var release *github.RepositoryRelease
+
+	if len(tag) > 0 {
+		release, _, err = client.Repositories.GetReleaseByTag(context.Background(), owner, repo, tag)
+	} else {
+		release, _, err = client.Repositories.GetLatestRelease(context.Background(), owner, repo)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	assetIndex, err := getAssetIndex(release)
 	if err != nil {
 		return nil, err
 	}
 
 	r = &Release{
 		Version:    *release.TagName,
-		AssetsName: *release.Assets[0].Name,
-		AssetsURL:  *release.Assets[0].BrowserDownloadURL,
+		AssetsName: *release.Assets[assetIndex].Name,
+		AssetsURL:  *release.Assets[assetIndex].BrowserDownloadURL,
 		PageURL:    *release.HTMLURL,
 	}
 	return
 }
 
-// GetLatestRelease Getting the latest release
-func GetLatestRelease(owner, repo string) (r *Release, err error) {
-	client := github.NewClient(&http.Client{
-		Timeout: 5 * time.Second,
-	})
-
-	release, _, err := client.Repositories.GetLatestRelease(context.Background(), owner, repo)
+func getAssetIndex(release *github.RepositoryRelease) (int, error) {
+	system, err := getSystem()
 	if err != nil {
-		return nil, err
+		return 0, err
+	}
+	arch, err := getArch()
+	if err != nil {
+		return 0, err
+	}
+	binName := fmt.Sprintf("dl-%s-%s-%s.tar.gz", *release.TagName, system, arch)
+	for i, asset := range release.Assets {
+		if binName == *asset.Name {
+			return i, nil
+		}
 	}
 
-	r = &Release{
-		Version:    *release.TagName,
-		AssetsName: *release.Assets[0].Name,
-		AssetsURL:  *release.Assets[0].BrowserDownloadURL,
-		PageURL:    *release.HTMLURL,
+	return 0, fmt.Errorf("error getting archive from release %s", *release.HTMLURL)
+}
+
+func getSystem() (string, error) {
+	system := runtime.GOOS
+
+	switch system {
+	case "linux", "darwin":
+		return system, nil
 	}
-	return
+	return "", fmt.Errorf("this installer does not support %s platform at this time", system)
+}
+
+func getArch() (string, error) {
+	arch := runtime.GOARCH
+
+	switch arch {
+	case "amd64", "arm64":
+		return arch, nil
+	}
+	return "", fmt.Errorf("your machine architecture %s is not currently supported", arch)
 }
