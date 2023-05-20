@@ -35,4 +35,5 @@ jobs:
           version: latest
           args: release --clean
         env:
+          FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
