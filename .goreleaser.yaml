@@ -1,0 +1,69 @@
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - id: "linux"
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    goarm:
+      - "7"
+    ignore:
+      - goamd64: v4
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}-
+      {{- .Version }}-
+      {{- tolower .Os }}-
+      {{- .Arch }}
+    rlcp: true
+    files:
+      - "!*"
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^test:'
+      - '^chore'
+      - 'merge conflict'
+      - Merge pull request
+      - Merge remote-tracking branch
+      - Merge branch
+      - go mod tidy
+  groups:
+    - title: Dependency updates
+      regexp: '^.*?(feat|fix)\(deps\)!?:.+$'
+      order: 300
+    - title: 'New Features'
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 100
+    - title: 'Security updates'
+      regexp: '^.*?sec(\([[:word:]]+\))??!?:.+$'
+      order: 150
+    - title: 'Bug fixes'
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 200
+    - title: 'Documentation updates'
+      regexp: ^.*?doc(\([[:word:]]+\))??!?:.+$
+      order: 400
+    - title: 'Build process updates'
+      regexp: ^.*?build(\([[:word:]]+\))??!?:.+$
+      order: 400
+    - title: Other work
+      order: 9999

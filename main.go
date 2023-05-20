@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var version = "0.5.7"
+var version = "dev"
 
 //go:embed config-files/*
 var templates embed.FS
