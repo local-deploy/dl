@@ -86,11 +86,24 @@ func ChmodR(path string, mode os.FileMode) error {
 	})
 }
 
-// CreateDirectory recursively create directories if they don't exist
+// CreateDirectory recursively create directories
 func CreateDirectory(path string) error {
 	_, err := os.Stat(path)
 	if err != nil {
 		err = os.MkdirAll(path, 0755)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// RemoveDirectory recursively remove directories
+func RemoveDirectory(path string) error {
+	_, err := os.Stat(path)
+	if err != nil {
+		err = os.RemoveAll(path)
 		if err != nil {
 			return err
 		}

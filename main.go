@@ -70,7 +70,7 @@ func firstStart() {
 	}
 
 	if !helper.IsAptInstall() {
-		err = utils.CreateTemplates()
+		err = utils.CreateTemplates(true)
 		if err != nil {
 			pterm.FgRed.Printfln("Unable to create template files: %s \n", err)
 			os.Exit(1)

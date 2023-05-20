@@ -12,9 +12,19 @@ import (
 var Templates embed.FS
 
 // CreateTemplates create docker-compose files
-func CreateTemplates() error {
+func CreateTemplates(overwrite bool) error {
 	templateDir := helper.TemplateDir()
-	err := helper.CreateDirectory(filepath.Join(templateDir, "config-files"))
+	configDir := filepath.Join(templateDir, "config-files")
+
+	// delete existing directory
+	if overwrite {
+		err := helper.RemoveDirectory(configDir)
+		if err != nil {
+			return err
+		}
+	}
+
+	err := helper.CreateDirectory(configDir)
 	if err != nil {
 		return err
 	}
@@ -25,7 +35,7 @@ func CreateTemplates() error {
 	}
 
 	for _, entry := range entries {
-		out, err := os.Create(filepath.Join(templateDir, "config-files", entry.Name()))
+		out, err := os.Create(filepath.Join(configDir, entry.Name()))
 		if err != nil {
 			return err
 		}
