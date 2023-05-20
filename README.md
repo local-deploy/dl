@@ -1,21 +1,30 @@
-[![Build](https://github.com/local-deploy/dl/actions/workflows/release.yml/badge.svg)](https://github.com/local-deploy/dl/actions/workflows/release.yml)
+<p align="center">
+  <img alt="DL Logo" src="https://avatars.githubusercontent.com/u/92750175?v=4&s=200" height="140" />
+  <h3 align="center">Deploy Local — site deployment assistant locally.</h3>
+  <p align="center">A convenient wrapper over docker-compose, which simplifies the local deployment of the project.</p>
+  <p align="center">
+    <a href="https://github.com/local-deploy/dl/releases/latest"><img alt="Release" src="https://img.shields.io/github/release/local-deploy/dl.svg?style=for-the-badge"></a>
+    <a href="/LICENSE.md"><img alt="Software License" src="https://img.shields.io/badge/license-MIT-brightgreen.svg?style=for-the-badge"></a>
+    <a href="https://github.com/local-deploy/dl/actions?workflow=release"><img alt="GitHub Actions" src="https://img.shields.io/github/actions/workflow/status/local-deploy/dl/.github/workflows/release.yml?style=for-the-badge"></a>
+    <a href="https://goreportcard.com/report/github.com/local-deploy/dl"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/local-deploy/dl?style=for-the-badge"></a>
+    <a href="http://godoc.org/github.com/local-deploy/dl"><img alt="Go Doc" src="https://img.shields.io/badge/godoc-reference-blue.svg?style=for-the-badge"></a>
+  </p>
+</p>
 
-Deploy Local — site deployment assistant locally.
+## Documentation [local-deploy.github.io](https://local-deploy.github.io/)
 
-A convenient wrapper over docker-compose, which simplifies the local deployment of the project.
+## Supported
 
 Supported OS: Linux (debian, ubuntu, linux mint), macOS (tested)  
 Supported architectures: x64, arm64  
 Supported frameworks and CMS: Bitrix, Laravel, WordPress
 
-Dependencies:
+## Dependencies
 
 - docker
 - docker-compose v2
 
 The `docker compose` (as plugin) supported
-
-### Documentation [local-deploy.github.io](https://local-deploy.github.io/)
 
 ## Development status
 
