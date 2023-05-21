@@ -30,7 +30,7 @@ func selfUpdateCommand() *cobra.Command {
 		Use:     "self-update",
 		Aliases: []string{"upgrade"},
 		Short:   "Update dl",
-		Long:    `Downloading the latest version of the app.`,
+		Long:    `Downloading the latest version of the app (if installed via bash script).`,
 		Example: "dl self-update\ndl self-update -n\ndl self-update --tag 0.5.2",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx := context.Background()
@@ -47,6 +47,13 @@ func selfUpdateCommand() *cobra.Command {
 
 func selfUpdateRun(ctx context.Context) (string, error) {
 	w := progress.ContextWriter(ctx)
+
+	if helper.IsAptInstall() {
+		pterm.FgYellow.Println("Please use command:")
+		pterm.Println()
+		pterm.FgGreen.Println("sudo apt update\nsudo apt install dl")
+		os.Exit(0)
+	}
 
 	w.Event(progress.Event{ID: "Update", Status: progress.Working})
 	w.Event(progress.Event{ID: "Getting the release", ParentID: "Update", Status: progress.Working})

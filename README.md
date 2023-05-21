@@ -67,6 +67,8 @@ Before you install DL for the first time on a new host machine, you need to set 
 
 ### Install locally via bash script
 
+> For Linux and MacOS
+
 The script will check the dependencies, download and install the latest release.
 
 The executable file `dl` will be written to the user's home directory under the path `~/.local/bin/dl`. If the directory does not exist, it will be created.
