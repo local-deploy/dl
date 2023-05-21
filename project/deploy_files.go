@@ -100,8 +100,6 @@ func (c SshClient) packFiles(ctx context.Context, path string) error {
 
 // FormatIgnoredPath Exclude path from tar
 func FormatIgnoredPath() string {
-	var ignoredPath []string
-
 	excluded := Env.GetString("EXCLUDED_FILES")
 	if len(excluded) == 0 {
 		return ""
@@ -109,8 +107,10 @@ func FormatIgnoredPath() string {
 
 	excludedPath := strings.Split(strings.TrimSpace(excluded), ",")
 	logrus.Infof("Ignored path: %s", excluded)
-	for _, value := range excludedPath {
-		ignoredPath = append(ignoredPath, "--exclude="+value)
+
+	ignoredPath := make([]string, len(excludedPath))
+	for i, value := range excludedPath {
+		ignoredPath[i] = "--exclude=" + strings.TrimSpace(value)
 	}
 
 	return strings.Join(ignoredPath, " ")

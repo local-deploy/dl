@@ -297,14 +297,13 @@ func (d DbSettings) DumpDataParams() string {
 
 // FormatIgnoredTables Exclude tables from dump
 func (d DbSettings) FormatIgnoredTables() string {
-	var ignoredTables []string
-
 	if len(d.ExcludedTables) == 0 {
 		return ""
 	}
 
-	for _, value := range d.ExcludedTables {
-		ignoredTables = append(ignoredTables, "--ignore-table="+d.DataBase+"."+value)
+	ignoredTables := make([]string, len(d.ExcludedTables))
+	for i, value := range d.ExcludedTables {
+		ignoredTables[i] = "--ignore-table=" + d.DataBase + "." + strings.TrimSpace(value)
 	}
 
 	return strings.Join(ignoredTables, " ")
