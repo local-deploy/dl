@@ -44,8 +44,8 @@ Before you install DL for the first time on a new host machine, you need to set 
 
 1. Update the apt package index and install packages to allow apt to use a repository over HTTPS:
     ```bash
-    sudo apt-get update
-    sudo apt-get install ca-certificates curl gnupg
+    sudo apt update
+    sudo apt install ca-certificates curl gnupg
     ```
 2. Add DL’s official GPG key:
     ```bash
