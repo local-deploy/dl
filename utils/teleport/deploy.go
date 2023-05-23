@@ -14,7 +14,7 @@ var pullWaitGroup sync.WaitGroup
 var tsh string
 
 // DeployTeleport Deploy using teleport
-func DeployTeleport(ctx context.Context, database bool, files bool, override []string) error {
+func DeployTeleport(ctx context.Context, database bool, files bool, override []string, tables []string) error {
 	var err error
 	w := progress.ContextWriter(ctx)
 
@@ -47,7 +47,7 @@ func DeployTeleport(ctx context.Context, database bool, files bool, override []s
 			os.Exit(1)
 		}
 		pullWaitGroup.Add(1)
-		go startDump(ctx, client)
+		go startDump(ctx, client, tables)
 	}
 
 	pullWaitGroup.Wait()
@@ -60,7 +60,7 @@ func startFiles(ctx context.Context, t *teleport, override []string) {
 	copyFiles(ctx, t, override)
 }
 
-func startDump(ctx context.Context, t *teleport) {
+func startDump(ctx context.Context, t *teleport, tables []string) {
 	defer pullWaitGroup.Done()
-	dumpDb(ctx, t)
+	dumpDb(ctx, t, tables)
 }

@@ -18,7 +18,7 @@ import (
 var remotePhpPath string
 
 // DumpDb Database import from server
-func DumpDb(ctx context.Context, client *client.Client) {
+func DumpDb(ctx context.Context, client *client.Client, tables []string) {
 	var db *DbSettings
 	var err error
 
@@ -66,16 +66,22 @@ func DumpDb(ctx context.Context, client *client.Client) {
 		db.Port = "3306"
 	}
 
-	err = c.mysqlDump(ctx, db)
+	if len(tables) > 0 {
+		dumpTables := strings.Join(tables, " ")
+		err = c.mysqlDumpTables(ctx, db, dumpTables)
+	} else {
+		err = c.mysqlDump(ctx, db)
+	}
+
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Failed to create database dump", fmt.Sprint(err)))
-		w.Event(progress.Event{ID: "Files", Status: progress.Error})
+		w.Event(progress.Event{ID: "Database", Status: progress.Error})
 		return
 	}
 
 	err = c.downloadDump(ctx)
 	if err != nil {
-		w.Event(progress.Event{ID: "Files", Status: progress.Error})
+		w.Event(progress.Event{ID: "Database", Status: progress.Error})
 		return
 	}
 
@@ -239,6 +245,58 @@ func (c SshClient) mysqlDump(ctx context.Context, db *DbSettings) error {
 	return nil
 }
 
+// mysqlDumpTables Create only tables dump
+func (c SshClient) mysqlDumpTables(ctx context.Context, db *DbSettings, dumpTables string) error {
+	w := progress.ContextWriter(ctx)
+	w.Event(progress.Event{ID: "Create database dump", ParentID: "Database", Status: progress.Working})
+
+	dump := c.checkMySqlDumpAvailable()
+	if dump != nil {
+		return errors.New("mysqldump not installed, database dump not possible")
+	}
+
+	dumpDataParams := db.DumpDataTablesParams()
+	dumpCmd := strings.Join([]string{"cd", c.Config.Catalog, "&&",
+		"mysqldump",
+		dumpDataParams,
+		db.DataBase,
+		dumpTables,
+		"|",
+		"gzip > " + c.Config.Catalog + "/production.sql.gz",
+	}, " ")
+	logrus.Infof("Run command: %s", dumpCmd)
+	_, err := c.Run(dumpCmd)
+
+	if err != nil {
+		return err
+	}
+
+	w.Event(progress.Event{ID: "Create database dump", ParentID: "Database", Status: progress.Done})
+
+	return nil
+}
+
+// DumpDataTablesParams options for only tables dump
+func (d DbSettings) DumpDataTablesParams() string {
+	params := []string{
+		"--host=" + d.Host,
+		"--port=" + d.Port,
+		"--user=" + d.Login,
+		"--password=" + strconv.Quote(d.Password),
+		"--single-transaction=1",
+		"--force",
+		"--lock-tables=false",
+		"--no-tablespaces",
+	}
+
+	mysqlVersion := Env.GetString("MYSQL_VERSION")
+	if mysqlVersion == "8.0" {
+		params = append(params, "--column-statistics=0")
+	}
+
+	return strings.Join(params, " ")
+}
+
 func (c SshClient) checkMySqlDumpAvailable() error {
 	logrus.Info("Check if mysqldump available")
 	dumpCmd := strings.Join([]string{"cd", c.Config.Catalog, "&&", "which mysqldump"}, " ")
@@ -377,8 +435,8 @@ func (c SshClient) ImportDb(ctx context.Context) {
 		strSQL := `"UPDATE b_option SET VALUE = 'Y' WHERE MODULE_ID = 'main' AND NAME = 'update_devsrv';
 UPDATE b_lang SET SERVER_NAME='` + site + `.localhost' WHERE LID='s1';
 UPDATE b_lang SET b_lang.DOC_ROOT='' WHERE 1=(SELECT DOC_ROOT FROM (SELECT COUNT(LID) FROM b_lang) as cnt);
-INSERT INTO b_lang_domain VALUES ('s1', '` + local + `');
-INSERT INTO b_lang_domain VALUES ('s1', '` + nip + `');"`
+INSERT IGNORE INTO b_lang_domain VALUES ('s1', '` + local + `');
+INSERT IGNORE INTO b_lang_domain VALUES ('s1', '` + nip + `');"`
 
 		commandUpdate := "echo " + strSQL + " | " + docker + " exec -i " + siteDB + " /usr/bin/mysql --user=" + mysqlUser + " --password=" + mysqlPassword + " --host=db " + mysqlDB + ""
 		logrus.Infof("Run command: %s", commandUpdate)

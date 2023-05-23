@@ -17,7 +17,7 @@ import (
 
 var remotePhpPath string
 
-func dumpDb(ctx context.Context, t *teleport) {
+func dumpDb(ctx context.Context, t *teleport, tables []string) {
 	var db *project.DbSettings
 	var err error
 
@@ -56,7 +56,13 @@ func dumpDb(ctx context.Context, t *teleport) {
 		db.Port = "3306"
 	}
 
-	err = t.mysqlDump(ctx, db)
+	if len(tables) > 0 {
+		dumpTables := strings.Join(tables, " ")
+		err = t.mysqlDumpTables(ctx, db, dumpTables)
+	} else {
+		err = t.mysqlDump(ctx, db)
+	}
+
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Failed to create database dump", fmt.Sprint(err)))
 		w.Event(progress.Event{ID: "Files", Status: progress.Error})
@@ -160,6 +166,37 @@ func (t *teleport) mysqlDump(ctx context.Context, db *project.DbSettings) error 
 		db.DataBase,
 		"|",
 		"gzip >> " + t.Catalog + "/production.sql.gz",
+	}, " ")
+	logrus.Infof("Run command: %s", dumpCmd)
+	_, err := t.run(dumpCmd)
+
+	if err != nil {
+		return err
+	}
+
+	w.Event(progress.Event{ID: "Create database dump", ParentID: "Database", Status: progress.Done})
+
+	return nil
+}
+
+// mysqlDumpTables Create only tables dump
+func (t *teleport) mysqlDumpTables(ctx context.Context, db *project.DbSettings, dumpTables string) error {
+	w := progress.ContextWriter(ctx)
+	w.Event(progress.Event{ID: "Create database dump", ParentID: "Database", Status: progress.Working})
+
+	dump := t.checkMySqlDumpAvailable()
+	if dump != nil {
+		return errors.New("mysqldump not installed, database dump not possible")
+	}
+
+	dumpDataParams := db.DumpDataTablesParams()
+	dumpCmd := strings.Join([]string{"cd", t.Catalog, "&&",
+		"mysqldump",
+		dumpDataParams,
+		db.DataBase,
+		dumpTables,
+		"|",
+		"gzip > " + t.Catalog + "/production.sql.gz",
 	}, " ")
 	logrus.Infof("Run command: %s", dumpCmd)
 	_, err := t.run(dumpCmd)

@@ -22,6 +22,8 @@ dl deploy [flags]
 ```
 dl deploy
 dl deploy -d
+dl deploy -d -t b_user,b_file
+dl deploy -f
 dl deploy -f -o bitrix,upload
 ```
 
@@ -32,6 +34,7 @@ dl deploy -f -o bitrix,upload
   -f, --files              Download only files from server
   -h, --help               help for deploy
   -o, --override strings   Override downloaded files (comma separated values)
+  -t, --tables strings     Dump only specified tables (comma separated values)
 ```
 
 ### Options inherited from parent commands
