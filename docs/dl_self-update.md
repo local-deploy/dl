@@ -4,7 +4,7 @@ Update dl
 
 ### Synopsis
 
-Downloading the latest version of the app.
+Downloading the latest version of the app (if installed via bash script).
 
 ```
 dl self-update [flags]
