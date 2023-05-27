@@ -30,6 +30,10 @@ The `docker compose` (as plugin) supported
 
 See all available installation methods https://local-deploy.github.io/getting-started/install
 
+## Upgrading from version 0.* to version 1.*
+
+Just reinstall the application using one of the above methods. Updating using the built-in commands is not possible.
+
 ## Usage
 
 1. Start service containers (traefik, mailhog, portainer) with the command (at the first start):
