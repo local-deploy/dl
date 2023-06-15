@@ -118,12 +118,12 @@ if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then
   printf "\nPATH=\"\$HOME/.local/bin:\$PATH\"" >>"$HOME/$SHELL_RC" && PATH="$PATH:$HOME/.local/bin"
 fi
 
-mv dl "$HOME/.local/bin/dl"
+mv -f "${TMP_DIR}/dl" "$HOME/.local/bin/dl"
 chmod +x "$HOME/.local/bin/dl"
 
 printf "${GREEN}Remove temp files${RESET}\n"
 
-rm -f "${TMP_DIR}$TARBALL"
+rm -f "${TMP_DIR}/$TARBALL"
 
 printf "${GREEN}DL is now installed. Run \"dl\" and \"dl version\" to verify your installation and see usage.${RESET}\n"
 
