@@ -58,7 +58,7 @@ func runPs() error {
 
 	cli, err := docker.NewClient()
 	if err != nil {
-		pterm.Fatal.Printfln("Failed to connect to socket")
+		pterm.FgRed.Printfln("Failed to connect to socket")
 		return err
 	}
 

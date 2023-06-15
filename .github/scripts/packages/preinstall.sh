@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
 
-mkdir -p "/etc/dl/config-files"
-mkdir -p "/usr/share/zsh/vendor-completions"
+install -m 0755 -d /etc/apt/keyrings
+install -m 0755 -d /etc/dl/config-files
+install -m 0755 -d /usr/share/zsh/vendor-completions

@@ -1,9 +1,12 @@
 package command
 
 import (
+	"path/filepath"
+
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/integration/network"
+	"github.com/local-deploy/dl/helper"
 	"github.com/local-deploy/dl/utils/docker"
 	"github.com/spf13/cobra"
 )
@@ -40,6 +43,7 @@ func getServicesContainer() []docker.Container {
 				"--providers.docker",
 				"--providers.docker.network=dl_default",
 				"--providers.docker.exposedbydefault=false",
+				"--providers.file.directory=/certs/conf",
 				"--entrypoints.web.address=:80",
 				"--entrypoints.websecure.address=:443",
 				"--entrypoints.ws.address=:8081",
@@ -62,6 +66,12 @@ func getServicesContainer() []docker.Container {
 					Type:     mount.TypeBind,
 					Source:   "/var/run/docker.sock",
 					Target:   "/var/run/docker.sock",
+					ReadOnly: true,
+				},
+				{
+					Type:     mount.TypeBind,
+					Source:   filepath.Join(helper.ConfigDir(), "certs"),
+					Target:   "/certs",
 					ReadOnly: true,
 				},
 			},
