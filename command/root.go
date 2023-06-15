@@ -43,6 +43,7 @@ func Execute() {
 	rootCmd.AddCommand(
 		envCommand(),
 		psCommand(),
+		certCommand(),
 		bashCommand(),
 		execCommand(),
 		completionCommand(),

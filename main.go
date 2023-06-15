@@ -4,6 +4,7 @@ import (
 	"embed"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/local-deploy/dl/command"
@@ -30,6 +31,10 @@ func main() {
 
 	if !helper.IsConfigFileExists() {
 		firstStart()
+	}
+
+	if !helper.IsCertPathExists() {
+		createCertDirectory()
 	}
 
 	initConfig()
@@ -102,6 +107,14 @@ func createConfigFile() error {
 	}
 
 	return errWrite
+}
+
+func createCertDirectory() {
+	err := helper.CreateDirectory(filepath.Join(helper.CertDir(), "conf"))
+	if err != nil {
+		pterm.FgRed.Printfln("Unable to create certs directory: %s \n", err)
+		os.Exit(1)
+	}
 }
 
 func dockerCheck() bool {

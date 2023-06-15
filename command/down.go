@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/local-deploy/dl/helper"
 	"github.com/local-deploy/dl/project"
 	"github.com/pterm/pterm"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func downCommand() *cobra.Command {
@@ -29,6 +31,11 @@ func downRun() {
 	project.LoadEnv()
 
 	pterm.FgGreen.Printfln("Stopping project...")
+
+	if viper.GetBool("ca") {
+		_ = helper.RemoveDirectory(filepath.Join(helper.CertDir(), "conf", project.Env.GetString("NETWORK_NAME")+".yaml"))
+		_ = helper.RemoveDirectory(filepath.Join(helper.CertDir(), project.Env.GetString("NETWORK_NAME")))
+	}
 
 	bin, option := helper.GetCompose()
 	Args := []string{bin}
