@@ -28,6 +28,12 @@ The `docker compose` (as plugin) supported
 
 ## Install
 
+Choose the installation method that suits you:
+
+- [Installing the deb-package](https://local-deploy.github.io/getting-started/install#installing-the-deb-package)
+- [Installation in the user's home directory](https://local-deploy.github.io/getting-started/install#installation-in-the-users-home-directory)
+- [Manual installation](https://local-deploy.github.io/getting-started/install#manual-installation)
+
 See all available installation methods https://local-deploy.github.io/getting-started/install
 
 ## Upgrading from version 0.* to version 1.*
