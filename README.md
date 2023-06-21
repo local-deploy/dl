@@ -11,6 +11,9 @@
   </p>
 </p>
 
+Deploy Local — is a command line interface designed to help developers quickly deploy projects to their local machine.  
+DL is a wrapper on top of Docker and docker-compose, in basic use no additional software or libraries are required to be installed.
+
 ## Documentation [local-deploy.github.io](https://local-deploy.github.io/)
 
 ## Supported
@@ -19,9 +22,24 @@ Supported OS: Linux, macOS, Windows (via WSL2)
 Supported architectures: x64, arm64  
 Supported frameworks and CMS: Bitrix, Laravel, WordPress
 
+## Features
+
+- Support for PHP versions (apache and php-fpm) 7.3, 7.4, 8.0, 8.1, 8.2
+- Support for MySQL versions 5.7, 8.0
+- Downloading the database and files from the production server
+- Redis
+- Memcached
+- Nginx
+- Cross-platform
+- Interception of mail sent via php
+- Portainer - docker container management system
+- Does not require root access (when installing the executable file in the user's directory)
+- Accessing sites from the browser via .localhost or .nip.io
+- Ability to add custom docker-compose.yaml files to DL configuration
+
 ## Dependencies
 
-- docker
+- docker (more than v22)
 - docker-compose v2
 
 The `docker compose` (as plugin) supported
