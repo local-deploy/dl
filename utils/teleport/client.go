@@ -20,7 +20,7 @@ type teleport struct {
 
 type status struct {
 	Cluster string   `njson:"active.cluster"`
-	Logins  []string `njson:"active.traits.logins"`
+	Logins  []string `njson:"active.logins"`
 }
 
 type node struct {
