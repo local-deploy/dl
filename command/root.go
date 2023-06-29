@@ -6,6 +6,7 @@ import (
 	"github.com/docker/compose/v2/pkg/progress"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -32,6 +33,8 @@ func Execute() {
 	rootCmd.SetUsageTemplate(usageTemplate)
 	rootCmd.DisableAutoGenTag = true
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Show more output")
+
+	rootCmd.Version = viper.GetString("version")
 
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		if debug {
