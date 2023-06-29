@@ -41,7 +41,7 @@ Bash:
   $ source <(%[1]s completion bash)
 
   # To load completions for each session, execute once:
-  $ echo "\nsource <(%[1]s completion bash)" >> ~/.bashrc
+  $ echo "source <(%[1]s completion bash)" >> ~/.bashrc
 
 Zsh:
 
