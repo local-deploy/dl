@@ -90,9 +90,7 @@ publishers:
 
 aurs:
   - homepage: https://local-deploy.github.io
-    description: |-
-      Deploy Local - site deployment assistant locally
-      A convenient wrapper over docker-compose, which simplifies the local deployment of the project.
+    description: Deploy Local - site deployment assistant locally. A convenient wrapper over docker-compose, which simplifies the local deployment of the project.
     maintainers:
       - "Sergey Voloshin <dl@varme.pw>"
     license: MIT
