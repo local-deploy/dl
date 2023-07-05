@@ -102,12 +102,6 @@ aurs:
 
       # config dir
       install -m 0755 -d "${pkgdir}/etc/dl/config-files"
-
-      # completions
-      install -m 0755 -d "${pkgdir}/usr/share/bash-completion/completions/"
-      install -m 0755 -d "${pkgdir}/usr/share/zsh/site-functions/"
-      install -Dm644 "./github/scripts/packages/completions/bash" "${pkgdir}/usr/share/bash-completion/completions/dl"
-      install -Dm644 "./github/scripts/packages/completions/zsh" "${pkgdir}/usr/share/zsh/site-functions/_dl"
     commit_author:
       name: dlbot
       email: dl@varme.pw
