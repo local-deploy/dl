@@ -36,4 +36,5 @@ jobs:
           args: release --clean
         env:
           FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
+          AUR_KEY: ${{ secrets.AUR_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
