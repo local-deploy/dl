@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/docker/compose/v2/pkg/api"
 	"github.com/docker/compose/v2/pkg/progress"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
@@ -51,7 +52,10 @@ func upRun() {
 		return
 	}
 
-	containerFilter := filters.NewArgs(filters.Arg("name", "traefik"))
+	containerFilter := filters.NewArgs(
+		filters.Arg("name", "traefik"),
+		filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, "dl-services")),
+	)
 	traefikExists, _ := cli.ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter})
 
 	if len(traefikExists) == 0 {
