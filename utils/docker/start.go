@@ -100,7 +100,7 @@ func (cli *Client) StartContainers(ctx context.Context, containers Containers, r
 			w.Event(progress.StartedEvent(eventName))
 
 			if len(localContainer.AddNetwork) > 0 {
-				err = cli.addContainerToNetwork(ctx, resp.ID, localContainer.AddNetwork)
+				_ = cli.addContainerToNetwork(ctx, resp.ID, localContainer.AddNetwork)
 			}
 
 			return nil

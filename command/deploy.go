@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"sync"
 
@@ -124,7 +123,7 @@ func deployService(ctx context.Context) error {
 		err = docker.UpDbContainer()
 		if err != nil {
 			w.Event(progress.ErrorMessageEvent("Import failed", fmt.Sprint(err)))
-			os.Exit(1)
+			return err
 		}
 		pullWaitGroup.Add(1)
 		go startDump(ctx, sshClient)
