@@ -17,6 +17,7 @@ Complete documentation is available at https://local-deploy.github.io/
 ### SEE ALSO
 
 * [dl bash](dl_bash.md)     - Login to PHP container
+* [dl cert](dl_cert.md)     - CA certificate management
 * [dl completion](dl_completion.md)     - Generate completion script
 * [dl config](dl_config.md)     - Application configuration
 * [dl deploy](dl_deploy.md)     - Downloading db and files from the production server
@@ -27,6 +28,7 @@ Complete documentation is available at https://local-deploy.github.io/
 * [dl recreate](dl_recreate.md)     - Recreate containers
 * [dl self-update](dl_self-update.md)     - Update dl
 * [dl service](dl_service.md)     - Local services configuration
+* [dl status](dl_status.md)     - List containers
 * [dl templates](dl_templates.md)     - Regenerate docker-compose files
 * [dl up](dl_up.md)     - Up project
 * [dl version](dl_version.md)     - Print the version number

@@ -58,6 +58,7 @@ func Execute() {
 		recreateCommand(),
 		serviceCommand(),
 		selfUpdateCommand(),
+		statusCommand(),
 		templateCreateCommand(),
 		versionCommand(),
 	)
