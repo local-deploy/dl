@@ -12,7 +12,7 @@ $ source <(dl completion bash)
 
 # To load completions for each session, execute once:
 
-$ echo "\nsource <(dl completion bash)" >> ~/.bashrc
+$ echo "source <(dl completion bash)" >> ~/.bashrc
 
 Zsh:
 

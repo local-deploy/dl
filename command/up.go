@@ -9,14 +9,11 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/docker/compose/v2/pkg/api"
 	"github.com/docker/compose/v2/pkg/progress"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/client"
 	"github.com/local-deploy/dl/helper"
 	"github.com/local-deploy/dl/project"
 	"github.com/local-deploy/dl/utils"
+	"github.com/local-deploy/dl/utils/docker"
 	"github.com/pterm/pterm"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -46,19 +43,13 @@ func upRun() {
 	}
 
 	ctx := context.Background()
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, err := docker.NewClient()
 	if err != nil {
 		pterm.FgRed.Printfln("Failed to connect to socket")
 		return
 	}
 
-	containerFilter := filters.NewArgs(
-		filters.Arg("name", "traefik"),
-		filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, "dl-services")),
-	)
-	traefikExists, _ := cli.ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter})
-
-	if len(traefikExists) == 0 {
+	if !cli.IsServiceRunning(ctx) {
 		err := startLocalServices()
 		if err != nil {
 			pterm.FgRed.Println(err)

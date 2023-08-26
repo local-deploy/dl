@@ -28,3 +28,22 @@ type Containers []Container
 type Client struct {
 	*client.Client
 }
+
+type ContainerSummary struct {
+	ID         string
+	Name       string
+	State      string
+	Health     string
+	IPAddress  string
+	ExitCode   int
+	Publishers PortPublishers
+}
+
+type PortPublishers []PortPublisher
+
+type PortPublisher struct {
+	URL           string
+	TargetPort    int
+	PublishedPort int
+	Protocol      string
+}
