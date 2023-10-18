@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/local-deploy/dl/helper"
 	"github.com/local-deploy/dl/project"
+	"github.com/local-deploy/dl/utils"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
@@ -26,10 +26,8 @@ func envCommand() *cobra.Command {
 func runEnv() {
 	if project.IsEnvFileExists() {
 		showEnvMenu()
-	} else {
-		if copyEnv() {
-			pterm.FgGreen.Println("The .env file has been created successfully. Please specify the necessary variables.")
-		}
+	} else if copyEnv() {
+		pterm.FgGreen.Println("The .env file has been created successfully. Please specify the necessary variables.")
 	}
 }
 
@@ -46,30 +44,15 @@ func showEnvMenu() {
 		deleteEnv()
 		copyEnv()
 		pterm.FgGreen.Println("File replaced successfully.")
-		break
 	case "just show":
 		printEnvConfig()
-		break
 	case "abort":
-		break
 	}
 }
 
 func printEnvConfig() {
-	templateDir := helper.TemplateDir()
-	src := filepath.Join(templateDir, ".env.example")
-
-	file, err := os.Open(src)
-	if err != nil {
-		pterm.FgRed.Println(err)
-	}
-	defer func() {
-		if err = file.Close(); err != nil {
-			pterm.FgRed.Println(err)
-		}
-	}()
-
-	scanner := bufio.NewScanner(file)
+	src, _ := utils.Templates.Open(filepath.Join("config-files", getEnvName()))
+	scanner := bufio.NewScanner(src)
 
 	pterm.Println()
 	pterm.FgGreen.Println("Copy the variables to your .env file and adjust the values")
@@ -88,24 +71,27 @@ func deleteEnv() {
 }
 
 func copyEnv() bool {
-	var src string
+	var (
+		src       string
+		bytesRead []byte
+		err       error
+	)
 
 	currentDir, _ := os.Getwd()
-	templateDir := helper.TemplateDir()
 
 	if project.IsEnvExampleFileExists() {
 		src = filepath.Join(currentDir, ".env.example")
+		bytesRead, err = os.ReadFile(src)
+		if err != nil {
+			pterm.FgRed.Println(err)
+			return false
+		}
 	} else {
-		src = filepath.Join(templateDir, ".env.example")
+		src = filepath.Join("config-files", getEnvName())
+		bytesRead, _ = utils.Templates.ReadFile(src)
 	}
 
 	dest := filepath.Join(currentDir, ".env")
-	bytesRead, err := os.ReadFile(src)
-	if err != nil {
-		pterm.FgRed.Println(err)
-		return false
-	}
-
 	err = os.WriteFile(dest, bytesRead, 0644) //nolint:gosec
 	if err != nil {
 		pterm.FgRed.Println(err)
@@ -113,4 +99,16 @@ func copyEnv() bool {
 		return false
 	}
 	return true
+}
+
+func getEnvName() string {
+	currentDir, _ := os.Getwd()
+
+	bitrixPath := filepath.Join(currentDir, "bitrix")
+	_, err := os.Stat(bitrixPath)
+	if err != nil {
+		return ".env.example"
+	}
+
+	return ".env.example-bitrix"
 }
