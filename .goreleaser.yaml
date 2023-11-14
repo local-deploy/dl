@@ -7,7 +7,7 @@ builds:
       - CGO_ENABLED=0
     goos:
       - linux
-      - darwin
+    #      - darwin
     goarch:
       - amd64
       - arm64
@@ -15,8 +15,6 @@ builds:
       - "7"
     ignore:
       - goamd64: v4
-      - goos: darwin
-        goarch: arm64
     mod_timestamp: "{{ .CommitTimestamp }}"
 
 release:
