@@ -6,11 +6,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func restartServiceCommand() *cobra.Command {
+func recreateServiceCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "restart",
-		Short: "Restart containers",
-		Long:  `Restarts running service containers.`,
+		Use:     "recreate",
+		Aliases: []string{"restart"},
+		Short:   "Recreate containers",
+		Long:    `Recreate running service containers.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
 			recreate = true

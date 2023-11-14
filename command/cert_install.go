@@ -81,6 +81,7 @@ func installCertRun() {
 		pterm.FgGreen.Println("The local CA is now installed in the browsers trust store (requires browser restart)!")
 
 		// Restart traefik
+		// TODO: Will not work with a new client!
 		source = "traefik"
 		ctx := context.Background()
 		_ = downServiceRun(ctx)

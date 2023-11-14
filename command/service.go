@@ -22,7 +22,6 @@ func serviceCommand() *cobra.Command {
 	serviceCmd.AddCommand(
 		downServiceCommand(),
 		recreateServiceCommand(),
-		restartServiceCommand(),
 		upServiceCommand(),
 	)
 	return serviceCmd
