@@ -14,14 +14,14 @@ import (
 
 // IsNetworkAvailable checking that the network exists
 func (cli *Client) IsNetworkAvailable(networkName string) bool {
-	net := helpers.IsNetworkAvailable(cli, networkName)
+	net := helpers.IsNetworkAvailable(cli.DockerCli.Client(), networkName)
 
 	return net().Success()
 }
 
 // IsNetworkNotAvailable checking that the network does not exist
 func (cli *Client) IsNetworkNotAvailable(networkName string) bool {
-	net := helpers.IsNetworkNotAvailable(cli, networkName)
+	net := helpers.IsNetworkNotAvailable(cli.DockerCli.Client(), networkName)
 
 	return net().Success()
 }
@@ -32,7 +32,7 @@ func (cli *Client) CreateNetwork(ctx context.Context, networkName string) error 
 
 	eventName := fmt.Sprintf("Network %q", networkName)
 	w.Event(progress.CreatingEvent(eventName))
-	_, err := cli.NetworkCreate(ctx, networkName, types.NetworkCreate{})
+	_, err := cli.DockerCli.Client().NetworkCreate(ctx, networkName, types.NetworkCreate{})
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Network", fmt.Sprint(err)))
 		return err
@@ -52,8 +52,8 @@ func (cli *Client) RemoveNetwork(ctx context.Context, networkName string) error 
 		w.Event(progress.RemovingEvent(eventName))
 
 		netFilters := filters.NewArgs(filters.Arg("name", networkName))
-		list, err := cli.NetworkList(ctx, types.NetworkListOptions{Filters: netFilters})
-		err = cli.NetworkRemove(ctx, list[0].ID)
+		list, _ := cli.DockerCli.Client().NetworkList(ctx, types.NetworkListOptions{Filters: netFilters})
+		err := cli.DockerCli.Client().NetworkRemove(ctx, list[0].ID)
 
 		if err != nil {
 			w.Event(progress.ErrorMessageEvent(eventName, fmt.Sprint(err)))
@@ -68,8 +68,8 @@ func (cli *Client) RemoveNetwork(ctx context.Context, networkName string) error 
 }
 
 // addContainerToNetwork add a container to the network
-func (cli *Client) addContainerToNetwork(ctx context.Context, containerId string, networkName string) error {
-	err := cli.NetworkConnect(ctx, networkName, containerId, &network.EndpointSettings{})
+func (cli *Client) addContainerToNetwork(ctx context.Context, containerID string, networkName string) error {
+	err := cli.DockerCli.Client().NetworkConnect(ctx, networkName, containerID, &network.EndpointSettings{})
 
 	return err
 }

@@ -25,13 +25,13 @@ func (cli *Client) PullRequiredImages(ctx context.Context, containers Containers
 		for _, con := range containers {
 			container := con
 			imageFiler := filters.NewArgs(filters.Arg("reference", container.Image+":"+container.Version))
-			isImageExists, _ := cli.ImageList(ctx, types.ImageListOptions{All: true, Filters: imageFiler})
+			isImageExists, _ := cli.DockerCli.Client().ImageList(ctx, types.ImageListOptions{All: true, Filters: imageFiler})
 
 			if len(isImageExists) == 0 {
 				eg.Go(func() error {
 					w.Event(progress.Event{ID: container.Name, Status: progress.Working, Text: "Pulling"})
 
-					stream, err := cli.ImagePull(ctx, container.Image+":"+container.Version, types.ImagePullOptions{})
+					stream, err := cli.DockerCli.Client().ImagePull(ctx, container.Image+":"+container.Version, types.ImagePullOptions{})
 					if err != nil {
 						w.TailMsgf(fmt.Sprint(err))
 						w.Event(progress.ErrorEvent(container.Name))
@@ -64,7 +64,7 @@ func (cli *Client) PullRequiredImages(ctx context.Context, containers Containers
 			return err
 		}
 		return err
-	})
+	}, cli.DockerCli.Err())
 }
 
 func toPullProgressEvent(parent string, jm jsonmessage.JSONMessage, w progress.Writer) {

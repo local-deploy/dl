@@ -34,7 +34,7 @@ func selfUpdateCommand() *cobra.Command {
 		Example: "dl self-update\ndl self-update -n\ndl self-update --tag 0.5.2",
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx := context.Background()
-			tag, _ := progress.RunWithStatus(ctx, selfUpdateRun)
+			tag, _ := selfUpdateRun(ctx)
 			if len(tag) > 0 {
 				printVersion(tag)
 			}

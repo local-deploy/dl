@@ -53,7 +53,7 @@ Laravel: only the database is downloaded`,
 
 func deployRun() error {
 	ctx := context.Background()
-	err := progress.Run(ctx, deployService)
+	err := deployService(ctx)
 	if err != nil {
 		fmt.Println("Something went wrong...")
 		return nil

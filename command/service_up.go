@@ -2,18 +2,15 @@ package command
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/docker/compose/v2/pkg/progress"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/api/types/volume"
+	"github.com/compose-spec/compose-go/types"
 	"github.com/local-deploy/dl/helper"
 	"github.com/local-deploy/dl/utils"
 	"github.com/local-deploy/dl/utils/docker"
 	"github.com/spf13/cobra"
 )
 
-var restart bool
+var recreate bool
 
 func upServiceCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -22,7 +19,7 @@ func upServiceCommand() *cobra.Command {
 		Long:  `Start portainer, mailcatcher and traefik containers.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			err := progress.Run(ctx, upServiceRun)
+			err := upServiceRun(ctx)
 			if err != nil {
 				return err
 			}
@@ -34,58 +31,38 @@ func upServiceCommand() *cobra.Command {
 		},
 		ValidArgs: []string{"--service", "--restart"},
 	}
-	cmd.Flags().StringVarP(&source, "service", "s", "", "Start single service")
-	cmd.Flags().BoolVarP(&restart, "restart", "r", false, "Restart running containers")
+	cmd.Flags().BoolVarP(&recreate, "recreate", "r", false, "Recreate running containers")
 	return cmd
 }
 
 func upServiceRun(ctx context.Context) error {
-	w := progress.ContextWriter(ctx)
-
 	if !helper.WpdeployCheck() {
 		return nil
 	}
 
-	serviceContainers := getServicesContainer()
-	cli, err := docker.NewClient()
-	if err != nil {
-		w.Event(progress.ErrorMessageEvent("Docker", "Failed connect to socket"))
-		return err
+	client, _ := docker.NewClient()
+
+	services := types.Services{}
+	servicesContainers := getServicesContainer()
+	for _, service := range servicesContainers {
+		services = append(services, service)
 	}
 
-	// Check for images
-	err = cli.PullRequiredImages(ctx, serviceContainers)
-	if err != nil {
-		return err
+	project := &types.Project{
+		Name:       "dl-services",
+		WorkingDir: "",
+		Services:   services,
+		Networks: map[string]types.NetworkConfig{
+			servicesNetworkName: {
+				Name: servicesNetworkName,
+			},
+		},
 	}
 
-	// Check network
-	if cli.IsNetworkNotAvailable(servicesNetworkName) {
-		err := cli.CreateNetwork(ctx, servicesNetworkName)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Create portainer data volume
-	volumeResponse, err := cli.VolumeList(ctx, filters.NewArgs(filters.Arg("name", "portainer_data")))
-
-	//goland:noinspection GoNilness
-	if len(volumeResponse.Volumes) == 0 {
-		eventName := fmt.Sprintf("Volume %q", "portainer_data")
-		w.Event(progress.CreatingEvent(eventName))
-		_, err = cli.VolumeCreate(ctx, volume.VolumeCreateBody{Name: "portainer_data", Driver: "local"})
-		if err != nil {
-			w.Event(progress.ErrorMessageEvent("Volume", fmt.Sprint(err)))
-			return nil
-		}
-		w.Event(progress.CreatedEvent(eventName))
-	}
-
-	err = cli.StartContainers(ctx, serviceContainers, restart)
+	err := client.StartContainers(ctx, project, recreate)
 	if err != nil {
 		return err
 	}
 
-	return err
+	return nil
 }

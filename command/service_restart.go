@@ -3,7 +3,6 @@ package command
 import (
 	"context"
 
-	"github.com/docker/compose/v2/pkg/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -14,10 +13,8 @@ func restartServiceCommand() *cobra.Command {
 		Long:  `Restarts running service containers.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := context.Background()
-			err := progress.Run(ctx, func(ctx context.Context) error {
-				restart = true
-				return upServiceRun(ctx)
-			})
+			recreate = true
+			err := upServiceRun(ctx)
 			if err != nil {
 				return err
 			}

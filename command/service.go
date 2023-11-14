@@ -3,11 +3,8 @@ package command
 import (
 	"path/filepath"
 
-	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/client"
-	"github.com/docker/docker/integration/network"
+	"github.com/compose-spec/compose-go/types"
 	"github.com/local-deploy/dl/helper"
-	"github.com/local-deploy/dl/utils/docker"
 	"github.com/spf13/cobra"
 )
 
@@ -32,13 +29,13 @@ func serviceCommand() *cobra.Command {
 }
 
 // getServicesContainer local services containers
-func getServicesContainer() []docker.Container {
-	containers := []docker.Container{
+func getServicesContainer() []types.ServiceConfig {
+	containers := []types.ServiceConfig{
 		{
-			Name:    "traefik",
-			Image:   "traefik",
-			Version: "latest",
-			Cmd: []string{
+			Name:          "traefik",
+			Image:         "traefik",
+			ContainerName: "traefik",
+			Command: types.ShellCommand{
 				"--api.insecure=true",
 				"--providers.docker",
 				"--providers.docker.network=dl_default",
@@ -50,8 +47,38 @@ func getServicesContainer() []docker.Container {
 				"--entrypoints.wss.address=:8082",
 				"--serversTransport.insecureSkipVerify=true",
 			},
-			Volumes: map[string]struct{}{"/var/run/docker.sock": {}},
-			Labels: map[string]string{
+			Environment: nil,
+			Ports: []types.ServicePortConfig{
+				{
+					Mode:      "ingress",
+					HostIP:    "0.0.0.0",
+					Target:    80,
+					Published: "80",
+					Protocol:  "tcp",
+				},
+				{
+					Mode:      "ingress",
+					HostIP:    "0.0.0.0",
+					Target:    443,
+					Published: "443",
+					Protocol:  "tcp",
+				},
+				{
+					Mode:      "ingress",
+					HostIP:    "0.0.0.0",
+					Target:    8081,
+					Published: "8081",
+					Protocol:  "tcp",
+				},
+				{
+					Mode:      "ingress",
+					HostIP:    "0.0.0.0",
+					Target:    8082,
+					Published: "8082",
+					Protocol:  "tcp",
+				},
+			},
+			Labels: types.Labels{
 				"traefik.enable":                                         "true",
 				"com.docker.compose.project":                             "dl-services",
 				"traefik.http.routers.traefik.entrypoints":               "web, websecure",
@@ -60,48 +87,74 @@ func getServicesContainer() []docker.Container {
 				"traefik.http.middlewares.site-compress.compress":        "true",
 				"traefik.http.routers.traefik.middlewares":               "site-compress",
 			},
-			Ports: []string{"0.0.0.0:80:80", "0.0.0.0:443:443", "0.0.0.0:8081:8081", "0.0.0.0:8082:8082"},
-			Mounts: []mount.Mount{
+			Networks: map[string]*types.ServiceNetworkConfig{
+				servicesNetworkName: nil,
+			},
+			Scale:      1,
+			PullPolicy: types.PullPolicyIfNotPresent,
+			Restart:    types.RestartPolicyAlways,
+			Volumes: []types.ServiceVolumeConfig{
 				{
-					Type:     mount.TypeBind,
+					Type:     types.VolumeTypeBind,
 					Source:   "/var/run/docker.sock",
 					Target:   "/var/run/docker.sock",
 					ReadOnly: true,
 				},
 				{
-					Type:     mount.TypeBind,
+					Type:     types.VolumeTypeBind,
 					Source:   filepath.Join(helper.ConfigDir(), "certs"),
 					Target:   "/certs",
 					ReadOnly: true,
 				},
 			},
-			Env:     nil,
-			Network: servicesNetworkName,
 		},
 		{
-			Name:       "mail",
-			Image:      "mailhog/mailhog",
-			Version:    "latest",
-			Cmd:        nil,
-			Volumes:    nil,
-			Entrypoint: nil,
-			Labels: map[string]string{
+			Name:          "mail",
+			Image:         "mailhog/mailhog",
+			ContainerName: "mail",
+			Labels: types.Labels{
 				"com.docker.compose.project":                          "dl-services",
 				"traefik.enable":                                      "true",
 				"traefik.http.routers.mail.entrypoints":               "web, websecure",
 				"traefik.http.routers.mail.rule":                      "Host(`mail.localhost`) || HostRegexp(`mail.{ip:.*}.nip.io`)",
 				"traefik.http.services.mail.loadbalancer.server.port": "8025",
 			},
-			Ports:   []string{"0.0.0.0:1025:1025"},
-			Network: servicesNetworkName,
+			Ports: []types.ServicePortConfig{
+				{
+					Mode:      "ingress",
+					HostIP:    "0.0.0.0",
+					Target:    1025,
+					Published: "1025",
+					Protocol:  "tcp",
+				},
+			},
+			Networks: map[string]*types.ServiceNetworkConfig{
+				servicesNetworkName: {},
+			},
+			Scale:      1,
+			PullPolicy: types.PullPolicyIfNotPresent,
+			Restart:    types.RestartPolicyAlways,
 		},
 		{
-			Name:    "portainer",
-			Image:   "portainer/portainer-ce",
-			Version: "latest",
-			Cmd:     []string{"--no-analytics"},
-			Volumes: map[string]struct{}{
-				"/var/run/docker.sock:/var/run/docker.sock": {},
+			Name:          "portainer",
+			Image:         "portainer/portainer-ce",
+			ContainerName: "portainer",
+			Command: types.ShellCommand{
+				"--no-analytics",
+			},
+			Volumes: []types.ServiceVolumeConfig{
+				{
+					Type:     types.VolumeTypeBind,
+					Source:   "/var/run/docker.sock",
+					Target:   "/var/run/docker.sock",
+					ReadOnly: true,
+				},
+				{
+					Type:     types.VolumeTypeVolume,
+					Source:   "portainer_data",
+					Target:   "/data",
+					ReadOnly: false,
+				},
 			},
 			Labels: map[string]string{
 				"com.docker.compose.project":                               "dl-services",
@@ -110,38 +163,14 @@ func getServicesContainer() []docker.Container {
 				"traefik.http.routers.portainer.rule":                      "Host(`portainer.localhost`) || HostRegexp(`portainer.{ip:.*}.nip.io`)",
 				"traefik.http.services.portainer.loadbalancer.server.port": "9000",
 			},
-			// Ports: []string{"0.0.0.0:9000:9000"},
-			Mounts: []mount.Mount{
-				{
-					Type:     mount.TypeBind,
-					Source:   "/var/run/docker.sock",
-					Target:   "/var/run/docker.sock",
-					ReadOnly: true,
-				},
-				{
-					Type:     mount.TypeVolume,
-					Source:   "portainer_data",
-					Target:   "/data",
-					ReadOnly: false,
-				},
+			Networks: map[string]*types.ServiceNetworkConfig{
+				servicesNetworkName: {},
 			},
-			Network: servicesNetworkName,
+			Scale:      1,
+			PullPolicy: types.PullPolicyIfNotPresent,
+			Restart:    types.RestartPolicyAlways,
 		},
 	}
 
-	if len(source) > 0 {
-		for _, con := range containers {
-			if con.Name == source {
-				return []docker.Container{con}
-			}
-		}
-	}
-
 	return containers
-}
-
-func isNet(cli client.NetworkAPIClient) bool {
-	net := network.IsNetworkAvailable(cli, servicesNetworkName)
-
-	return net().Success()
 }

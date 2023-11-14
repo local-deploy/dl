@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/docker/compose/v2/pkg/progress"
 	"github.com/local-deploy/dl/helper"
 	"github.com/local-deploy/dl/project"
 	"github.com/local-deploy/dl/utils"
@@ -107,7 +106,7 @@ func startLocalServices() error {
 	a = strings.TrimSpace(a)
 	if strings.ToLower(a) == "y" || a == "" {
 		ctx := context.Background()
-		err := progress.Run(ctx, upServiceRun)
+		err := upServiceRun(ctx)
 		if err != nil {
 			return err
 		}

@@ -76,10 +76,10 @@ func runPs() error {
 
 func getProjectContainers(ctx context.Context, cli *docker.Client, projectName string) ([]docker.ContainerSummary, error) {
 	containerFilter := filters.NewArgs(filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, projectName)))
-	containers, _ := cli.ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter, All: true})
+	containers, _ := cli.DockerCli.Client().ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter, All: true})
 
 	netFilters := filters.NewArgs(filters.Arg("name", projectName+"_default"))
-	network, _ := cli.NetworkList(ctx, types.NetworkListOptions{Filters: netFilters})
+	network, _ := cli.DockerCli.Client().NetworkList(ctx, types.NetworkListOptions{Filters: netFilters})
 
 	summary := make([]docker.ContainerSummary, len(containers))
 	eg, ctx := errgroup.WithContext(ctx)
@@ -99,7 +99,7 @@ func getProjectContainers(ctx context.Context, cli *docker.Client, projectName s
 				})
 			}
 
-			inspect, err := cli.ContainerInspect(ctx, container.ID)
+			inspect, err := cli.DockerCli.Client().ContainerInspect(ctx, container.ID)
 			if err != nil {
 				return err
 			}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/docker/compose/v2/pkg/progress"
 	"github.com/docker/docker/api/types"
+	config "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"golang.org/x/sync/errgroup"
 )
@@ -25,7 +26,7 @@ func (cli *Client) RemoveContainers(ctx context.Context, containers Containers) 
 		return nil
 	}
 
-	removeContainers, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerFilters})
+	removeContainers, err := cli.DockerCli.Client().ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerFilters})
 	if err != nil {
 		return err
 	}
@@ -37,7 +38,7 @@ func (cli *Client) RemoveContainers(ctx context.Context, containers Containers) 
 			eventName := getContainerProgressName(container)
 
 			w.Event(progress.StoppingEvent(eventName))
-			err := cli.ContainerStop(ctx, container.ID, nil)
+			err := cli.DockerCli.Client().ContainerStop(ctx, container.ID, config.StopOptions{})
 			if err != nil {
 				w.Event(progress.ErrorMessageEvent(eventName, fmt.Sprint(err)))
 				return nil
@@ -45,7 +46,7 @@ func (cli *Client) RemoveContainers(ctx context.Context, containers Containers) 
 			w.Event(progress.StoppedEvent(eventName))
 
 			w.Event(progress.RemovingEvent(eventName))
-			err = cli.ContainerRemove(ctx, container.ID, types.ContainerRemoveOptions{
+			err = cli.DockerCli.Client().ContainerRemove(ctx, container.ID, types.ContainerRemoveOptions{
 				// RemoveVolumes: true,
 				Force: true,
 			})
