@@ -16,6 +16,8 @@ DL is a wrapper on top of Docker and docker-compose, in basic use no additional 
 
 ## Documentation [local-deploy.github.io](https://local-deploy.github.io/)
 
+![cast](docs/dl.gif)
+
 ## Supported
 
 Supported OS: Linux, macOS, Windows (via WSL2)  
