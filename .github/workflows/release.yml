@@ -1,17 +1,46 @@
 name: Build and release
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     tags:
       - "*"
 
 jobs:
-  build:
+  prepare:
     runs-on: ubuntu-latest
-    environment: production
+    name: Prepare
+    outputs:
+      branch: ${{ steps.branch.outputs.name }}
+      version: ${{ steps.version.outputs.tag }}
+      strategy: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Setup matrix
+        id: set-matrix
+        run: echo "matrix=[{\"runner\":\"ubuntu-latest\",\"os\":\"linux\",\"arch\":\"amd64\"},{\"runner\":\"ubuntu-latest\",\"os\":\"linux\",\"arch\":\"arm64\"},{\"runner\":\"macos-latest\",\"os\":\"darwin\",\"arch\":\"amd64\"},{\"runner\":\"macos-latest\",\"os\":\"darwin\",\"arch\":\"arm64\"}]" >> "$GITHUB_OUTPUT"
+      - name: Extract branch name
+        id: branch
+        run: echo "name=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> "$GITHUB_OUTPUT"
+      - name: Extract version
+        id: version
+        run: echo "tag=${GITHUB_REF#refs/*/}" >> "$GITHUB_OUTPUT"
+
+  build:
+    runs-on: ${{ matrix.runner }}
+    name: Build ${{ matrix.os }}/${{ matrix.arch }}
+    needs:
+      - prepare
+    strategy:
+      matrix:
+        include: ${{fromJson(needs.prepare.outputs.strategy)}}
+    env:
+      CGO: 0
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -21,20 +50,190 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version-file: 'go.mod'
-          cache: true
 
-      #      - name: Loading dependencies
-      #        run: go mod download
-      #
-      #      - name: Test
-      #        run: go test -v ./...
+      - name: Set CGO
+        if: ${{ matrix.os == 'darwin' }}
+        run: echo "CGO=1" >> $GITHUB_ENV
 
-      - name: Make release
-        uses: goreleaser/goreleaser-action@v4
+      - name: Build
+        run: |
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} CGO_ENABLED=${{ env.CGO }} go build -ldflags "-s -w -X 'main.version=${{ needs.prepare.outputs.version }}'" -o "$GITHUB_WORKSPACE"/dist/dl-${{ matrix.os }}-${{ matrix.arch }} .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
         with:
-          version: latest
-          args: release --clean
+          path: dist/dl-${{ matrix.os }}-${{ matrix.arch }}
+          name: bin
+          retention-days: 1
+
+  archives:
+    name: Packing ${{ matrix.os }}-${{ matrix.arch }}.tar.gz
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - prepare
+    strategy:
+      matrix:
+        include: ${{fromJson(needs.prepare.outputs.strategy)}}
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: bin
+          path: dist
+      - name: Create archives
+        run: |
+          cd "$GITHUB_WORKSPACE"/dist &&
+          mv dl-${{ matrix.os }}-${{ matrix.arch }} dl &&
+          tar -czvf dl-${{ needs.prepare.outputs.version }}-${{ matrix.os }}-${{ matrix.arch }}.tar.gz dl
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          path: dist/dl-${{ needs.prepare.outputs.version }}-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
+          name: releases
+          retention-days: 1
+
+  packages:
+    name: Create ${{ matrix.arch }}.${{ matrix.type }}
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - prepare
+    strategy:
+      matrix:
+        package: [ deb, archlinux, rpm ]
+        arch: [ amd64, arm64 ]
+        include:
+          - type: pkg.tar.zst
+            package: archlinux
+          - type: deb
+            package: deb
+          - type: rpm
+            package: rpm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: bin
+          path: bin
+      - name: Rename binary
+        run: cd "$GITHUB_WORKSPACE"/bin && mv dl-linux-${{ matrix.arch }} dl
+      - name: Download nFPM
+        run: |
+          cd "$GITHUB_WORKSPACE" &&
+          wget https://github.com/goreleaser/nfpm/releases/download/v2.35.2/nfpm_2.35.2_Linux_x86_64.tar.gz &&
+          tar -xzvf nfpm_2.35.2_Linux_x86_64.tar.gz
+      - name: Create package
+        env:
+          PKG_VERSION: ${{ needs.prepare.outputs.version }}
+          PKG_ARCH: ${{ matrix.arch }}
+        run: |
+          cd "$GITHUB_WORKSPACE" &&
+          mkdir -p dist &&
+          ./nfpm package -p ${{ matrix.package }} -t dist/dl-${{ needs.prepare.outputs.version }}-linux-${{ matrix.arch }}.${{ matrix.type }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          path: dist/
+          name: releases
+          retention-days: 1
+
+  checksum:
+    name: Create checksum
+    runs-on: ubuntu-latest
+    needs:
+      - packages
+      - archives
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: releases
+      - name: Generate checksum
+        uses: jmgilman/actions-generate-checksum@v1
+        with:
+          patterns: |
+            *.tar.gz
+            *.pkg.tar.zst
+            *.deb
+            *.rpm
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: releases
+          path: checksum.txt
+          retention-days: 1
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs:
+      - checksum
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Changelog
+        uses: varrcan/generate-pretty-changelog-action@v1
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: releases
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: ${{ contains(github.ref, '-rc') }}
+          body_path: ${{ github.workspace }}/CHANGELOG.md
+          files: |
+            checksum.txt
+            *.tar.gz
+            *.pkg.tar.zst
+            *.deb
+            *.rpm
+
+  aur-publish:
+    name: AUR Publish
+    runs-on: ubuntu-latest
+    environment: production
+    if: "!contains(github.ref, '-rc')"
+    needs:
+      - release
+    steps:
+      - name: Publish AUR package
+        uses: ATiltedTree/create-aur-release@v1
+        with:
+          package_name: dl-bin
+          commit_username: "dlbot"
+          commit_email: dl@varme.pw
+          ssh_private_key: ${{ secrets.AUR_KEY }}
+
+  fury-publish:
+    name: Fury publish ${{ matrix.arch }}.${{ matrix.type }}
+    runs-on: ubuntu-latest
+    environment: production
+    if: "!contains(github.ref, '-rc')"
+    needs:
+      - release
+      - prepare
+    strategy:
+      matrix:
+        arch: [ amd64, arm64 ]
+        type: [ deb, rpm ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: releases
+          path: dist
+      - name: Publish Fury package
         env:
           FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
-          AUR_KEY: ${{ secrets.AUR_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bash ./.github/scripts/fury-upload.sh dl-${{ needs.prepare.outputs.version }}-linux-${{ matrix.arch }}.${{ matrix.type }}
