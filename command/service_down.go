@@ -7,7 +7,6 @@ import (
 	"github.com/compose-spec/compose-go/types"
 	"github.com/docker/compose/v2/pkg/api"
 	"github.com/local-deploy/dl/containers"
-	"github.com/local-deploy/dl/helper"
 	"github.com/local-deploy/dl/utils/docker"
 	"github.com/spf13/cobra"
 )
@@ -34,7 +33,7 @@ Valid parameters for the "--service" flag: portainer, mail, traefik`,
 
 func downServiceRun(ctx context.Context) error {
 	client, _ := docker.NewClient()
-	helper.CheckOldNetwork(ctx, client)
+	checkOldNetwork(ctx, client)
 
 	services := types.Services{}
 	servicesContainers := getServicesContainer()

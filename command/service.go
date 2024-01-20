@@ -1,8 +1,15 @@
 package command
 
 import (
+	"context"
+
 	"github.com/compose-spec/compose-go/types"
+	dockerTypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/local-deploy/dl/containers"
+	"github.com/local-deploy/dl/utils/docker"
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
 
@@ -33,4 +40,36 @@ func getServicesContainer() []types.ServiceConfig {
 	}
 
 	return configs
+}
+
+// CheckOldNetwork deleting the old dl_default network created in previous versions of dl
+func checkOldNetwork(ctx context.Context, client *docker.Client) {
+	netFilters := filters.NewArgs(filters.Arg("name", "dl_default"))
+	list, _ := client.DockerCli.Client().NetworkList(ctx, dockerTypes.NetworkListOptions{Filters: netFilters})
+	if len(list) == 0 {
+		return
+	}
+
+	inspect, err := client.DockerCli.Client().NetworkInspect(ctx, "dl_default", dockerTypes.NetworkInspectOptions{})
+	if err != nil {
+		return
+	}
+
+	for label, value := range inspect.Labels {
+		if label == "com.docker.compose.network" && value == "dl_default" {
+			return
+		}
+	}
+
+	for _, con := range inspect.Containers {
+		_ = client.DockerCli.Client().ContainerStop(ctx, con.Name, container.StopOptions{})
+		_ = client.DockerCli.Client().ContainerRemove(ctx, con.Name, dockerTypes.ContainerRemoveOptions{Force: true})
+	}
+
+	err = client.DockerCli.Client().NetworkRemove(ctx, "dl_default")
+	if err != nil {
+		return
+	}
+
+	pterm.FgYellow.Println("Successful removal containers of the previous version.")
 }

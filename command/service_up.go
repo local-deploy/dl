@@ -42,7 +42,7 @@ func upServiceRun(ctx context.Context) error {
 	}
 
 	client, _ := docker.NewClient()
-	helper.CheckOldNetwork(ctx, client)
+	checkOldNetwork(ctx, client)
 
 	services := types.Services{}
 	servicesContainers := getServicesContainer()

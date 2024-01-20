@@ -9,10 +9,8 @@ import (
 	"strings"
 
 	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
-	"github.com/local-deploy/dl/utils/docker"
 	"github.com/pterm/pterm"
 )
 
@@ -73,36 +71,4 @@ func wpdeployDown() error {
 		return nil
 	}
 	return errorMsg
-}
-
-// CheckOldNetwork deleting the old dl_default network created in previous versions of dl
-func CheckOldNetwork(ctx context.Context, client *docker.Client) {
-	netFilters := filters.NewArgs(filters.Arg("name", "dl_default"))
-	list, _ := client.DockerCli.Client().NetworkList(ctx, types.NetworkListOptions{Filters: netFilters})
-	if len(list) == 0 {
-		return
-	}
-
-	inspect, err := client.DockerCli.Client().NetworkInspect(ctx, "dl_default", types.NetworkInspectOptions{})
-	if err != nil {
-		return
-	}
-
-	for label, value := range inspect.Labels {
-		if label == "com.docker.compose.network" && value == "dl_default" {
-			return
-		}
-	}
-
-	for _, con := range inspect.Containers {
-		_ = client.DockerCli.Client().ContainerStop(ctx, con.Name, container.StopOptions{})
-		_ = client.DockerCli.Client().ContainerRemove(ctx, con.Name, types.ContainerRemoveOptions{Force: true})
-	}
-
-	err = client.DockerCli.Client().NetworkRemove(ctx, "dl_default")
-	if err != nil {
-		return
-	}
-
-	pterm.FgYellow.Println("Successful removal containers of the previous version.")
 }
