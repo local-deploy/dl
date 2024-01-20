@@ -6,6 +6,8 @@ import (
 
 	"github.com/compose-spec/compose-go/types"
 	"github.com/docker/compose/v2/pkg/api"
+	"github.com/local-deploy/dl/containers"
+	"github.com/local-deploy/dl/helper"
 	"github.com/local-deploy/dl/utils/docker"
 	"github.com/spf13/cobra"
 )
@@ -32,6 +34,7 @@ Valid parameters for the "--service" flag: portainer, mail, traefik`,
 
 func downServiceRun(ctx context.Context) error {
 	client, _ := docker.NewClient()
+	helper.CheckOldNetwork(ctx, client)
 
 	services := types.Services{}
 	servicesContainers := getServicesContainer()
@@ -44,18 +47,17 @@ func downServiceRun(ctx context.Context) error {
 		WorkingDir: "",
 		Services:   services,
 		Networks: map[string]types.NetworkConfig{
-			servicesNetworkName: {
-				Name: servicesNetworkName,
+			containers.ServicesNetworkName: {
+				Name: containers.ServicesNetworkName,
 			},
 		},
 	}
 
-	var timeout *time.Duration
+	timeoutValue := 30 * time.Second
 	err := client.Backend.Down(ctx, project.Name, api.DownOptions{
 		RemoveOrphans: false,
 		Project:       project,
-		Timeout:       timeout,
-		Images:        "",
+		Timeout:       &timeoutValue,
 		Volumes:       false,
 	})
 	if err != nil {

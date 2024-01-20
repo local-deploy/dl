@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/compose-spec/compose-go/types"
+	"github.com/local-deploy/dl/containers"
 	"github.com/local-deploy/dl/helper"
 	"github.com/local-deploy/dl/utils"
 	"github.com/local-deploy/dl/utils/docker"
@@ -41,6 +42,7 @@ func upServiceRun(ctx context.Context) error {
 	}
 
 	client, _ := docker.NewClient()
+	helper.CheckOldNetwork(ctx, client)
 
 	services := types.Services{}
 	servicesContainers := getServicesContainer()
@@ -53,8 +55,8 @@ func upServiceRun(ctx context.Context) error {
 		WorkingDir: "",
 		Services:   services,
 		Networks: map[string]types.NetworkConfig{
-			servicesNetworkName: {
-				Name: servicesNetworkName,
+			containers.ServicesNetworkName: {
+				Name: containers.ServicesNetworkName,
 			},
 		},
 	}
