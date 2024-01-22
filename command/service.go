@@ -1,18 +1,19 @@
 package command
 
 import (
-	"path/filepath"
+	"context"
 
-	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/client"
-	"github.com/docker/docker/integration/network"
-	"github.com/local-deploy/dl/helper"
+	"github.com/compose-spec/compose-go/types"
+	dockerTypes "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
+	"github.com/local-deploy/dl/containers"
 	"github.com/local-deploy/dl/utils/docker"
+	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
 )
 
 var source string
-var servicesNetworkName = "dl_default"
 
 var serviceCmd = &cobra.Command{
 	Use:       "service",
@@ -25,123 +26,50 @@ func serviceCommand() *cobra.Command {
 	serviceCmd.AddCommand(
 		downServiceCommand(),
 		recreateServiceCommand(),
-		restartServiceCommand(),
 		upServiceCommand(),
 	)
 	return serviceCmd
 }
 
 // getServicesContainer local services containers
-func getServicesContainer() []docker.Container {
-	containers := []docker.Container{
-		{
-			Name:    "traefik",
-			Image:   "traefik",
-			Version: "latest",
-			Cmd: []string{
-				"--api.insecure=true",
-				"--providers.docker",
-				"--providers.docker.network=dl_default",
-				"--providers.docker.exposedbydefault=false",
-				"--providers.file.directory=/certs/conf",
-				"--entrypoints.web.address=:80",
-				"--entrypoints.websecure.address=:443",
-				"--entrypoints.ws.address=:8081",
-				"--entrypoints.wss.address=:8082",
-				"--serversTransport.insecureSkipVerify=true",
-			},
-			Volumes: map[string]struct{}{"/var/run/docker.sock": {}},
-			Labels: map[string]string{
-				"traefik.enable":                                         "true",
-				"com.docker.compose.project":                             "dl-services",
-				"traefik.http.routers.traefik.entrypoints":               "web, websecure",
-				"traefik.http.routers.traefik.rule":                      "Host(`traefik.localhost`) || HostRegexp(`traefik.{ip:.*}.nip.io`)",
-				"traefik.http.services.traefik.loadbalancer.server.port": "8080",
-				"traefik.http.middlewares.site-compress.compress":        "true",
-				"traefik.http.routers.traefik.middlewares":               "site-compress",
-			},
-			Ports: []string{"0.0.0.0:80:80", "0.0.0.0:443:443", "0.0.0.0:8081:8081", "0.0.0.0:8082:8082"},
-			Mounts: []mount.Mount{
-				{
-					Type:     mount.TypeBind,
-					Source:   "/var/run/docker.sock",
-					Target:   "/var/run/docker.sock",
-					ReadOnly: true,
-				},
-				{
-					Type:     mount.TypeBind,
-					Source:   filepath.Join(helper.ConfigDir(), "certs"),
-					Target:   "/certs",
-					ReadOnly: true,
-				},
-			},
-			Env:     nil,
-			Network: servicesNetworkName,
-		},
-		{
-			Name:       "mail",
-			Image:      "mailhog/mailhog",
-			Version:    "latest",
-			Cmd:        nil,
-			Volumes:    nil,
-			Entrypoint: nil,
-			Labels: map[string]string{
-				"com.docker.compose.project":                          "dl-services",
-				"traefik.enable":                                      "true",
-				"traefik.http.routers.mail.entrypoints":               "web, websecure",
-				"traefik.http.routers.mail.rule":                      "Host(`mail.localhost`) || HostRegexp(`mail.{ip:.*}.nip.io`)",
-				"traefik.http.services.mail.loadbalancer.server.port": "8025",
-			},
-			Ports:   []string{"0.0.0.0:1025:1025"},
-			Network: servicesNetworkName,
-		},
-		{
-			Name:    "portainer",
-			Image:   "portainer/portainer-ce",
-			Version: "latest",
-			Cmd:     []string{"--no-analytics"},
-			Volumes: map[string]struct{}{
-				"/var/run/docker.sock:/var/run/docker.sock": {},
-			},
-			Labels: map[string]string{
-				"com.docker.compose.project":                               "dl-services",
-				"traefik.enable":                                           "true",
-				"traefik.http.routers.portainer.entrypoints":               "web, websecure",
-				"traefik.http.routers.portainer.rule":                      "Host(`portainer.localhost`) || HostRegexp(`portainer.{ip:.*}.nip.io`)",
-				"traefik.http.services.portainer.loadbalancer.server.port": "9000",
-			},
-			// Ports: []string{"0.0.0.0:9000:9000"},
-			Mounts: []mount.Mount{
-				{
-					Type:     mount.TypeBind,
-					Source:   "/var/run/docker.sock",
-					Target:   "/var/run/docker.sock",
-					ReadOnly: true,
-				},
-				{
-					Type:     mount.TypeVolume,
-					Source:   "portainer_data",
-					Target:   "/data",
-					ReadOnly: false,
-				},
-			},
-			Network: servicesNetworkName,
-		},
+func getServicesContainer() []types.ServiceConfig {
+	configs := []types.ServiceConfig{
+		containers.Traefik(),
+		containers.Mail(),
+		containers.Portainer(),
 	}
 
-	if len(source) > 0 {
-		for _, con := range containers {
-			if con.Name == source {
-				return []docker.Container{con}
-			}
+	return configs
+}
+
+// CheckOldNetwork deleting the old dl_default network created in previous versions of dl
+func checkOldNetwork(ctx context.Context, client *docker.Client) {
+	netFilters := filters.NewArgs(filters.Arg("name", "dl_default"))
+	list, _ := client.DockerCli.Client().NetworkList(ctx, dockerTypes.NetworkListOptions{Filters: netFilters})
+	if len(list) == 0 {
+		return
+	}
+
+	inspect, err := client.DockerCli.Client().NetworkInspect(ctx, "dl_default", dockerTypes.NetworkInspectOptions{})
+	if err != nil {
+		return
+	}
+
+	for label, value := range inspect.Labels {
+		if label == "com.docker.compose.network" && value == "dl_default" {
+			return
 		}
 	}
 
-	return containers
-}
+	for _, con := range inspect.Containers {
+		_ = client.DockerCli.Client().ContainerStop(ctx, con.Name, container.StopOptions{})
+		_ = client.DockerCli.Client().ContainerRemove(ctx, con.Name, dockerTypes.ContainerRemoveOptions{Force: true})
+	}
 
-func isNet(cli client.NetworkAPIClient) bool {
-	net := network.IsNetworkAvailable(cli, servicesNetworkName)
+	err = client.DockerCli.Client().NetworkRemove(ctx, "dl_default")
+	if err != nil {
+		return
+	}
 
-	return net().Success()
+	pterm.FgYellow.Println("Successful removal containers of the previous version.")
 }

@@ -17,15 +17,55 @@ import (
 
 var remotePhpPath string
 
-// DumpDb Database import from server
-func DumpDb(ctx context.Context, client *client.Client, tables []string) {
-	var db *DbSettings
+// DumpDB Database import from server
+func DumpDB(ctx context.Context, client *client.Client, tables []string) {
 	var err error
 
 	c := &SshClient{client}
-
 	w := progress.ContextWriter(ctx)
 	w.Event(progress.Event{ID: "Database", Status: progress.Working})
+
+	db, err := c.getMysqlSettings()
+	if err != nil {
+		w.Event(progress.ErrorMessageEvent("Database", fmt.Sprint(err)))
+		return
+	}
+
+	if len(db.Port) == 0 {
+		logrus.Info("Port not set, standard port 3306 is used")
+		db.Port = "3306"
+	}
+
+	if len(tables) > 0 {
+		dumpTables := strings.Join(tables, " ")
+		err = c.mysqlDumpTables(ctx, db, dumpTables)
+	} else {
+		err = c.mysqlDump(ctx, db)
+	}
+
+	if err != nil {
+		w.Event(progress.ErrorMessageEvent("Database", fmt.Sprintf("Failed to create database dump: %s", err)))
+		return
+	}
+
+	err = c.downloadDump(ctx)
+	if err != nil {
+		w.Event(progress.ErrorMessageEvent("Database", fmt.Sprintf("Failed to download dump: %s", err)))
+		return
+	}
+
+	err = c.ImportDB(ctx)
+	if err != nil {
+		w.Event(progress.ErrorMessageEvent("Database", fmt.Sprintf("Access error: %s", err)))
+		return
+	}
+
+	w.Event(progress.Event{ID: "Database", Status: progress.Done})
+}
+
+func (c SshClient) getMysqlSettings() (*DbSettings, error) {
+	var err error
+	var db *DbSettings
 
 	mysqlDataBase := Env.GetString("MYSQL_DATABASE_SRV")
 	mysqlLogin := Env.GetString("MYSQL_LOGIN_SRV")
@@ -48,49 +88,19 @@ func DumpDb(ctx context.Context, client *client.Client, tables []string) {
 		logrus.Info("Attempt to access database")
 		switch c.Config.FwType {
 		case "bitrix":
-			db, err = c.accessBitrixDb()
+			db, err = c.accessBitrixDB()
 		case "laravel":
-			db, err = c.accessLaravelDb()
+			db, err = c.accessLaravelDB()
 		case "wordpress":
-			db, err = c.accessWpDb()
+			db, err = c.accessWpDB()
 		}
 
 		if err != nil {
-			w.Event(progress.ErrorMessageEvent("Database access error", fmt.Sprint(err)))
-			return
+			return nil, fmt.Errorf("access error: %w", err)
 		}
 	}
 
-	if len(db.Port) == 0 {
-		logrus.Info("Port not set, standard port 3306 is used")
-		db.Port = "3306"
-	}
-
-	if len(tables) > 0 {
-		dumpTables := strings.Join(tables, " ")
-		err = c.mysqlDumpTables(ctx, db, dumpTables)
-	} else {
-		err = c.mysqlDump(ctx, db)
-	}
-
-	if err != nil {
-		w.Event(progress.ErrorMessageEvent("Failed to create database dump", fmt.Sprint(err)))
-		w.Event(progress.Event{ID: "Database", Status: progress.Error})
-		return
-	}
-
-	err = c.downloadDump(ctx)
-	if err != nil {
-		w.Event(progress.Event{ID: "Database", Status: progress.Error})
-		return
-	}
-
-	c.ImportDb(ctx)
-
-	w.Event(progress.Event{
-		ID:     "Database",
-		Status: progress.Done,
-	})
+	return db, nil
 }
 
 // checkPhpAvailable It possible that PHP not installed on the server in the host system. For example, through docker.
@@ -107,8 +117,8 @@ func (c SshClient) checkPhpAvailable() {
 	logrus.Info("PHP not available")
 }
 
-// accessBitrixDb Attempt to determine database accesses
-func (c SshClient) accessBitrixDb() (*DbSettings, error) {
+// accessBitrixDB Attempt to determine database accesses
+func (c SshClient) accessBitrixDB() (*DbSettings, error) {
 	var catCmd string
 	if len(remotePhpPath) > 0 {
 		// A more precise way to define variables
@@ -151,8 +161,8 @@ echo $settings["connections"]["value"]["default"]["password"]."\n";'`,
 	}, err
 }
 
-// accessWpDb Attempt to determine database accesses
-func (c SshClient) accessWpDb() (*DbSettings, error) {
+// accessWpDB Attempt to determine database accesses
+func (c SshClient) accessWpDB() (*DbSettings, error) {
 	catCmd := strings.Join([]string{"cd", c.Config.Catalog, "&&",
 		`$(which php) -r 'error_reporting(0); define("SHORTINIT",true); $settings = include "wp-config.php"; echo DB_HOST."\n"; echo DB_NAME."\n"; echo DB_USER."\n"; echo DB_PASSWORD."\n";'`,
 	}, " ")
@@ -179,7 +189,7 @@ func (c SshClient) accessWpDb() (*DbSettings, error) {
 	}, err
 }
 
-func (c SshClient) accessLaravelDb() (*DbSettings, error) {
+func (c SshClient) accessLaravelDB() (*DbSettings, error) {
 	catCmd := strings.Join([]string{"cd", c.Config.Catalog, "&&", "export $(grep -v '^#' .env | xargs)", "&&",
 		`echo $DB_HOST`, "&&",
 		`echo $DB_DATABASE`, "&&",
@@ -209,9 +219,9 @@ func (c SshClient) accessLaravelDb() (*DbSettings, error) {
 // mysqlDump Create database dump
 func (c SshClient) mysqlDump(ctx context.Context, db *DbSettings) error {
 	w := progress.ContextWriter(ctx)
-	w.Event(progress.Event{ID: "Create database dump", ParentID: "Database", Status: progress.Working})
+	w.Event(progress.Event{ID: "Database", StatusText: "Create database dump"})
 
-	dump := c.checkMySqlDumpAvailable()
+	dump := c.checkMySQLDumpAvailable()
 	if dump != nil {
 		return errors.New("mysqldump not installed, database dump not possible")
 	}
@@ -240,17 +250,15 @@ func (c SshClient) mysqlDump(ctx context.Context, db *DbSettings) error {
 		return err
 	}
 
-	w.Event(progress.Event{ID: "Create database dump", ParentID: "Database", Status: progress.Done})
-
 	return nil
 }
 
 // mysqlDumpTables Create only tables dump
 func (c SshClient) mysqlDumpTables(ctx context.Context, db *DbSettings, dumpTables string) error {
 	w := progress.ContextWriter(ctx)
-	w.Event(progress.Event{ID: "Create database dump", ParentID: "Database", Status: progress.Working})
+	w.Event(progress.Event{ID: "Database", StatusText: "Creating database dump"})
 
-	dump := c.checkMySqlDumpAvailable()
+	dump := c.checkMySQLDumpAvailable()
 	if dump != nil {
 		return errors.New("mysqldump not installed, database dump not possible")
 	}
@@ -270,8 +278,6 @@ func (c SshClient) mysqlDumpTables(ctx context.Context, db *DbSettings, dumpTabl
 	if err != nil {
 		return err
 	}
-
-	w.Event(progress.Event{ID: "Create database dump", ParentID: "Database", Status: progress.Done})
 
 	return nil
 }
@@ -297,7 +303,7 @@ func (d DbSettings) DumpDataTablesParams() string {
 	return strings.Join(params, " ")
 }
 
-func (c SshClient) checkMySqlDumpAvailable() error {
+func (c SshClient) checkMySQLDumpAvailable() error {
 	logrus.Info("Check if mysqldump available")
 	dumpCmd := strings.Join([]string{"cd", c.Config.Catalog, "&&", "which mysqldump"}, " ")
 	logrus.Infof("Run command: %s", dumpCmd)
@@ -370,8 +376,7 @@ func (d DbSettings) FormatIgnoredTables() string {
 // downloadDump Downloading a dump and deleting an archive from the server
 func (c SshClient) downloadDump(ctx context.Context) error {
 	w := progress.ContextWriter(ctx)
-
-	w.Event(progress.Event{ID: "Download database dump", ParentID: "Database", Status: progress.Working})
+	w.Event(progress.Event{ID: "Database", StatusText: "Download database dump"})
 
 	serverPath := filepath.Join(c.Config.Catalog, "production.sql.gz")
 	localPath := filepath.Join(Env.GetString("PWD"), "production.sql.gz")
@@ -380,35 +385,29 @@ func (c SshClient) downloadDump(ctx context.Context) error {
 	err := c.Download(ctx, serverPath, localPath)
 
 	if err != nil {
-		w.Event(progress.ErrorMessageEvent("Download error", fmt.Sprint(err)))
 		return err
 	}
 
 	err = c.CleanRemote(serverPath)
 	if err != nil {
-		w.Event(progress.ErrorMessageEvent("File deletion error", fmt.Sprint(err)))
 		return err
 	}
-
-	w.Event(progress.Event{ID: "Download database dump", ParentID: "Database", Status: progress.Done})
 
 	return err
 }
 
-// ImportDb Importing a database into a local container
-func (c SshClient) ImportDb(ctx context.Context) {
+// ImportDB Importing a database into a local container
+func (c SshClient) ImportDB(ctx context.Context) error {
 	w := progress.ContextWriter(ctx)
-	w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Working})
+	w.Event(progress.Event{ID: "Database", StatusText: "Import database"})
 
 	docker, err := exec.LookPath("docker")
 	if err != nil {
-		w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Error, Text: fmt.Sprint(err)})
-		return
+		return err
 	}
 	gunzip, err := exec.LookPath("gunzip")
 	if err != nil {
-		w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Error, Text: fmt.Sprint(err)})
-		return
+		return err
 	}
 
 	// TODO: переписать на sdk
@@ -425,7 +424,7 @@ func (c SshClient) ImportDb(ctx context.Context) {
 	logrus.Infof("Run command: %s", commandImport)
 	outImport, err := exec.Command("bash", "-c", commandImport).CombinedOutput() //nolint:gosec
 	if err != nil {
-		w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Error, Text: string(outImport)})
+		return errors.New(string(outImport))
 	}
 
 	if c.Config.FwType == "bitrix" {
@@ -442,17 +441,15 @@ INSERT IGNORE INTO b_lang_domain VALUES ('s1', '` + nip + `');"`
 		logrus.Infof("Run command: %s", commandUpdate)
 		outUpdate, err := exec.Command("bash", "-c", commandUpdate).CombinedOutput() //nolint:gosec
 		if err != nil {
-			w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Error, Text: string(outUpdate)})
-			return
+			return errors.New(string(outUpdate))
 		}
 	}
 
 	logrus.Infof("Delete dump: %s", localPath)
 	err = exec.Command("rm", localPath).Run()
-
 	if err != nil {
-		w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Error, Text: fmt.Sprint(err)})
+		return err
 	}
 
-	w.Event(progress.Event{ID: "Import database", ParentID: "Database", Status: progress.Done})
+	return nil
 }

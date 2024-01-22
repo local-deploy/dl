@@ -5,25 +5,53 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/docker/cli/cli/command"
 	"github.com/docker/cli/cli/command/formatter"
+	"github.com/docker/cli/cli/flags"
 	"github.com/docker/compose/v2/pkg/api"
+	"github.com/docker/compose/v2/pkg/compose"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/client"
 )
 
 // NewClient docker client initialization
 func NewClient() (*Client, error) {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, composeService, err := newComposeService()
+	if err != nil {
+		return nil, err
+	}
+	c := &Client{
+		DockerCli: cli,
+		Backend:   composeService,
+	}
+
+	return c, err
+}
+
+func newComposeService() (*command.DockerCli, api.Service, error) {
+	dockerCli, err := newDockerCli()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return dockerCli, api.NewServiceProxy().WithService(compose.NewComposeService(dockerCli)), err
+}
+
+func newDockerCli() (*command.DockerCli, error) {
+	dockerCLI, err := command.NewDockerCli()
 	if err != nil {
 		return nil, err
 	}
 
-	c := &Client{
-		Client: cli,
+	options := flags.NewClientOptions()
+	options.LogLevel = "fatal"
+
+	err = dockerCLI.Initialize(options)
+	if err != nil {
+		return nil, err
 	}
 
-	return c, err
+	return dockerCLI, err
 }
 
 // IsServiceRunning Checking if local services running
@@ -32,7 +60,7 @@ func (cli *Client) IsServiceRunning(ctx context.Context) bool {
 		filters.Arg("name", "traefik"),
 		filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, "dl-services")),
 	)
-	traefikExists, _ := cli.ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter})
+	traefikExists, _ := cli.DockerCli.Client().ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter})
 
 	return len(traefikExists) > 0
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 
@@ -53,7 +54,7 @@ Laravel: only the database is downloaded`,
 
 func deployRun() error {
 	ctx := context.Background()
-	err := progress.Run(ctx, deployService)
+	err := progress.RunWithTitle(ctx, deployService, os.Stdout, "Deploy")
 	if err != nil {
 		fmt.Println("Something went wrong...")
 		return nil
@@ -156,7 +157,7 @@ func startFiles(ctx context.Context, c *client.Client) {
 
 func startDump(ctx context.Context, c *client.Client) {
 	defer pullWaitGroup.Done()
-	project.DumpDb(ctx, c, tables)
+	project.DumpDB(ctx, c, tables)
 }
 
 func detectFw() (string, error) {

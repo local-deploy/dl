@@ -1,8 +1,9 @@
 package docker
 
 import (
+	"github.com/docker/cli/cli/command"
+	"github.com/docker/compose/v2/pkg/api"
 	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/client"
 )
 
 // Container contains container data needed to run
@@ -26,7 +27,8 @@ type Containers []Container
 
 // Client docker client
 type Client struct {
-	*client.Client
+	DockerCli command.Cli
+	Backend   api.Service
 }
 
 type ContainerSummary struct {

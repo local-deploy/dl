@@ -80,10 +80,9 @@ func installCertRun() {
 		storeCertConfig(true)
 		pterm.FgGreen.Println("The local CA is now installed in the browsers trust store (requires browser restart)!")
 
-		// Restart traefik
-		source = "traefik"
+		// Recreate local services
+		recreate = true
 		ctx := context.Background()
-		_ = downServiceRun(ctx)
 		err = upServiceRun(ctx)
 		if err != nil {
 			pterm.FgYellow.Println("Restart services for changes to take effect: dl service recreate")

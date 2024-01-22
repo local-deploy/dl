@@ -39,7 +39,7 @@ func Execute() {
 	rootCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
 		if debug {
 			logrus.SetLevel(logrus.DebugLevel)
-			progress.Mode = "plain"
+			progress.Mode = progress.ModePlain
 		}
 	}
 

@@ -2,8 +2,11 @@ package command
 
 import (
 	"context"
+	"time"
 
-	"github.com/docker/compose/v2/pkg/progress"
+	"github.com/compose-spec/compose-go/types"
+	"github.com/docker/compose/v2/pkg/api"
+	"github.com/local-deploy/dl/containers"
 	"github.com/local-deploy/dl/utils/docker"
 	"github.com/spf13/cobra"
 )
@@ -16,41 +19,49 @@ func downServiceCommand() *cobra.Command {
 Valid parameters for the "--service" flag: portainer, mail, traefik`,
 		Example: "dl down\ndl down -s portainer",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := context.Background()
-			err := progress.Run(ctx, downServiceRun)
+			ctx := cmd.Context()
+			err := downServiceRun(ctx)
 			if err != nil {
 				return err
 			}
 
 			return nil
 		},
-		ValidArgs: []string{"--service"},
 	}
-	cmd.Flags().StringVarP(&source, "service", "s", "", "Stop and remove single service")
 	return cmd
 }
 
 func downServiceRun(ctx context.Context) error {
-	w := progress.ContextWriter(ctx)
+	client, _ := docker.NewClient()
+	checkOldNetwork(ctx, client)
 
-	serviceContainers := getServicesContainer()
-	cli, err := docker.NewClient()
+	services := types.Services{}
+	servicesContainers := getServicesContainer()
+	for _, service := range servicesContainers {
+		services = append(services, service)
+	}
+
+	project := &types.Project{
+		Name:       "dl-services",
+		WorkingDir: "",
+		Services:   services,
+		Networks: map[string]types.NetworkConfig{
+			containers.ServicesNetworkName: {
+				Name: containers.ServicesNetworkName,
+			},
+		},
+	}
+
+	timeoutValue := 30 * time.Second
+	err := client.Backend.Down(ctx, project.Name, api.DownOptions{
+		RemoveOrphans: false,
+		Project:       project,
+		Timeout:       &timeoutValue,
+		Volumes:       false,
+	})
 	if err != nil {
-		w.Event(progress.ErrorMessageEvent("Docker", "Failed connect to socket"))
 		return err
 	}
 
-	err = cli.RemoveContainers(ctx, serviceContainers)
-	if err != nil {
-		return err
-	}
-
-	if cli.IsNetworkAvailable(servicesNetworkName) && len(source) == 0 {
-		err := cli.RemoveNetwork(ctx, servicesNetworkName)
-		if err != nil {
-			return err
-		}
-	}
-
-	return err
+	return nil
 }

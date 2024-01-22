@@ -79,7 +79,7 @@ func getServices(ctx context.Context, cli *docker.Client) ([]docker.ContainerSum
 	containerFilter := filters.NewArgs(
 		filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, "dl-services")),
 	)
-	containers, _ := cli.ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter, All: true})
+	containers, _ := cli.DockerCli.Client().ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter, All: true})
 
 	return calculate(ctx, cli, containers)
 }
@@ -88,7 +88,7 @@ func getProjects(ctx context.Context, cli *docker.Client) ([]docker.ContainerSum
 	containerFilter := filters.NewArgs(
 		filters.Arg("label", fmt.Sprintf("%s=%s", api.WorkingDirLabel, helper.TemplateDir())),
 	)
-	containers, _ := cli.ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter, All: true})
+	containers, _ := cli.DockerCli.Client().ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter, All: true})
 
 	return calculate(ctx, cli, containers)
 }
@@ -112,7 +112,7 @@ func calculate(ctx context.Context, cli *docker.Client, containers []types.Conta
 				})
 			}
 
-			inspect, err := cli.ContainerInspect(ctx, container.ID)
+			inspect, err := cli.DockerCli.Client().ContainerInspect(ctx, container.ID)
 			if err != nil {
 				return err
 			}

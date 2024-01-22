@@ -40,13 +40,13 @@ func copyFiles(ctx context.Context, t *teleport, override []string) {
 
 	err = t.downloadArchive(ctx)
 	if err != nil {
-		w.Event(progress.Event{ID: "Files", Status: progress.Error})
+		w.Event(progress.ErrorMessageEvent("Files", fmt.Sprint(err)))
 		return
 	}
 
 	err = project.ExtractArchive(ctx, path)
 	if err != nil {
-		w.Event(progress.Event{ID: "Files", Status: progress.Error})
+		w.Event(progress.ErrorMessageEvent("Files", fmt.Sprint(err)))
 		return
 	}
 
@@ -61,8 +61,7 @@ func copyFiles(ctx context.Context, t *teleport, override []string) {
 
 func (t *teleport) packFiles(ctx context.Context, path string) error {
 	w := progress.ContextWriter(ctx)
-
-	w.Event(progress.Event{ID: "Archive files", ParentID: "Files", Status: progress.Working})
+	w.Event(progress.Event{ID: "Files", StatusText: "Creating archive"})
 
 	excludeTarString := project.FormatIgnoredPath()
 	tarCmd := strings.Join([]string{"cd", t.Catalog, "&&",
@@ -80,35 +79,28 @@ func (t *teleport) packFiles(ctx context.Context, path string) error {
 		return err
 	}
 
-	w.Event(progress.Event{ID: "Archive files", ParentID: "Files", Status: progress.Done})
-
 	return nil
 }
 
 func (t *teleport) downloadArchive(ctx context.Context) error {
 	w := progress.ContextWriter(ctx)
+	w.Event(progress.Event{ID: "Files", StatusText: "Download archive"})
 
 	serverPath := filepath.Join(t.Catalog, "production.tar.gz")
 	localPath := filepath.Join(project.Env.GetString("PWD"), "production.tar.gz")
-
-	w.Event(progress.Event{ID: "Download archive", ParentID: "Files", Status: progress.Working})
 
 	logrus.Infof("Download archive: %s", serverPath)
 	err := t.download(serverPath, localPath)
 
 	if err != nil {
-		w.Event(progress.ErrorMessageEvent("Download error", fmt.Sprint(err)))
 		return err
 	}
 
 	logrus.Infof("Delete archive: %s", serverPath)
 	err = t.delete(serverPath)
 	if err != nil {
-		w.Event(progress.ErrorMessageEvent("File deletion error", fmt.Sprint(err)))
 		return err
 	}
-
-	w.Event(progress.Event{ID: "Download archive", ParentID: "Files", Status: progress.Done})
 
 	return err
 }

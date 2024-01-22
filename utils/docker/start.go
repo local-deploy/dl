@@ -2,110 +2,115 @@ package docker
 
 import (
 	"context"
-	"fmt"
+	"time"
 
-	"github.com/docker/compose/v2/pkg/progress"
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/go-connections/nat"
-	"golang.org/x/sync/errgroup"
+	"github.com/compose-spec/compose-go/types"
+	"github.com/docker/compose/v2/cmd/compose"
+	"github.com/docker/compose/v2/pkg/api"
 )
 
+type composeOptions struct {
+	*compose.ProjectOptions
+}
+
+type upOptions struct { //nolint:maligned
+	*composeOptions
+	Detach             bool
+	noStart            bool
+	noDeps             bool
+	cascadeStop        bool
+	exitCodeFrom       string
+	noColor            bool
+	noPrefix           bool
+	attachDependencies bool
+	attach             []string
+	noAttach           []string
+	timestamp          bool
+	wait               bool
+	waitTimeout        int
+}
+
 // StartContainers running docker containers
-func (cli *Client) StartContainers(ctx context.Context, containers Containers, restart bool) error {
-	w := progress.ContextWriter(ctx)
-	eg, _ := errgroup.WithContext(ctx)
+func (cli *Client) StartContainers(ctx context.Context, project *types.Project, recreate bool) error {
+	var (
+		services []string
+		consumer api.LogConsumer
+	)
 
-	for _, con := range containers {
-		localContainer := con
+	up := upOptions{}
+	opt := createOptions{}
 
-		// Check running containers
-		containerFilter := filters.NewArgs(filters.Arg("name", con.Name))
-		isExists, _ := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerFilter})
-		if len(isExists) > 0 {
-			eventName := fmt.Sprintf("Container %q", localContainer.Name)
-			if !restart {
-				w.Event(progress.RunningEvent(eventName))
-				continue
-			}
-
-			eg.Go(func() error {
-				w.Event(progress.RestartingEvent(eventName))
-				err := cli.ContainerRestart(ctx, isExists[0].ID, nil)
-				if err != nil {
-					w.TailMsgf(fmt.Sprint(err))
-					w.Event(progress.ErrorEvent(eventName))
-					return nil
-				}
-
-				w.Event(progress.RestartedEvent(eventName))
-				return nil
-			})
-
-			continue
+	for i, s := range project.Services {
+		s.CustomLabels = map[string]string{
+			api.ProjectLabel:    project.Name,
+			api.ServiceLabel:    s.Name,
+			api.VersionLabel:    api.ComposeVersion,
+			api.WorkingDirLabel: project.WorkingDir,
+			api.OneoffLabel:     "False", // default, will be overridden by `run` command
 		}
-
-		// Check name running containers
-		busyName := false
-		containerNameFilter := filters.NewArgs(filters.Arg("name", con.Name))
-		isExistsName, _ := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerNameFilter})
-		if len(isExistsName) > 0 {
-			busyName = true
-			w.Event(progress.ErrorMessageEvent(con.Name, "Unable to start container: name already in use"))
-		}
-		if busyName {
-			continue
-		}
-
-		eventName := fmt.Sprintf("Container %q", con.Name)
-		w.Event(progress.CreatingEvent(eventName))
-
-		// Create containers
-		eg.Go(func() error {
-			exposedPorts, portBindings, _ := nat.ParsePortSpecs(localContainer.Ports)
-
-			resp, err := cli.ContainerCreate(ctx,
-				&container.Config{
-					Cmd:          localContainer.Cmd,
-					Image:        localContainer.Image,
-					Volumes:      localContainer.Volumes,
-					Entrypoint:   localContainer.Entrypoint,
-					Labels:       localContainer.Labels,
-					ExposedPorts: exposedPorts,
-					Env:          localContainer.Env,
-				},
-				&container.HostConfig{
-					NetworkMode:   container.NetworkMode(localContainer.Network),
-					RestartPolicy: container.RestartPolicy{Name: "always"},
-					PortBindings:  portBindings,
-					Mounts:        localContainer.Mounts,
-				}, nil, nil, localContainer.Name)
-
-			if err != nil {
-				w.TailMsgf(fmt.Sprint(err))
-				w.Event(progress.ErrorEvent(eventName))
-				return nil
-			}
-
-			// Start containers
-			w.Event(progress.StartingEvent(eventName))
-			err = cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
-			if err != nil {
-				w.TailMsgf(fmt.Sprint(err))
-				w.Event(progress.ErrorEvent(eventName))
-				return nil
-			}
-
-			w.Event(progress.StartedEvent(eventName))
-
-			if len(localContainer.AddNetwork) > 0 {
-				_ = cli.addContainerToNetwork(ctx, resp.ID, localContainer.AddNetwork)
-			}
-
-			return nil
-		})
+		project.Services[i] = s
 	}
 
-	return eg.Wait()
+	err := opt.apply(project)
+	if err != nil {
+		return err
+	}
+
+	err = up.apply(project, services)
+	if err != nil {
+		return err
+	}
+
+	create := api.CreateOptions{
+		Services:             services,
+		RemoveOrphans:        false,
+		IgnoreOrphans:        false,
+		Recreate:             api.RecreateDiverged,
+		RecreateDependencies: api.RecreateDiverged,
+		Inherit:              true,
+		QuietPull:            false,
+	}
+
+	if recreate {
+		create.Recreate = api.RecreateForce
+	}
+
+	timeout := time.Duration(up.waitTimeout) * time.Second
+	start := api.StartOptions{
+		Project:      project,
+		Attach:       consumer,
+		ExitCodeFrom: up.exitCodeFrom,
+		CascadeStop:  up.cascadeStop,
+		Wait:         up.wait,
+		WaitTimeout:  timeout,
+		Services:     services,
+	}
+
+	err = cli.Backend.Up(ctx, project, api.UpOptions{
+		Create: create,
+		Start:  start,
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (opts upOptions) apply(project *types.Project, services []string) error {
+	if opts.noDeps {
+		err := project.ForServices(services, types.IgnoreDependencies)
+		if err != nil {
+			return err
+		}
+	}
+
+	if opts.exitCodeFrom != "" {
+		_, err := project.GetService(opts.exitCodeFrom)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
