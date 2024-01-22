@@ -3,7 +3,6 @@ package teleport
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync"
 
 	"github.com/docker/compose/v2/pkg/progress"
@@ -44,7 +43,7 @@ func DeployTeleport(ctx context.Context, database bool, files bool, override []s
 		err = docker.UpDbContainer()
 		if err != nil {
 			w.Event(progress.ErrorMessageEvent("Import failed", fmt.Sprint(err)))
-			os.Exit(1)
+			return err
 		}
 		pullWaitGroup.Add(1)
 		go startDump(ctx, client, tables)
@@ -62,5 +61,5 @@ func startFiles(ctx context.Context, t *teleport, override []string) {
 
 func startDump(ctx context.Context, t *teleport, tables []string) {
 	defer pullWaitGroup.Done()
-	dumpDb(ctx, t, tables)
+	dumpDB(ctx, t, tables)
 }

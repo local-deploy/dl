@@ -12,6 +12,7 @@ import (
 )
 
 // RemoveContainers stop and remove docker containers
+// Deprecated
 func (cli *Client) RemoveContainers(ctx context.Context, containers Containers) error {
 	w := progress.ContextWriter(ctx)
 	eg, _ := errgroup.WithContext(ctx)

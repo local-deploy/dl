@@ -13,6 +13,7 @@ import (
 )
 
 // IsNetworkAvailable checking that the network exists
+// Deprecated
 func (cli *Client) IsNetworkAvailable(networkName string) bool {
 	net := helpers.IsNetworkAvailable(cli.DockerCli.Client(), networkName)
 
@@ -20,6 +21,7 @@ func (cli *Client) IsNetworkAvailable(networkName string) bool {
 }
 
 // IsNetworkNotAvailable checking that the network does not exist
+// Deprecated
 func (cli *Client) IsNetworkNotAvailable(networkName string) bool {
 	net := helpers.IsNetworkNotAvailable(cli.DockerCli.Client(), networkName)
 
@@ -27,6 +29,7 @@ func (cli *Client) IsNetworkNotAvailable(networkName string) bool {
 }
 
 // CreateNetwork create a new network
+// Deprecated
 func (cli *Client) CreateNetwork(ctx context.Context, networkName string) error {
 	w := progress.ContextWriter(ctx)
 
@@ -43,6 +46,7 @@ func (cli *Client) CreateNetwork(ctx context.Context, networkName string) error 
 }
 
 // RemoveNetwork delete network
+// Deprecated
 func (cli *Client) RemoveNetwork(ctx context.Context, networkName string) error {
 	w := progress.ContextWriter(ctx)
 	eg, _ := errgroup.WithContext(ctx)
@@ -68,6 +72,7 @@ func (cli *Client) RemoveNetwork(ctx context.Context, networkName string) error 
 }
 
 // addContainerToNetwork add a container to the network
+// Deprecated
 func (cli *Client) addContainerToNetwork(ctx context.Context, containerID string, networkName string) error {
 	err := cli.DockerCli.Client().NetworkConnect(ctx, networkName, containerID, &network.EndpointSettings{})
 

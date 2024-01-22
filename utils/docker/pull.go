@@ -16,6 +16,7 @@ import (
 )
 
 // PullRequiredImages check for the presence of the image in the system and download if necessary
+// Deprecated
 func (cli *Client) PullRequiredImages(ctx context.Context, containers Containers) error {
 
 	return progress.Run(ctx, func(ctx context.Context) error {

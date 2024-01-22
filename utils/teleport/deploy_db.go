@@ -17,12 +17,51 @@ import (
 
 var remotePhpPath string
 
-func dumpDb(ctx context.Context, t *teleport, tables []string) {
-	var db *project.DbSettings
+func dumpDB(ctx context.Context, t *teleport, tables []string) {
 	var err error
 
 	w := progress.ContextWriter(ctx)
 	w.Event(progress.Event{ID: "Database", Status: progress.Working})
+
+	db, err := t.getMysqlSettings()
+	if err != nil {
+		w.Event(progress.ErrorMessageEvent("Database", fmt.Sprint(err)))
+		return
+	}
+
+	if len(tables) > 0 {
+		dumpTables := strings.Join(tables, " ")
+		err = t.mysqlDumpTables(ctx, db, dumpTables)
+	} else {
+		err = t.mysqlDump(ctx, db)
+	}
+
+	if err != nil {
+		w.Event(progress.ErrorMessageEvent("Database", fmt.Sprintf("Failed to create database dump: %s", err)))
+		return
+	}
+
+	err = t.downloadDump(ctx)
+	if err != nil {
+		w.Event(progress.ErrorMessageEvent("Database", fmt.Sprintf("Failed to download dump: %s", err)))
+		return
+	}
+
+	sshClient := &client.Client{Config: &client.Config{FwType: "bitrix"}}
+	c := &project.SshClient{Client: sshClient}
+	err = c.ImportDB(ctx)
+	if err != nil {
+		w.Event(progress.ErrorMessageEvent("Database", fmt.Sprintf("Access error: %s", err)))
+		return
+	}
+
+	w.Event(progress.Event{ID: "Database", Status: progress.Done})
+}
+
+// Struct teleport has methods on both value and pointer receivers. Such usage is not recommended by the Go Documentation.
+func (t *teleport) getMysqlSettings() (*project.DbSettings, error) {
+	var db *project.DbSettings
+	var err error
 
 	mysqlDataBase := project.Env.GetString("MYSQL_DATABASE_SRV")
 	mysqlLogin := project.Env.GetString("MYSQL_LOGIN_SRV")
@@ -43,11 +82,9 @@ func dumpDb(ctx context.Context, t *teleport, tables []string) {
 		t.checkPhpAvailable()
 
 		logrus.Info("Attempt to access database")
-		db, err = t.accessBitrixDb()
-
+		db, err = t.accessBitrixDB()
 		if err != nil {
-			w.Event(progress.ErrorMessageEvent("Database access error", fmt.Sprint(err)))
-			return
+			return nil, fmt.Errorf("access error: %w", err)
 		}
 	}
 
@@ -56,33 +93,7 @@ func dumpDb(ctx context.Context, t *teleport, tables []string) {
 		db.Port = "3306"
 	}
 
-	if len(tables) > 0 {
-		dumpTables := strings.Join(tables, " ")
-		err = t.mysqlDumpTables(ctx, db, dumpTables)
-	} else {
-		err = t.mysqlDump(ctx, db)
-	}
-
-	if err != nil {
-		w.Event(progress.ErrorMessageEvent("Failed to create database dump", fmt.Sprint(err)))
-		w.Event(progress.Event{ID: "Files", Status: progress.Error})
-		return
-	}
-
-	err = t.downloadDump(ctx)
-	if err != nil {
-		w.Event(progress.Event{ID: "Files", Status: progress.Error})
-		return
-	}
-
-	sshClient := &client.Client{Config: &client.Config{FwType: "bitrix"}}
-	c := &project.SshClient{Client: sshClient}
-	c.ImportDb(ctx)
-
-	w.Event(progress.Event{
-		ID:     "Database",
-		Status: progress.Done,
-	})
+	return db, nil
 }
 
 func (t *teleport) checkPhpAvailable() {
@@ -98,7 +109,7 @@ func (t *teleport) checkPhpAvailable() {
 	logrus.Info("PHP not available")
 }
 
-func (t *teleport) accessBitrixDb() (*project.DbSettings, error) {
+func (t *teleport) accessBitrixDB() (*project.DbSettings, error) {
 	serverPath := filepath.Join(t.Catalog, "bitrix/.settings.php")
 	localPath := filepath.Join(project.Env.GetString("PWD"), ".tmp.php")
 	err := t.download(serverPath, localPath)
@@ -143,9 +154,9 @@ echo $settings["connections"]["value"]["default"]["password"]."\n";'`,
 
 func (t *teleport) mysqlDump(ctx context.Context, db *project.DbSettings) error {
 	w := progress.ContextWriter(ctx)
-	w.Event(progress.Event{ID: "Create database dump", ParentID: "Database", Status: progress.Working})
+	w.Event(progress.Event{ID: "Database", StatusText: "Create database dump"})
 
-	dump := t.checkMySqlDumpAvailable()
+	dump := t.checkMySQLDumpAvailable()
 	if dump != nil {
 		return errors.New("mysqldump not installed, database dump not possible")
 	}
@@ -174,17 +185,15 @@ func (t *teleport) mysqlDump(ctx context.Context, db *project.DbSettings) error 
 		return err
 	}
 
-	w.Event(progress.Event{ID: "Create database dump", ParentID: "Database", Status: progress.Done})
-
 	return nil
 }
 
 // mysqlDumpTables Create only tables dump
 func (t *teleport) mysqlDumpTables(ctx context.Context, db *project.DbSettings, dumpTables string) error {
 	w := progress.ContextWriter(ctx)
-	w.Event(progress.Event{ID: "Create database dump", ParentID: "Database", Status: progress.Working})
+	w.Event(progress.Event{ID: "Database", StatusText: "Creating database dump"})
 
-	dump := t.checkMySqlDumpAvailable()
+	dump := t.checkMySQLDumpAvailable()
 	if dump != nil {
 		return errors.New("mysqldump not installed, database dump not possible")
 	}
@@ -205,12 +214,10 @@ func (t *teleport) mysqlDumpTables(ctx context.Context, db *project.DbSettings, 
 		return err
 	}
 
-	w.Event(progress.Event{ID: "Create database dump", ParentID: "Database", Status: progress.Done})
-
 	return nil
 }
 
-func (t *teleport) checkMySqlDumpAvailable() error {
+func (t *teleport) checkMySQLDumpAvailable() error {
 	logrus.Info("Check if mysqldump available")
 	dumpCmd := strings.Join([]string{"cd", t.Catalog, "&&", "which mysqldump"}, " ")
 	logrus.Infof("Run command: %s", dumpCmd)
@@ -226,7 +233,7 @@ func (t *teleport) checkMySqlDumpAvailable() error {
 func (t *teleport) downloadDump(ctx context.Context) error {
 	w := progress.ContextWriter(ctx)
 
-	w.Event(progress.Event{ID: "Download database dump", ParentID: "Database", Status: progress.Working})
+	w.Event(progress.Event{ID: "Database", StatusText: "Download database dump"})
 
 	serverPath := filepath.Join(t.Catalog, "production.sql.gz")
 	localPath := filepath.Join(project.Env.GetString("PWD"), "production.sql.gz")
@@ -235,17 +242,13 @@ func (t *teleport) downloadDump(ctx context.Context) error {
 	err := t.download(serverPath, localPath)
 
 	if err != nil {
-		w.Event(progress.ErrorMessageEvent("Download error", fmt.Sprint(err)))
 		return err
 	}
 
 	err = t.delete(serverPath)
 	if err != nil {
-		w.Event(progress.ErrorMessageEvent("File deletion error", fmt.Sprint(err)))
 		return err
 	}
-
-	w.Event(progress.Event{ID: "Download database dump", ParentID: "Database", Status: progress.Done})
 
 	return err
 }

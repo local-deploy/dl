@@ -2,7 +2,7 @@ package teleport
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -65,8 +65,7 @@ func checkAccess(c *teleport) error {
 	if accessNode(c) && accessUser(c) {
 		return nil
 	}
-	//goland:noinspection GoErrorStringFormat
-	return errors.New("You do not have access to this server")
+	return fmt.Errorf("You do not have access to this server")
 }
 
 func accessNode(c *teleport) bool {
@@ -91,8 +90,7 @@ func setTeleportStatus() error {
 	cmdStatus := []string{tsh, "status", "-f", "json"}
 	out, err := exec.Command("bash", "-c", strings.Join(cmdStatus[:], " ")).CombinedOutput()
 	if err != nil {
-		//goland:noinspection GoErrorStringFormat
-		return errors.New("The user is not authorized in Teleport")
+		return fmt.Errorf("the user is not authorized in Teleport")
 	}
 
 	err = njson.Unmarshal(out, &s)
@@ -139,8 +137,7 @@ func (t *teleport) run(cmd string) (string, error) {
 	cmdRun := []string{tsh, "ssh", t.User + "@" + t.Node, strconv.Quote(cmd)}
 	out, err := exec.Command("bash", "-c", strings.Join(cmdRun[:], " ")).CombinedOutput()
 	if err != nil {
-		//goland:noinspection GoErrorStringFormat
-		return "", errors.New("Something went wrong")
+		return "", fmt.Errorf("Something went wrong")
 	}
 
 	return string(out), nil
@@ -150,8 +147,7 @@ func (t *teleport) download(from, to string) error {
 	cmdRun := []string{tsh, "scp", "--login=" + t.User, t.Node + ":" + from, to}
 	_, err := exec.Command("bash", "-c", strings.Join(cmdRun[:], " ")).CombinedOutput()
 	if err != nil {
-		//goland:noinspection GoErrorStringFormat
-		return errors.New("Something went wrong")
+		return fmt.Errorf("Something went wrong")
 	}
 
 	return nil
@@ -161,8 +157,7 @@ func (t *teleport) delete(path string) error {
 	cmdRun := []string{tsh, "ssh", t.User + "@" + t.Node, strconv.Quote("rm " + path)}
 	_, err := exec.Command("bash", "-c", strings.Join(cmdRun[:], " ")).CombinedOutput()
 	if err != nil {
-		//goland:noinspection GoErrorStringFormat
-		return errors.New("Something went wrong")
+		return fmt.Errorf("Something went wrong")
 	}
 
 	return nil
