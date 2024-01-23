@@ -28,6 +28,8 @@ var phpImagesVersion = map[string]string{
 	"8.1-fpm":    "1.0.5",
 	"8.2-apache": "1.0.3",
 	"8.2-fpm":    "1.0.3",
+	"8.3-apache": "1.0.0",
+	"8.3-fpm":    "1.0.0",
 }
 
 // LoadEnv Get variables from .env file
