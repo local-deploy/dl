@@ -85,6 +85,7 @@ jobs:
         run: |
           cd "$GITHUB_WORKSPACE"/dist &&
           mv dl-${{ matrix.os }}-${{ matrix.arch }} dl &&
+          chmod u+x dl &&
           tar -czvf dl-${{ needs.prepare.outputs.version }}-${{ matrix.os }}-${{ matrix.arch }}.tar.gz dl
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -120,8 +121,11 @@ jobs:
         with:
           name: bin
           path: bin
-      - name: Rename binary
-        run: cd "$GITHUB_WORKSPACE"/bin && mv dl-linux-${{ matrix.arch }} dl
+      - name: Prepare binary
+        run: |
+          cd "$GITHUB_WORKSPACE"/bin &&
+          mv dl-linux-${{ matrix.arch }} dl &&
+          chmod u+x dl
       - name: Download nFPM
         run: |
           cd "$GITHUB_WORKSPACE" &&
