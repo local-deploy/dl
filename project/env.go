@@ -111,6 +111,7 @@ func setComposeFiles() {
 
 	images := map[string]string{
 		"mysql":     templateDir + "/docker-compose-mysql.yaml",
+		"mariadb":   templateDir + "/docker-compose-mariadb.yaml",
 		"pgsql":     templateDir + "/docker-compose-pgsql.yaml",
 		"fpm":       templateDir + "/docker-compose-fpm.yaml",
 		"apache":    templateDir + "/docker-compose-apache.yaml",
@@ -130,6 +131,9 @@ func setComposeFiles() {
 
 	if Env.GetFloat64("MYSQL_VERSION") > 0 {
 		files = append(files, images["mysql"])
+	}
+	if Env.GetFloat64("MARIADB_VERSION") > 0 {
+		files = append(files, images["mariadb"])
 	}
 	if Env.GetFloat64("POSTGRES_VERSION") > 0 {
 		files = append(files, images["pgsql"])

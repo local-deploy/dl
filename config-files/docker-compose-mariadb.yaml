@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  db:
+    container_name: ${HOST_NAME}_db
+    image: mariadb:${MARIADB_VERSION:-lts}
+    command: --innodb_strict_mode=off --innodb_flush_log_at_trx_commit=2 --transaction-isolation=READ-COMMITTED --sql_mode=
+    environment:
+      - "MYSQL_DATABASE=${MYSQL_DATABASE:-db}"
+      - "MYSQL_USER=${MYSQL_USER:-db}"
+      - "MYSQL_PASSWORD=${MYSQL_PASSWORD:-db}"
+      - "MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}"
+      - "TZ=${TZ:-Europe/Moscow}"
+    volumes:
+      - "${PWD}/.docker/volume/mariadb/:/var/lib/mysql/:delegated"
