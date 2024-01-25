@@ -3,7 +3,7 @@ version: "3.8"
 services:
   php:
     container_name: ${HOST_NAME}_php
-    image: ${REPO}/local-deploy/php${PHP_VERSION:-7.4-fpm}:${PHP_IMAGE_VERSION:-latest}
+    image: ${REPO}/local-deploy/php${PHP_VERSION:-8.2-fpm}:${PHP_IMAGE_VERSION:-latest}
     environment:
       - "DOCUMENT_ROOT=${DOCUMENT_ROOT:-/var/www/html}"
       - "HOST_NAME=${HOST_NAME:-localhost}"
@@ -18,9 +18,11 @@ services:
       - "XDEBUG_PORT=${XDEBUG_PORT:-9003}"
       - "VIRTUAL_HOST=${HOST_NAME:-localhost}"
       - "PHP_MODULES=${PHP_MODULES:-opcache}"
+      - "PHP_INI_SCAN_DIR=/usr/local/etc/php/conf.d:/usr/local/etc/php/conf.custom.d"
       - "ENVIRONMENT=dl"
     volumes:
       - "${PWD}/:/var/www/html/"
+      - "${PHP_INI_SOURCE:-/dev/null}:/usr/local/etc/php/conf.custom.d/custom.ini:ro"
       - "~/.ssh/${SSH_KEY:-id_rsa}:/var/www/.ssh/id_rsa:ro"
       - "~/.ssh/known_hosts:/var/www/.ssh/known_hosts"
     networks:

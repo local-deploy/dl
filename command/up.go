@@ -65,7 +65,7 @@ func upRun() {
 
 	bin, option := helper.GetCompose()
 	Args := []string{bin}
-	preArgs := []string{"-p", project.Env.GetString("NETWORK_NAME"), "up", "-d"}
+	preArgs := []string{"-p", project.Env.GetString("NETWORK_NAME"), "--project-directory", project.Env.GetString("PWD"), "up", "-d"}
 
 	if len(option) > 0 {
 		Args = append(Args, option)
