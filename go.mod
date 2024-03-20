@@ -8,7 +8,7 @@ require (
 	github.com/compose-spec/compose-go v1.20.1
 	github.com/docker/cli v24.0.7+incompatible
 	github.com/docker/compose/v2 v2.23.0
-	github.com/docker/docker v24.0.7+incompatible
+	github.com/docker/docker v24.0.9+incompatible
 	github.com/google/go-github/v41 v41.0.0
 	github.com/m7shapan/njson v1.0.8
 	github.com/pkg/sftp v1.13.6
