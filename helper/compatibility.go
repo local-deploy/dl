@@ -8,7 +8,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/pterm/pterm"
@@ -24,7 +24,7 @@ func WpdeployCheck() bool {
 	}
 
 	containerFilter := filters.NewArgs(filters.Arg("label", "com.docker.compose.project=local-services"))
-	isExists, err := cli.ContainerList(ctx, types.ContainerListOptions{All: true, Filters: containerFilter})
+	isExists, err := cli.ContainerList(ctx, container.ListOptions{All: true, Filters: containerFilter})
 	if err != nil {
 		pterm.FgRed.Println(err)
 		return false

@@ -7,6 +7,7 @@ import (
 
 	"github.com/docker/compose/v2/pkg/api"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/local-deploy/dl/helper"
 	"github.com/local-deploy/dl/utils/docker"
@@ -79,7 +80,7 @@ func getServices(ctx context.Context, cli *docker.Client) ([]docker.ContainerSum
 	containerFilter := filters.NewArgs(
 		filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, "dl-services")),
 	)
-	containers, _ := cli.DockerCli.Client().ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter, All: true})
+	containers, _ := cli.DockerCli.Client().ContainerList(ctx, container.ListOptions{Filters: containerFilter, All: true})
 
 	return calculate(ctx, cli, containers)
 }
@@ -88,7 +89,7 @@ func getProjects(ctx context.Context, cli *docker.Client) ([]docker.ContainerSum
 	containerFilter := filters.NewArgs(
 		filters.Arg("label", fmt.Sprintf("%s=%s", api.WorkingDirLabel, helper.TemplateDir())),
 	)
-	containers, _ := cli.DockerCli.Client().ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter, All: true})
+	containers, _ := cli.DockerCli.Client().ContainerList(ctx, container.ListOptions{Filters: containerFilter, All: true})
 
 	return calculate(ctx, cli, containers)
 }
@@ -96,14 +97,14 @@ func getProjects(ctx context.Context, cli *docker.Client) ([]docker.ContainerSum
 func calculate(ctx context.Context, cli *docker.Client, containers []types.Container) ([]docker.ContainerSummary, error) {
 	summary := make([]docker.ContainerSummary, len(containers))
 	eg, ctx := errgroup.WithContext(ctx)
-	for i, container := range containers {
-		i, container := i, container
+	for i, c := range containers {
+		i, con := i, c
 		eg.Go(func() error {
 			var publishers []docker.PortPublisher
-			sort.Slice(container.Ports, func(i, j int) bool {
-				return container.Ports[i].PrivatePort < container.Ports[j].PrivatePort
+			sort.Slice(con.Ports, func(i, j int) bool {
+				return con.Ports[i].PrivatePort < con.Ports[j].PrivatePort
 			})
-			for _, port := range container.Ports {
+			for _, port := range con.Ports {
 				publishers = append(publishers, docker.PortPublisher{
 					URL:           port.IP,
 					TargetPort:    int(port.PrivatePort),
@@ -112,7 +113,7 @@ func calculate(ctx context.Context, cli *docker.Client, containers []types.Conta
 				})
 			}
 
-			inspect, err := cli.DockerCli.Client().ContainerInspect(ctx, container.ID)
+			inspect, err := cli.DockerCli.Client().ContainerInspect(ctx, con.ID)
 			if err != nil {
 				return err
 			}
@@ -133,9 +134,9 @@ func calculate(ctx context.Context, cli *docker.Client, containers []types.Conta
 			}
 
 			summary[i] = docker.ContainerSummary{
-				ID:         container.ID,
-				Name:       docker.GetCanonicalContainerName(container),
-				State:      container.State,
+				ID:         con.ID,
+				Name:       docker.GetCanonicalContainerName(con),
+				State:      con.State,
 				Health:     health,
 				ExitCode:   exitCode,
 				Publishers: publishers,
@@ -158,14 +159,14 @@ func render(cli *docker.Client, title string, containers []docker.ContainerSumma
 
 	data := make([][]string, len(containers)+1)
 	data[0] = []string{"ID", "Name", "State", "Ports"}
-	for _, container := range containers {
-		status := container.State
-		if status == "running" && container.Health != "" {
-			status = fmt.Sprintf("%s (%s)", container.State, container.Health)
+	for _, con := range containers {
+		status := con.State
+		if status == "running" && con.Health != "" {
+			status = fmt.Sprintf("%s (%s)", con.State, con.Health)
 		} else if status == "exited" || status == "dead" {
-			status = fmt.Sprintf("%s (%d)", container.State, container.ExitCode)
+			status = fmt.Sprintf("%s (%d)", con.State, con.ExitCode)
 		}
-		con := []string{container.ID[:12], container.Name, status, cli.DisplayablePorts(container)}
+		con := []string{con.ID[:12], con.Name, status, cli.DisplayablePorts(con)}
 		data = append(data, con)
 	}
 

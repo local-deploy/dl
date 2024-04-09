@@ -7,6 +7,7 @@ import (
 
 	"github.com/docker/compose/v2/pkg/api"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/local-deploy/dl/project"
 	"github.com/local-deploy/dl/utils/docker"
@@ -76,21 +77,21 @@ func runPs() error {
 
 func getProjectContainers(ctx context.Context, cli *docker.Client, projectName string) ([]docker.ContainerSummary, error) {
 	containerFilter := filters.NewArgs(filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, projectName)))
-	containers, _ := cli.DockerCli.Client().ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter, All: true})
+	containers, _ := cli.DockerCli.Client().ContainerList(ctx, container.ListOptions{Filters: containerFilter, All: true})
 
 	netFilters := filters.NewArgs(filters.Arg("name", projectName+"_default"))
 	network, _ := cli.DockerCli.Client().NetworkList(ctx, types.NetworkListOptions{Filters: netFilters})
 
 	summary := make([]docker.ContainerSummary, len(containers))
 	eg, ctx := errgroup.WithContext(ctx)
-	for i, container := range containers {
-		i, container := i, container
+	for i, c := range containers {
+		i, con := i, c
 		eg.Go(func() error {
 			var publishers []docker.PortPublisher
-			sort.Slice(container.Ports, func(i, j int) bool {
-				return container.Ports[i].PrivatePort < container.Ports[j].PrivatePort
+			sort.Slice(con.Ports, func(i, j int) bool {
+				return con.Ports[i].PrivatePort < con.Ports[j].PrivatePort
 			})
-			for _, p := range container.Ports {
+			for _, p := range con.Ports {
 				publishers = append(publishers, docker.PortPublisher{
 					URL:           p.IP,
 					TargetPort:    int(p.PrivatePort),
@@ -99,7 +100,7 @@ func getProjectContainers(ctx context.Context, cli *docker.Client, projectName s
 				})
 			}
 
-			inspect, err := cli.DockerCli.Client().ContainerInspect(ctx, container.ID)
+			inspect, err := cli.DockerCli.Client().ContainerInspect(ctx, con.ID)
 			if err != nil {
 				return err
 			}
@@ -120,16 +121,16 @@ func getProjectContainers(ctx context.Context, cli *docker.Client, projectName s
 				}
 			}
 
-			for _, n := range container.NetworkSettings.Networks {
+			for _, n := range con.NetworkSettings.Networks {
 				if network[0].ID == n.NetworkID {
 					ip = n.IPAddress
 				}
 			}
 
 			summary[i] = docker.ContainerSummary{
-				ID:         container.ID,
-				Name:       docker.GetCanonicalContainerName(container),
-				State:      container.State,
+				ID:         con.ID,
+				Name:       docker.GetCanonicalContainerName(con),
+				State:      con.State,
 				Health:     health,
 				ExitCode:   exitCode,
 				Publishers: publishers,

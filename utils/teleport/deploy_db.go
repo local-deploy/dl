@@ -48,7 +48,7 @@ func dumpDB(ctx context.Context, t *teleport, tables []string) {
 	}
 
 	sshClient := &client.Client{Config: &client.Config{FwType: "bitrix"}}
-	c := &project.SshClient{Client: sshClient}
+	c := &project.SSHClient{Client: sshClient}
 	err = c.ImportDB(ctx)
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Database", fmt.Sprintf("Access error: %s", err)))
@@ -59,8 +59,8 @@ func dumpDB(ctx context.Context, t *teleport, tables []string) {
 }
 
 // Struct teleport has methods on both value and pointer receivers. Such usage is not recommended by the Go Documentation.
-func (t *teleport) getMysqlSettings() (*project.DbSettings, error) {
-	var db *project.DbSettings
+func (t *teleport) getMysqlSettings() (*project.DBSettings, error) {
+	var db *project.DBSettings
 	var err error
 
 	mysqlDataBase := project.Env.GetString("MYSQL_DATABASE_SRV")
@@ -70,7 +70,7 @@ func (t *teleport) getMysqlSettings() (*project.DbSettings, error) {
 		logrus.Info("Manual database access settings are used")
 		excludedTables := strings.Split(strings.TrimSpace(project.Env.GetString("EXCLUDED_TABLES")), ",")
 
-		db = &project.DbSettings{
+		db = &project.DBSettings{
 			Host:           project.Env.GetString("MYSQL_HOST_SRV"),
 			Port:           project.Env.GetString("MYSQL_PORT_SRV"),
 			DataBase:       mysqlDataBase,
@@ -109,7 +109,7 @@ func (t *teleport) checkPhpAvailable() {
 	logrus.Info("PHP not available")
 }
 
-func (t *teleport) accessBitrixDB() (*project.DbSettings, error) {
+func (t *teleport) accessBitrixDB() (*project.DBSettings, error) {
 	serverPath := filepath.Join(t.Catalog, "bitrix/.settings.php")
 	localPath := filepath.Join(project.Env.GetString("PWD"), ".tmp.php")
 	err := t.download(serverPath, localPath)
@@ -143,7 +143,7 @@ echo $settings["connections"]["value"]["default"]["password"]."\n";'`,
 
 	excludedTables := strings.Split(strings.TrimSpace(project.Env.GetString("EXCLUDED_TABLES")), ",")
 
-	return &project.DbSettings{
+	return &project.DBSettings{
 		Host:           dbArray[0],
 		DataBase:       dbArray[1],
 		Login:          dbArray[2],
@@ -152,7 +152,7 @@ echo $settings["connections"]["value"]["default"]["password"]."\n";'`,
 	}, err
 }
 
-func (t *teleport) mysqlDump(ctx context.Context, db *project.DbSettings) error {
+func (t *teleport) mysqlDump(ctx context.Context, db *project.DBSettings) error {
 	w := progress.ContextWriter(ctx)
 	w.Event(progress.Event{ID: "Database", StatusText: "Create database dump"})
 
@@ -189,7 +189,7 @@ func (t *teleport) mysqlDump(ctx context.Context, db *project.DbSettings) error 
 }
 
 // mysqlDumpTables Create only tables dump
-func (t *teleport) mysqlDumpTables(ctx context.Context, db *project.DbSettings, dumpTables string) error {
+func (t *teleport) mysqlDumpTables(ctx context.Context, db *project.DBSettings, dumpTables string) error {
 	w := progress.ContextWriter(ctx)
 	w.Event(progress.Event{ID: "Database", StatusText: "Creating database dump"})
 

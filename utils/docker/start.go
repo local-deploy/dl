@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/compose-spec/compose-go/types"
+	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/docker/compose/v2/cmd/compose"
 	"github.com/docker/compose/v2/pkg/api"
 )
@@ -56,7 +56,7 @@ func (cli *Client) StartContainers(ctx context.Context, project *types.Project, 
 		return err
 	}
 
-	err = up.apply(project, services)
+	project, err = up.apply(project, services)
 	if err != nil {
 		return err
 	}
@@ -97,20 +97,21 @@ func (cli *Client) StartContainers(ctx context.Context, project *types.Project, 
 	return nil
 }
 
-func (opts upOptions) apply(project *types.Project, services []string) error {
+func (opts upOptions) apply(project *types.Project, services []string) (*types.Project, error) {
 	if opts.noDeps {
-		err := project.ForServices(services, types.IgnoreDependencies)
+		var err error
+		project, err = project.WithSelectedServices(services, types.IgnoreDependencies)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	if opts.exitCodeFrom != "" {
 		_, err := project.GetService(opts.exitCodeFrom)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	return nil
+	return project, nil
 }

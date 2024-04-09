@@ -11,6 +11,7 @@ import (
 	"github.com/docker/compose/v2/pkg/api"
 	"github.com/docker/compose/v2/pkg/compose"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 )
 
@@ -34,7 +35,7 @@ func newComposeService() (*command.DockerCli, api.Service, error) {
 		return nil, nil, err
 	}
 
-	return dockerCli, api.NewServiceProxy().WithService(compose.NewComposeService(dockerCli)), err
+	return dockerCli, compose.NewComposeService(dockerCli), err
 }
 
 func newDockerCli() (*command.DockerCli, error) {
@@ -60,7 +61,7 @@ func (cli *Client) IsServiceRunning(ctx context.Context) bool {
 		filters.Arg("name", "traefik"),
 		filters.Arg("label", fmt.Sprintf("%s=%s", api.ProjectLabel, "dl-services")),
 	)
-	traefikExists, _ := cli.DockerCli.Client().ContainerList(ctx, types.ContainerListOptions{Filters: containerFilter})
+	traefikExists, _ := cli.DockerCli.Client().ContainerList(ctx, container.ListOptions{Filters: containerFilter})
 
 	return len(traefikExists) > 0
 }

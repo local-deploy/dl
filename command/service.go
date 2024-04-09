@@ -3,7 +3,7 @@ package command
 import (
 	"context"
 
-	"github.com/compose-spec/compose-go/types"
+	"github.com/compose-spec/compose-go/v2/types"
 	dockerTypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
@@ -63,7 +63,7 @@ func checkOldNetwork(ctx context.Context, client *docker.Client) {
 
 	for _, con := range inspect.Containers {
 		_ = client.DockerCli.Client().ContainerStop(ctx, con.Name, container.StopOptions{})
-		_ = client.DockerCli.Client().ContainerRemove(ctx, con.Name, dockerTypes.ContainerRemoveOptions{Force: true})
+		_ = client.DockerCli.Client().ContainerRemove(ctx, con.Name, container.RemoveOptions{Force: true})
 	}
 
 	err = client.DockerCli.Client().NetworkRemove(ctx, "dl_default")
