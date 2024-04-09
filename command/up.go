@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/local-deploy/dl/helper"
 	"github.com/local-deploy/dl/project"
 	"github.com/local-deploy/dl/utils"
 	"github.com/local-deploy/dl/utils/docker"
@@ -37,7 +36,7 @@ Analogue of the "docker-compose up -d" command.`,
 func upRun() {
 	project.LoadEnv()
 
-	if !helper.WpdeployCheck() {
+	if !utils.WpdeployCheck() {
 		return
 	}
 
@@ -63,7 +62,7 @@ func upRun() {
 		project.CreateCert()
 	}
 
-	bin, option := helper.GetCompose()
+	bin, option := utils.GetCompose()
 	Args := []string{bin}
 	preArgs := []string{"-p", project.Env.GetString("NETWORK_NAME"), "--project-directory", project.Env.GetString("PWD"), "up", "-d"}
 

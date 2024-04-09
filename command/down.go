@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/local-deploy/dl/helper"
 	"github.com/local-deploy/dl/project"
+	"github.com/local-deploy/dl/utils"
 	"github.com/pterm/pterm"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -33,11 +33,11 @@ func downRun() {
 	pterm.FgGreen.Printfln("Stopping project...")
 
 	if viper.GetBool("ca") {
-		_ = helper.RemoveDirectory(filepath.Join(helper.CertDir(), "conf", project.Env.GetString("NETWORK_NAME")+".yaml"))
-		_ = helper.RemoveDirectory(filepath.Join(helper.CertDir(), project.Env.GetString("NETWORK_NAME")))
+		_ = utils.RemoveDirectory(filepath.Join(utils.CertDir(), "conf", project.Env.GetString("NETWORK_NAME")+".yaml"))
+		_ = utils.RemoveDirectory(filepath.Join(utils.CertDir(), project.Env.GetString("NETWORK_NAME")))
 	}
 
-	bin, option := helper.GetCompose()
+	bin, option := utils.GetCompose()
 	Args := []string{bin}
 	preArgs := []string{"-p", project.Env.GetString("NETWORK_NAME"), "down"}
 

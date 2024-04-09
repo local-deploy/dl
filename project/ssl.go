@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/local-deploy/dl/helper"
+	"github.com/local-deploy/dl/utils"
 	"github.com/local-deploy/dl/utils/cert"
 	"github.com/pterm/pterm"
 	"gopkg.in/yaml.v3"
@@ -26,7 +26,7 @@ type certFileStruct struct {
 
 // CreateCert create a certificate and key for the project
 func CreateCert() {
-	certutilPath, err := helper.CertutilPath()
+	certutilPath, err := utils.CertutilPath()
 	if err != nil {
 		pterm.FgRed.Printfln("Error: %s", err)
 		return
@@ -36,7 +36,7 @@ func CreateCert() {
 		CertutilPath:  certutilPath,
 		CaFileName:    cert.CaRootName,
 		CaFileKeyName: cert.CaRootKeyName,
-		CaPath:        helper.CertDir(),
+		CaPath:        utils.CertDir(),
 	}
 
 	err = c.LoadCA()
@@ -46,8 +46,8 @@ func CreateCert() {
 	}
 
 	// ~/.config/dl/certs/site
-	certDir := filepath.Join(helper.CertDir(), Env.GetString("NETWORK_NAME"))
-	_ = helper.CreateDirectory(certDir)
+	certDir := filepath.Join(utils.CertDir(), Env.GetString("NETWORK_NAME"))
+	_ = utils.CreateDirectory(certDir)
 
 	err = c.MakeCert([]string{
 		Env.GetString("LOCAL_DOMAIN"),
@@ -73,7 +73,7 @@ func CreateCert() {
 	}
 
 	// ~/.config/dl/certs/conf/site.localhost.yaml
-	err = os.WriteFile(filepath.Join(helper.CertDir(), "conf", Env.GetString("NETWORK_NAME")+".yaml"), yamlData, 0600)
+	err = os.WriteFile(filepath.Join(utils.CertDir(), "conf", Env.GetString("NETWORK_NAME")+".yaml"), yamlData, 0600)
 	if err != nil {
 		pterm.FgRed.Printfln("failed to create config certificate file: %s", err)
 	}

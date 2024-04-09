@@ -3,7 +3,7 @@ package command
 import (
 	"path/filepath"
 
-	"github.com/local-deploy/dl/helper"
+	"github.com/local-deploy/dl/utils"
 	"github.com/local-deploy/dl/utils/cert"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
@@ -23,7 +23,7 @@ func uninstallCertCommand() *cobra.Command {
 }
 
 func uninstallCertRun() {
-	certutilPath, err := helper.CertutilPath()
+	certutilPath, err := utils.CertutilPath()
 	if err != nil {
 		pterm.FgRed.Printfln("Error: %s", err)
 		return
@@ -33,7 +33,7 @@ func uninstallCertRun() {
 		CertutilPath:  certutilPath,
 		CaFileName:    cert.CaRootName,
 		CaFileKeyName: cert.CaRootKeyName,
-		CaPath:        helper.CertDir(),
+		CaPath:        utils.CertDir(),
 	}
 
 	err = c.LoadCA()
@@ -50,8 +50,8 @@ func uninstallCertRun() {
 
 	c.Uninstall()
 
-	helper.RemoveFilesInPath(filepath.Join(helper.CertDir(), "conf"))
-	helper.RemoveFilesInPath(helper.CertDir())
+	utils.RemoveFilesInPath(filepath.Join(utils.CertDir(), "conf"))
+	utils.RemoveFilesInPath(utils.CertDir())
 
 	storeCertConfig(false)
 	pterm.FgYellow.Println("The local CA is now uninstalled from the browsers trust store!")

@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/docker/compose/v2/pkg/progress"
-	"github.com/local-deploy/dl/helper"
 	"github.com/local-deploy/dl/project"
+	"github.com/local-deploy/dl/utils"
 	"github.com/local-deploy/dl/utils/client"
 	"github.com/sirupsen/logrus"
 )
@@ -129,7 +129,7 @@ echo $settings["connections"]["value"]["default"]["password"]."\n";'`,
 		return nil, err
 	}
 
-	dbArray := helper.CleanSlice(strings.Split(strings.TrimSpace(string(cat)), "\n"))
+	dbArray := utils.CleanSlice(strings.Split(strings.TrimSpace(string(cat)), "\n"))
 	logrus.Infof("Received variables: %s", dbArray)
 	if len(dbArray) != 4 {
 		return nil, errors.New("failed to define DB variables, please specify accesses manually")

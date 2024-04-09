@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/local-deploy/dl/helper"
+	"github.com/local-deploy/dl/utils"
 	"github.com/pterm/pterm"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/terminal"
@@ -101,7 +101,7 @@ func getAuth(config *Config) Auth {
 
 		return auth
 	} else {
-		home, _ := helper.HomeDir()
+		home, _ := utils.HomeDir()
 		auth, err := Key(filepath.Join(home, ".ssh", config.Key), getPassphrase(config.UseKeyPassphrase))
 		if err != nil {
 			pterm.FgRed.Println(err)

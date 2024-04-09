@@ -18,7 +18,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/local-deploy/dl/helper"
+	"github.com/local-deploy/dl/utils"
 	"github.com/pterm/pterm"
 )
 
@@ -195,16 +195,16 @@ func (c *Cert) MakeCert(hosts []string, path string) error {
 	privatePEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: pkcs8PrivateKey})
 
 	if certFile == keyFile {
-		err = os.WriteFile(filepath.Join(helper.CertDir(), path, keyFile), append(certPEM, privatePEM...), 0600)
+		err = os.WriteFile(filepath.Join(utils.CertDir(), path, keyFile), append(certPEM, privatePEM...), 0600)
 		if err != nil {
 			return fmt.Errorf("failed to save certificate and key: %w", err)
 		}
 	} else {
-		err = os.WriteFile(filepath.Join(helper.CertDir(), path, certFile), certPEM, 0644) //nolint:gosec
+		err = os.WriteFile(filepath.Join(utils.CertDir(), path, certFile), certPEM, 0644) //nolint:gosec
 		if err != nil {
 			return fmt.Errorf("failed to save certificate: %w", err)
 		}
-		err = os.WriteFile(filepath.Join(helper.CertDir(), path, keyFile), privatePEM, 0600)
+		err = os.WriteFile(filepath.Join(utils.CertDir(), path, keyFile), privatePEM, 0600)
 		if err != nil {
 			return fmt.Errorf("failed to save certificate key: %w", err)
 		}

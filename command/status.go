@@ -9,7 +9,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
-	"github.com/local-deploy/dl/helper"
+	"github.com/local-deploy/dl/utils"
 	"github.com/local-deploy/dl/utils/docker"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
@@ -87,7 +87,7 @@ func getServices(ctx context.Context, cli *docker.Client) ([]docker.ContainerSum
 
 func getProjects(ctx context.Context, cli *docker.Client) ([]docker.ContainerSummary, error) {
 	containerFilter := filters.NewArgs(
-		filters.Arg("label", fmt.Sprintf("%s=%s", api.WorkingDirLabel, helper.TemplateDir())),
+		filters.Arg("label", fmt.Sprintf("%s=%s", api.WorkingDirLabel, utils.TemplateDir())),
 	)
 	containers, _ := cli.DockerCli.Client().ContainerList(ctx, container.ListOptions{Filters: containerFilter, All: true})
 

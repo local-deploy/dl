@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/local-deploy/dl/command"
-	"github.com/local-deploy/dl/helper"
 	"github.com/local-deploy/dl/utils"
 	"github.com/pterm/pterm"
 	"github.com/spf13/viper"
@@ -29,11 +28,11 @@ func main() {
 		return
 	}
 
-	if !helper.IsConfigFileExists() {
+	if !utils.IsConfigFileExists() {
 		firstStart()
 	}
 
-	if !helper.IsCertPathExists() {
+	if !utils.IsCertPathExists() {
 		createCertDirectory()
 	}
 
@@ -43,7 +42,7 @@ func main() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	configDir := helper.ConfigDir()
+	configDir := utils.ConfigDir()
 
 	viper.AddConfigPath(configDir)
 	viper.SetConfigType("yaml")
@@ -74,7 +73,7 @@ func firstStart() {
 		os.Exit(1)
 	}
 
-	if !helper.IsAptInstall() {
+	if !utils.IsAptInstall() {
 		err = utils.CreateTemplates(true)
 		if err != nil {
 			pterm.FgRed.Printfln("Unable to create template files: %s \n", err)
@@ -84,9 +83,9 @@ func firstStart() {
 }
 
 func createConfigFile() error {
-	configDir := helper.ConfigDir()
+	configDir := utils.ConfigDir()
 
-	err := helper.CreateDirectory(configDir)
+	err := utils.CreateDirectory(configDir)
 	if err != nil {
 		return err
 	}
@@ -110,7 +109,7 @@ func createConfigFile() error {
 }
 
 func createCertDirectory() {
-	err := helper.CreateDirectory(filepath.Join(helper.CertDir(), "conf"))
+	err := utils.CreateDirectory(filepath.Join(utils.CertDir(), "conf"))
 	if err != nil {
 		pterm.FgRed.Printfln("Unable to create certs directory: %s \n", err)
 		os.Exit(1)

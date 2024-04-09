@@ -5,7 +5,6 @@ import (
 
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/local-deploy/dl/containers"
-	"github.com/local-deploy/dl/helper"
 	"github.com/local-deploy/dl/utils"
 	"github.com/local-deploy/dl/utils/docker"
 	"github.com/spf13/cobra"
@@ -52,7 +51,7 @@ func MapsAppend[T comparable, U any](target map[T]U, source map[T]U) map[T]U {
 }
 
 func upServiceRun(ctx context.Context) error {
-	if !helper.WpdeployCheck() {
+	if !utils.WpdeployCheck() {
 		return nil
 	}
 

@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/docker/compose/v2/pkg/progress"
-	"github.com/local-deploy/dl/helper"
 	"github.com/local-deploy/dl/utils"
 	"github.com/local-deploy/dl/utils/github"
 	"github.com/pterm/pterm"
@@ -48,7 +47,7 @@ func selfUpdateCommand() *cobra.Command {
 func selfUpdateRun(ctx context.Context) (string, error) {
 	w := progress.ContextWriter(ctx)
 
-	if helper.IsAptInstall() {
+	if utils.IsAptInstall() {
 		pterm.FgYellow.Println("Please use command:")
 		pterm.Println()
 		pterm.FgGreen.Println("sudo apt update\nsudo apt install dl")
@@ -223,11 +222,11 @@ func extractArchive(archivePath string) error {
 }
 
 func copyBin() error {
-	binPath := helper.BinPath()
+	binPath := utils.BinPath()
 
 	tmpBinPath := filepath.Join(os.TempDir(), "dl", "dl")
 
-	if helper.IsBinFileExists() {
+	if utils.IsBinFileExists() {
 		err := os.Remove(binPath)
 		if err != nil {
 			return err

@@ -3,7 +3,6 @@ package utils
 import (
 	"time"
 
-	"github.com/local-deploy/dl/helper"
 	"github.com/local-deploy/dl/utils/github"
 	"github.com/pterm/pterm"
 	"github.com/spf13/viper"
@@ -11,7 +10,7 @@ import (
 
 // CheckUpdates checking for updates every 24 hours
 func CheckUpdates() {
-	if helper.IsAptInstall() {
+	if IsAptInstall() {
 		return
 	}
 

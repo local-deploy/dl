@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/docker/compose/v2/pkg/progress"
-	"github.com/local-deploy/dl/helper"
+	"github.com/local-deploy/dl/utils"
 	"github.com/local-deploy/dl/utils/client"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/text/cases"
@@ -179,7 +179,7 @@ func ExtractArchive(ctx context.Context, path string) error {
 	for _, dir := range s {
 		logrus.Infof("Run chmod 775: %s", dir)
 		chmodDir := filepath.Join(destinationPath, dir)
-		err = helper.ChmodR(chmodDir, 0775)
+		err = utils.ChmodR(chmodDir, 0775)
 		if err != nil {
 			w.Event(progress.ErrorMessageEvent("Files", fmt.Sprint(err)))
 			return err

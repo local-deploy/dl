@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/compose-spec/compose-go/v2/types"
-	"github.com/local-deploy/dl/helper"
+	"github.com/local-deploy/dl/utils"
 )
 
 // ServicesNetworkName network name for service containers
@@ -59,7 +59,7 @@ func Traefik() types.ServiceConfig {
 			},
 			{
 				Type:     types.VolumeTypeBind,
-				Source:   filepath.Join(helper.ConfigDir(), "certs"),
+				Source:   filepath.Join(utils.ConfigDir(), "certs"),
 				Target:   "/certs",
 				ReadOnly: true,
 			},

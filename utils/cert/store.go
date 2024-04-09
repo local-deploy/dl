@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/local-deploy/dl/helper"
+	"github.com/local-deploy/dl/utils"
 	"github.com/pterm/pterm"
 )
 
@@ -134,7 +134,7 @@ func commandWithSudo(cmd ...string) *exec.Cmd {
 	if err == nil && u.Uid == "0" {
 		return exec.Command(cmd[0], cmd[1:]...) //nolint:gosec
 	}
-	if !helper.BinaryExists("sudo") {
+	if !utils.BinaryExists("sudo") {
 		sudoWarningOnce.Do(func() {
 			pterm.FgRed.Println(`Warning: "sudo" is not available, and dl is not running as root. The (un)install operation might fail.️`)
 		})
