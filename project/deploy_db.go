@@ -21,7 +21,7 @@ var remotePhpPath string
 func DumpDB(ctx context.Context, client *client.Client, tables []string) {
 	var err error
 
-	c := &SshClient{client}
+	c := &SSHClient{client}
 	w := progress.ContextWriter(ctx)
 	w.Event(progress.Event{ID: "Database", Status: progress.Working})
 
@@ -63,9 +63,9 @@ func DumpDB(ctx context.Context, client *client.Client, tables []string) {
 	w.Event(progress.Event{ID: "Database", Status: progress.Done})
 }
 
-func (c SshClient) getMysqlSettings() (*DbSettings, error) {
+func (c SSHClient) getMysqlSettings() (*DBSettings, error) {
 	var err error
-	var db *DbSettings
+	var db *DBSettings
 
 	mysqlDataBase := Env.GetString("MYSQL_DATABASE_SRV")
 	mysqlLogin := Env.GetString("MYSQL_LOGIN_SRV")
@@ -74,7 +74,7 @@ func (c SshClient) getMysqlSettings() (*DbSettings, error) {
 		logrus.Info("Manual database access settings are used")
 		excludedTables := strings.Split(strings.TrimSpace(Env.GetString("EXCLUDED_TABLES")), ",")
 
-		db = &DbSettings{
+		db = &DBSettings{
 			Host:           Env.GetString("MYSQL_HOST_SRV"),
 			Port:           Env.GetString("MYSQL_PORT_SRV"),
 			DataBase:       mysqlDataBase,
@@ -104,7 +104,7 @@ func (c SshClient) getMysqlSettings() (*DbSettings, error) {
 }
 
 // checkPhpAvailable It possible that PHP not installed on the server in the host system. For example, through docker.
-func (c SshClient) checkPhpAvailable() {
+func (c SSHClient) checkPhpAvailable() {
 	logrus.Info("Check if PHP available")
 	phpCmd := strings.Join([]string{"cd", c.Config.Catalog, "&&", "which php"}, " ")
 	logrus.Infof("Run command: %s", phpCmd)
@@ -118,7 +118,7 @@ func (c SshClient) checkPhpAvailable() {
 }
 
 // accessBitrixDB Attempt to determine database accesses
-func (c SshClient) accessBitrixDB() (*DbSettings, error) {
+func (c SSHClient) accessBitrixDB() (*DBSettings, error) {
 	var catCmd string
 	if len(remotePhpPath) > 0 {
 		// A more precise way to define variables
@@ -152,7 +152,7 @@ echo $settings["connections"]["value"]["default"]["password"]."\n";'`,
 
 	excludedTables := strings.Split(strings.TrimSpace(Env.GetString("EXCLUDED_TABLES")), ",")
 
-	return &DbSettings{
+	return &DBSettings{
 		Host:           dbArray[0],
 		DataBase:       dbArray[1],
 		Login:          dbArray[2],
@@ -162,7 +162,7 @@ echo $settings["connections"]["value"]["default"]["password"]."\n";'`,
 }
 
 // accessWpDB Attempt to determine database accesses
-func (c SshClient) accessWpDB() (*DbSettings, error) {
+func (c SSHClient) accessWpDB() (*DBSettings, error) {
 	catCmd := strings.Join([]string{"cd", c.Config.Catalog, "&&",
 		`$(which php) -r 'error_reporting(0); define("SHORTINIT",true); $settings = include "wp-config.php"; echo DB_HOST."\n"; echo DB_NAME."\n"; echo DB_USER."\n"; echo DB_PASSWORD."\n";'`,
 	}, " ")
@@ -180,7 +180,7 @@ func (c SshClient) accessWpDB() (*DbSettings, error) {
 
 	excludedTables := strings.Split(strings.TrimSpace(Env.GetString("EXCLUDED_TABLES")), ",")
 
-	return &DbSettings{
+	return &DBSettings{
 		Host:           dbArray[0],
 		DataBase:       dbArray[1],
 		Login:          dbArray[2],
@@ -189,7 +189,7 @@ func (c SshClient) accessWpDB() (*DbSettings, error) {
 	}, err
 }
 
-func (c SshClient) accessLaravelDB() (*DbSettings, error) {
+func (c SSHClient) accessLaravelDB() (*DBSettings, error) {
 	catCmd := strings.Join([]string{"cd", c.Config.Catalog, "&&", "export $(grep -v '^#' .env | xargs)", "&&",
 		`echo $DB_HOST`, "&&",
 		`echo $DB_DATABASE`, "&&",
@@ -207,7 +207,7 @@ func (c SshClient) accessLaravelDB() (*DbSettings, error) {
 
 	excludedTables := strings.Split(strings.TrimSpace(Env.GetString("EXCLUDED_TABLES")), ",")
 
-	return &DbSettings{
+	return &DBSettings{
 		Host:           dbArray[0],
 		DataBase:       dbArray[1],
 		Login:          dbArray[2],
@@ -217,7 +217,7 @@ func (c SshClient) accessLaravelDB() (*DbSettings, error) {
 }
 
 // mysqlDump Create database dump
-func (c SshClient) mysqlDump(ctx context.Context, db *DbSettings) error {
+func (c SSHClient) mysqlDump(ctx context.Context, db *DBSettings) error {
 	w := progress.ContextWriter(ctx)
 	w.Event(progress.Event{ID: "Database", StatusText: "Create database dump"})
 
@@ -254,7 +254,7 @@ func (c SshClient) mysqlDump(ctx context.Context, db *DbSettings) error {
 }
 
 // mysqlDumpTables Create only tables dump
-func (c SshClient) mysqlDumpTables(ctx context.Context, db *DbSettings, dumpTables string) error {
+func (c SSHClient) mysqlDumpTables(ctx context.Context, db *DBSettings, dumpTables string) error {
 	w := progress.ContextWriter(ctx)
 	w.Event(progress.Event{ID: "Database", StatusText: "Creating database dump"})
 
@@ -283,7 +283,7 @@ func (c SshClient) mysqlDumpTables(ctx context.Context, db *DbSettings, dumpTabl
 }
 
 // DumpDataTablesParams options for only tables dump
-func (d DbSettings) DumpDataTablesParams() string {
+func (d DBSettings) DumpDataTablesParams() string {
 	params := []string{
 		"--host=" + d.Host,
 		"--port=" + d.Port,
@@ -303,7 +303,7 @@ func (d DbSettings) DumpDataTablesParams() string {
 	return strings.Join(params, " ")
 }
 
-func (c SshClient) checkMySQLDumpAvailable() error {
+func (c SSHClient) checkMySQLDumpAvailable() error {
 	logrus.Info("Check if mysqldump available")
 	dumpCmd := strings.Join([]string{"cd", c.Config.Catalog, "&&", "which mysqldump"}, " ")
 	logrus.Infof("Run command: %s", dumpCmd)
@@ -317,7 +317,7 @@ func (c SshClient) checkMySQLDumpAvailable() error {
 }
 
 // DumpTablesParams table dump options
-func (d DbSettings) DumpTablesParams() string {
+func (d DBSettings) DumpTablesParams() string {
 	params := []string{
 		"--host=" + d.Host,
 		"--port=" + d.Port,
@@ -338,7 +338,7 @@ func (d DbSettings) DumpTablesParams() string {
 }
 
 // DumpDataParams options for data dump
-func (d DbSettings) DumpDataParams() string {
+func (d DBSettings) DumpDataParams() string {
 	params := []string{
 		"--host=" + d.Host,
 		"--port=" + d.Port,
@@ -360,7 +360,7 @@ func (d DbSettings) DumpDataParams() string {
 }
 
 // FormatIgnoredTables Exclude tables from dump
-func (d DbSettings) FormatIgnoredTables() string {
+func (d DBSettings) FormatIgnoredTables() string {
 	if len(d.ExcludedTables) == 0 {
 		return ""
 	}
@@ -374,7 +374,7 @@ func (d DbSettings) FormatIgnoredTables() string {
 }
 
 // downloadDump Downloading a dump and deleting an archive from the server
-func (c SshClient) downloadDump(ctx context.Context) error {
+func (c SSHClient) downloadDump(ctx context.Context) error {
 	w := progress.ContextWriter(ctx)
 	w.Event(progress.Event{ID: "Database", StatusText: "Download database dump"})
 
@@ -397,7 +397,7 @@ func (c SshClient) downloadDump(ctx context.Context) error {
 }
 
 // ImportDB Importing a database into a local container
-func (c SshClient) ImportDB(ctx context.Context) error {
+func (c SSHClient) ImportDB(ctx context.Context) error {
 	w := progress.ContextWriter(ctx)
 	w.Event(progress.Event{ID: "Database", StatusText: "Import database"})
 

@@ -24,7 +24,7 @@ func CopyFiles(ctx context.Context, client *client.Client, override []string) {
 		path string
 	)
 
-	c := &SshClient{client}
+	c := &SSHClient{client}
 
 	w := progress.ContextWriter(ctx)
 	w.Event(progress.Event{ID: "Files", Status: progress.Working})
@@ -72,7 +72,7 @@ func CopyFiles(ctx context.Context, client *client.Client, override []string) {
 }
 
 // packFiles Add files to archive
-func (c SshClient) packFiles(ctx context.Context, path string) error {
+func (c SSHClient) packFiles(ctx context.Context, path string) error {
 	w := progress.ContextWriter(ctx)
 	w.Event(progress.Event{ID: "Files", StatusText: "Creating archive"})
 
@@ -113,7 +113,7 @@ func FormatIgnoredPath() string {
 	return strings.Join(ignoredPath, " ")
 }
 
-func (c SshClient) downloadArchive(ctx context.Context) error {
+func (c SSHClient) downloadArchive(ctx context.Context) error {
 	w := progress.ContextWriter(ctx)
 	w.Event(progress.Event{ID: "Files", StatusText: "Download archive"})
 

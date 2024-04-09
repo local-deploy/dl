@@ -5,13 +5,13 @@ import "github.com/local-deploy/dl/utils/client"
 // CallMethod to dynamically determine the function name
 type CallMethod struct{}
 
-// SshClient client ssh
-type SshClient struct {
+// SSHClient client ssh
+type SSHClient struct {
 	*client.Client
 }
 
-// DbSettings database settings
-type DbSettings struct {
+// DBSettings database settings
+type DBSettings struct {
 	Host, DataBase, Login, Password, Port string
 	ExcludedTables                        []string
 }

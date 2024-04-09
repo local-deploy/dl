@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/compose-spec/compose-go/types"
+	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/docker/compose/v2/pkg/api"
 	"github.com/local-deploy/dl/containers"
 	"github.com/local-deploy/dl/utils/docker"
@@ -38,7 +38,7 @@ func downServiceRun(ctx context.Context) error {
 	services := types.Services{}
 	servicesContainers := getServicesContainer()
 	for _, service := range servicesContainers {
-		services = append(services, service)
+		services[service.Name] = service
 	}
 
 	project := &types.Project{

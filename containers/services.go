@@ -3,7 +3,7 @@ package containers
 import (
 	"path/filepath"
 
-	"github.com/compose-spec/compose-go/types"
+	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/local-deploy/dl/helper"
 )
 
@@ -30,34 +30,10 @@ func Traefik() types.ServiceConfig {
 		},
 		Environment: nil,
 		Ports: []types.ServicePortConfig{
-			{
-				Mode:      "ingress",
-				HostIP:    "0.0.0.0",
-				Target:    80,
-				Published: "80",
-				Protocol:  "tcp",
-			},
-			{
-				Mode:      "ingress",
-				HostIP:    "0.0.0.0",
-				Target:    443,
-				Published: "443",
-				Protocol:  "tcp",
-			},
-			{
-				Mode:      "ingress",
-				HostIP:    "0.0.0.0",
-				Target:    8081,
-				Published: "8081",
-				Protocol:  "tcp",
-			},
-			{
-				Mode:      "ingress",
-				HostIP:    "0.0.0.0",
-				Target:    8082,
-				Published: "8082",
-				Protocol:  "tcp",
-			},
+			{Mode: "ingress", HostIP: "0.0.0.0", Target: 80, Published: "80", Protocol: "tcp"},
+			{Mode: "ingress", HostIP: "0.0.0.0", Target: 443, Published: "443", Protocol: "tcp"},
+			{Mode: "ingress", HostIP: "0.0.0.0", Target: 8081, Published: "8081", Protocol: "tcp"},
+			{Mode: "ingress", HostIP: "0.0.0.0", Target: 8082, Published: "8082", Protocol: "tcp"},
 		},
 		Labels: types.Labels{
 			"traefik.enable":                                         "true",
@@ -71,7 +47,7 @@ func Traefik() types.ServiceConfig {
 		Networks: map[string]*types.ServiceNetworkConfig{
 			ServicesNetworkName: nil,
 		},
-		Scale:      1,
+		Scale:      intPtr(1),
 		PullPolicy: types.PullPolicyIfNotPresent,
 		Restart:    types.RestartPolicyAlways,
 		Volumes: []types.ServiceVolumeConfig{
@@ -116,7 +92,7 @@ func Mail() types.ServiceConfig {
 		Networks: map[string]*types.ServiceNetworkConfig{
 			ServicesNetworkName: {},
 		},
-		Scale:      1,
+		Scale:      intPtr(1),
 		PullPolicy: types.PullPolicyIfNotPresent,
 		Restart:    types.RestartPolicyAlways,
 	}
@@ -155,8 +131,12 @@ func Portainer() types.ServiceConfig {
 		Networks: map[string]*types.ServiceNetworkConfig{
 			ServicesNetworkName: {},
 		},
-		Scale:      1,
+		Scale:      intPtr(1),
 		PullPolicy: types.PullPolicyIfNotPresent,
 		Restart:    types.RestartPolicyAlways,
 	}
+}
+
+func intPtr(i int) *int {
+	return &i
 }
