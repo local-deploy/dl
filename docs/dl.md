@@ -28,7 +28,7 @@ Complete documentation is available at https://local-deploy.github.io/
 * [dl recreate](dl_recreate.md)     - Recreate containers
 * [dl self-update](dl_self-update.md)     - Update dl
 * [dl service](dl_service.md)     - Local services configuration
-* [dl status](dl_status.md)     - List containers
+* [dl status](dl_status.md)     - Show dl status
 * [dl templates](dl_templates.md)     - Regenerate docker-compose files
 * [dl up](dl_up.md)     - Up project
 * [dl version](dl_version.md)     - Print the version number

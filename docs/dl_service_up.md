@@ -13,9 +13,8 @@ dl service up [flags]
 ### Options
 
 ```
-  -h, --help             help for up
-  -r, --restart          Restart running containers
-  -s, --service string   Start single service
+  -h, --help       help for up
+  -r, --recreate   Recreate running containers
 ```
 
 ### Options inherited from parent commands

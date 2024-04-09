@@ -1,10 +1,10 @@
 ## dl status
 
-List containers
+Show dl status
 
 ### Synopsis
 
-List containers in the current project.
+List of containers started by dl.
 
 ```
 dl status [flags]

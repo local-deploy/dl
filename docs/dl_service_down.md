@@ -21,8 +21,7 @@ dl down -s portainer
 ### Options
 
 ```
-  -h, --help             help for down
-  -s, --service string   Stop and remove single service
+  -h, --help   help for down
 ```
 
 ### Options inherited from parent commands

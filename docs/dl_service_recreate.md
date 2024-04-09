@@ -4,7 +4,7 @@ Recreate containers
 
 ### Synopsis
 
-Stop services containers and restart.
+Recreate running service containers.
 
 ```
 dl service recreate [flags]
@@ -13,8 +13,7 @@ dl service recreate [flags]
 ### Options
 
 ```
-  -h, --help             help for recreate
-  -s, --service string   Recreate single service
+  -h, --help   help for recreate
 ```
 
 ### Options inherited from parent commands
