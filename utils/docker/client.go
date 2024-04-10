@@ -45,7 +45,7 @@ func newDockerCli() (*command.DockerCli, error) {
 	}
 
 	options := flags.NewClientOptions()
-	options.LogLevel = "fatal"
+	// options.LogLevel = "fatal"
 
 	err = dockerCLI.Initialize(options)
 	if err != nil {

@@ -36,18 +36,18 @@ type Config struct {
 	Callback         ssh.HostKeyCallback
 }
 
-// DefaultTimeout is the timeout of ssh client connection.
-var DefaultTimeout = 20 * time.Second
+// defaultTimeout is the timeout of ssh client connection.
+var defaultTimeout = 20 * time.Second
 
 // NewClient returns new client and error if any
 func NewClient(config *Config) (c *Client, err error) {
-	c, err = NewConn(&Config{
+	c, err = newConn(&Config{
 		User:     config.User,
 		Addr:     config.Addr,
 		Port:     config.Port,
 		Catalog:  config.Catalog,
 		FwType:   config.FwType,
-		Timeout:  DefaultTimeout,
+		Timeout:  defaultTimeout,
 		Auth:     getAuth(config),
 		Callback: verifyHost,
 	})
@@ -55,18 +55,18 @@ func NewClient(config *Config) (c *Client, err error) {
 	return
 }
 
-// NewConn returns new client and error if any.
-func NewConn(config *Config) (c *Client, err error) {
+// newConn returns new client and error if any.
+func newConn(config *Config) (c *Client, err error) {
 	c = &Client{
 		Config: config,
 	}
 
-	c.Client, err = Dial("tcp", config)
+	c.Client, err = dial("tcp", config)
 	return
 }
 
-// Dial starts a client connection to SSH server based on config.
-func Dial(proto string, c *Config) (*ssh.Client, error) {
+// dial starts a client connection to SSH server based on config.
+func dial(proto string, c *Config) (*ssh.Client, error) {
 	return ssh.Dial(proto, net.JoinHostPort(c.Addr, fmt.Sprint(c.Port)), &ssh.ClientConfig{
 		User:            c.User,
 		Auth:            c.Auth,
@@ -100,15 +100,15 @@ func getAuth(config *Config) Auth {
 		auth := Password(askPass("Enter SSH Password: "))
 
 		return auth
-	} else {
-		home, _ := utils.HomeDir()
-		auth, err := Key(filepath.Join(home, ".ssh", config.Key), getPassphrase(config.UseKeyPassphrase))
-		if err != nil {
-			pterm.FgRed.Println(err)
-			return nil
-		}
-		return auth
 	}
+
+	home, _ := utils.HomeDir()
+	auth, err := Key(filepath.Join(home, ".ssh", config.Key), getPassphrase(config.UseKeyPassphrase))
+	if err != nil {
+		pterm.FgRed.Println(err)
+		return nil
+	}
+	return auth
 }
 
 func getPassphrase(ask bool) string {
@@ -138,11 +138,11 @@ func verifyHost(host string, remote net.Addr, key ssh.PublicKey) error {
 	}
 
 	// handshake because public key already exists
-	if hostFound && err == nil {
+	if hostFound {
 		return nil
 	}
 
-	if askIsHostTrusted(host, key) == false {
+	if !askIsHostTrusted(host, key) {
 		pterm.FgRed.Println("Connection aborted")
 		return nil
 	}
