@@ -2,6 +2,7 @@ package command
 
 import (
 	"github.com/pterm/pterm"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -23,6 +24,8 @@ func certCommand() *cobra.Command {
 
 func storeCertConfig(status bool) {
 	viper.Set("ca", status)
+
+	logrus.Info("Updating the configuration file")
 	err := viper.WriteConfig()
 	if err != nil {
 		pterm.FgRed.Println(err)

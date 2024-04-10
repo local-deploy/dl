@@ -162,6 +162,7 @@ func startDump(ctx context.Context, c *client.Client) {
 
 func detectFw() (string, error) {
 	ls := strings.Join([]string{"cd", sshClient.Config.Catalog, "&&", "ls"}, " ")
+	logrus.Infof("Run command: %s", ls)
 	out, err := sshClient.Run(ls)
 	if err != nil {
 		return "", err
@@ -182,6 +183,8 @@ func detectFw() (string, error) {
 		fmt.Println("Laravel FW detected")
 		return "laravel", nil
 	}
+
+	logrus.Errorf("Output of ls: %s", string(out))
 
 	return "", errors.New("failed determine the Framework, please specify accesses manually https://clck.ru/uAGwX")
 }
