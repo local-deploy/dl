@@ -13,6 +13,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/sirupsen/logrus"
 )
 
 // NewClient docker client initialization
@@ -45,7 +46,7 @@ func newDockerCli() (*command.DockerCli, error) {
 	}
 
 	options := flags.NewClientOptions()
-	// options.LogLevel = "fatal"
+	options.LogLevel = logrus.GetLevel().String()
 
 	err = dockerCLI.Initialize(options)
 	if err != nil {

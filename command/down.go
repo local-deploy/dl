@@ -33,8 +33,8 @@ func downRun() {
 	pterm.FgGreen.Printfln("Stopping project...")
 
 	if viper.GetBool("ca") {
-		_ = utils.RemoveDirectory(filepath.Join(utils.CertDir(), "conf", project.Env.GetString("NETWORK_NAME")+".yaml"))
-		_ = utils.RemoveDirectory(filepath.Join(utils.CertDir(), project.Env.GetString("NETWORK_NAME")))
+		_ = utils.RemovePath(filepath.Join(utils.CertDir(), "conf", project.Env.GetString("NETWORK_NAME")+".yaml"))
+		_ = utils.RemovePath(filepath.Join(utils.CertDir(), project.Env.GetString("NETWORK_NAME")))
 	}
 
 	bin, option := utils.GetCompose()
