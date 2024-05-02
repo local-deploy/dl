@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   php:
     container_name: ${HOST_NAME}_php
