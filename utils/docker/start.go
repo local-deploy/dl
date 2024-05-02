@@ -18,7 +18,6 @@ type upOptions struct { //nolint:maligned
 	Detach             bool
 	noStart            bool
 	noDeps             bool
-	cascadeStop        bool
 	exitCodeFrom       string
 	noColor            bool
 	noPrefix           bool
@@ -80,7 +79,6 @@ func (cli *Client) StartContainers(ctx context.Context, project *types.Project, 
 		Project:      project,
 		Attach:       consumer,
 		ExitCodeFrom: up.exitCodeFrom,
-		CascadeStop:  up.cascadeStop,
 		Wait:         up.wait,
 		WaitTimeout:  timeout,
 		Services:     services,
