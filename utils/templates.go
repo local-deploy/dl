@@ -15,7 +15,7 @@ func CreateTemplates(overwrite bool) error {
 
 	// delete existing directory
 	if overwrite {
-		err := RemoveDirectory(templateDir)
+		err := RemovePath(templateDir)
 		if err != nil {
 			return err
 		}
@@ -26,7 +26,7 @@ func CreateTemplates(overwrite bool) error {
 		return err
 	}
 
-	entries, err := Templates.ReadDir("config-files")
+	entries, err := Templates.ReadDir("templates")
 	if err != nil {
 		return err
 	}
@@ -37,7 +37,7 @@ func CreateTemplates(overwrite bool) error {
 			return err
 		}
 
-		data, err := Templates.ReadFile(filepath.Join("config-files", entry.Name()))
+		data, err := Templates.ReadFile(filepath.Join("templates", entry.Name()))
 		if err != nil {
 			return err
 		}

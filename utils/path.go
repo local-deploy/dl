@@ -29,13 +29,9 @@ func ConfigDir() string {
 	return filepath.Join(conf, "dl")
 }
 
-// TemplateDir template directory (~/.config/dl or /etc/dl)
+// TemplateDir template directory (~/.config/dl/templates)
 func TemplateDir() string {
-	if IsAptInstall() {
-		return filepath.Join("/", "etc", "dl", "config-files")
-	}
-
-	return filepath.Join(ConfigDir(), "config-files")
+	return filepath.Join(ConfigDir(), "templates")
 }
 
 // binDir path to bin directory
@@ -73,7 +69,7 @@ func CertutilPath() (string, error) {
 			out, err := exec.Command("brew", "--prefix", "nss").Output()
 			if err == nil {
 				certutilPath := filepath.Join(strings.TrimSpace(string(out)), "bin", "certutil")
-				if pathExists(certutilPath) {
+				if PathExists(certutilPath) {
 					logrus.Infof("Found certutil: %s", certutilPath)
 					return certutilPath, nil
 				}
@@ -107,7 +103,8 @@ func BinaryExists(name string) bool {
 	return err == nil
 }
 
-func pathExists(path string) bool {
+// PathExists check for the existence of a path
+func PathExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
 }
@@ -122,21 +119,22 @@ func IsAptInstall() bool {
 	return strings.EqualFold(binDir(), "/usr/bin")
 }
 
-// IsConfigFileExists checking for the existence of a configuration file
-func IsConfigFileExists() bool {
+// IsNeedInstall checking for the existence of a configuration file
+func IsNeedInstall() bool {
 	config := filepath.Join(ConfigDir(), "config.yaml")
+	templates := filepath.Join(ConfigDir(), "templates")
 
-	return pathExists(config)
+	return !PathExists(config) || !PathExists(templates)
 }
 
 // IsBinFileExists checks the existence of a binary
 func IsBinFileExists() bool {
-	return pathExists(BinPath())
+	return PathExists(BinPath())
 }
 
 // IsCertPathExists check if the certificate directory exists
 func IsCertPathExists() bool {
-	return pathExists(CertDir())
+	return PathExists(CertDir())
 }
 
 // ChmodR change file permissions recursively
@@ -152,7 +150,7 @@ func ChmodR(path string, mode os.FileMode) error {
 
 // CreateDirectory recursively create directories
 func CreateDirectory(path string) error {
-	if !pathExists(path) {
+	if !PathExists(path) {
 		err := os.MkdirAll(path, 0755)
 		if err != nil {
 			return err
@@ -162,9 +160,9 @@ func CreateDirectory(path string) error {
 	return nil
 }
 
-// RemoveDirectory recursively remove directories
-func RemoveDirectory(path string) error {
-	if pathExists(path) {
+// RemovePath recursively remove directories
+func RemovePath(path string) error {
+	if PathExists(path) {
 		err := os.RemoveAll(path)
 		if err != nil {
 			return err
@@ -176,7 +174,7 @@ func RemoveDirectory(path string) error {
 
 // RemoveFilesInPath deleting files in a directory
 func RemoveFilesInPath(path string) {
-	if pathExists(path) {
+	if PathExists(path) {
 		dir, _ := os.ReadDir(path)
 		if len(dir) > 0 {
 			for _, dirEntry := range dir {

@@ -51,7 +51,7 @@ func showEnvMenu() {
 }
 
 func printEnvConfig() {
-	src, _ := utils.Templates.Open(filepath.Join("config-files", getEnvName()))
+	src, _ := utils.Templates.Open(filepath.Join("templates", getEnvName()))
 	scanner := bufio.NewScanner(src)
 
 	pterm.Println()
@@ -87,7 +87,7 @@ func copyEnv() bool {
 			return false
 		}
 	} else {
-		src = filepath.Join("config-files", getEnvName())
+		src = filepath.Join("templates", getEnvName())
 		bytesRead, _ = utils.Templates.ReadFile(src)
 	}
 

@@ -22,8 +22,6 @@ scripts:
 contents:
   - src: bin/dl
     dst: /usr/bin/dl
-  - src: config-files/
-    dst: /etc/dl/config-files
   - src: .github/scripts/packages/completions/zsh
     dst: /usr/share/zsh/vendor-completions/_dl
   - src: .github/scripts/packages/completions/bash
@@ -36,5 +34,5 @@ overrides:
       - nss
   deb:
     depends:
-      - docker-ce (>= 5:23) | docker-desktop
+      - docker-ce (>= 5:23)
       - libnss3-tools (>= 2:2)

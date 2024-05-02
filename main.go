@@ -15,7 +15,7 @@ import (
 
 var version = "dev"
 
-//go:embed config-files/*
+//go:embed templates/*
 var templates embed.FS
 
 func main() {
@@ -28,7 +28,7 @@ func main() {
 		return
 	}
 
-	if !utils.IsConfigFileExists() {
+	if utils.IsNeedInstall() {
 		firstStart()
 	}
 
@@ -73,12 +73,16 @@ func firstStart() {
 		os.Exit(1)
 	}
 
-	if !utils.IsAptInstall() {
-		err = utils.CreateTemplates(true)
-		if err != nil {
-			pterm.FgRed.Printfln("Unable to create template files: %s \n", err)
-			os.Exit(1)
-		}
+	err = utils.CreateTemplates(true)
+	if err != nil {
+		pterm.FgRed.Printfln("Unable to create template files: %s \n", err)
+		os.Exit(1)
+	}
+
+	// remove old template directory
+	err = utils.RemovePath(filepath.Join(utils.ConfigDir(), "config-files"))
+	if err != nil {
+		pterm.FgRed.Printfln("Unable to remove old template files: %s \n", err)
 	}
 }
 
@@ -88,6 +92,11 @@ func createConfigFile() error {
 	err := utils.CreateDirectory(configDir)
 	if err != nil {
 		return err
+	}
+
+	// do not overwrite the config if it exists
+	if utils.PathExists(filepath.Join(configDir, "config.yaml")) {
+		return nil
 	}
 
 	viper.AddConfigPath(configDir)
