@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/pterm/pterm"
+	"github.com/sirupsen/logrus"
 )
 
 // HomeDir user home directory
@@ -55,20 +56,25 @@ func CertDir() string {
 
 // CertutilPath determine the path to the certutil
 func CertutilPath() (string, error) {
+	logrus.Info("Determine the path to the certutil")
+
 	switch runtime.GOOS {
 	case "darwin":
 		switch {
 		case BinaryExists("certutil"):
 			certutilPath, _ := exec.LookPath("certutil")
+			logrus.Infof("Found certutil: %s", certutilPath)
 			return certutilPath, nil
 		case BinaryExists("/usr/local/opt/nss/bin/certutil"):
 			certutilPath := "/usr/local/opt/nss/bin/certutil"
+			logrus.Infof("Found certutil: %s", certutilPath)
 			return certutilPath, nil
 		default:
 			out, err := exec.Command("brew", "--prefix", "nss").Output()
 			if err == nil {
 				certutilPath := filepath.Join(strings.TrimSpace(string(out)), "bin", "certutil")
 				if pathExists(certutilPath) {
+					logrus.Infof("Found certutil: %s", certutilPath)
 					return certutilPath, nil
 				}
 			}
@@ -77,6 +83,7 @@ func CertutilPath() (string, error) {
 	case "linux":
 		if BinaryExists("certutil") {
 			certutilPath, _ := exec.LookPath("certutil")
+			logrus.Infof("Found certutil: %s", certutilPath)
 			return certutilPath, nil
 		}
 	}
