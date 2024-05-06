@@ -22,12 +22,12 @@ DL is a wrapper on top of Docker and docker-compose, in basic use no additional 
 
 Supported OS: Linux, macOS, Windows (via WSL2)  
 Supported architectures: x64, arm64  
-Supported frameworks and CMS: Bitrix, Laravel, WordPress
+Supported frameworks and CMS: Bitrix, Laravel, WordPress, and many others with manual settings
 
 ## Features
 
-- Support for PHP versions (apache and php-fpm) 7.3, 7.4, 8.0, 8.1, 8.2
-- Support for MySQL versions 5.7, 8.0
+- Support for PHP versions (apache and php-fpm) 7.3, 7.4, 8.0, 8.1, 8.2, 8.3
+- Support for MySQL, MariaDB and PostgreSQL
 - Downloading the database and files from the production server
 - Redis
 - Memcached
