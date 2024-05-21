@@ -14,7 +14,7 @@ var ServicesNetworkName = "dl_default"
 func Traefik() types.ServiceConfig {
 	return types.ServiceConfig{
 		Name:          "traefik",
-		Image:         "traefik",
+		Image:         "traefik:v2.10.7",
 		ContainerName: "traefik",
 		Command: types.ShellCommand{
 			"--api.insecure=true",
