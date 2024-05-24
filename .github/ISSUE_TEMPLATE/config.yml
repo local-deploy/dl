@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://local-deploy.github.io/
+    about: 'Use the documentation'
+  - name: Discussions
+    url: https://github.com/orgs/local-deploy/discussions/new/choose
+    about: 'Open a discussion on GitHub Discussions'
+  - name: 'Telegram'
+    url: https://t.me/localdeploy
+    about: 'Write to Telegram chat'
