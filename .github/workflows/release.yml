@@ -1,7 +1,7 @@
 name: Build and release
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: "${{ github.workflow }}-${{ github.ref }}"
   cancel-in-progress: true
 
 on:
@@ -47,9 +47,10 @@ jobs:
       - run: git fetch --force --tags
 
       - name: Install Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
+          cache-dependency-path: go.mod
 
       - name: Set CGO
         if: ${{ matrix.os == 'darwin' }}
@@ -60,10 +61,10 @@ jobs:
           GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} CGO_ENABLED=${{ env.CGO }} go build -ldflags "-s -w -X 'main.version=${{ needs.prepare.outputs.version }}'" -o "$GITHUB_WORKSPACE"/dist/dl-${{ matrix.os }}-${{ matrix.arch }} .
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: dist/dl-${{ matrix.os }}-${{ matrix.arch }}
-          name: bin
+          name: dl-${{ matrix.os }}-${{ matrix.arch }}
           retention-days: 1
 
   archives:
@@ -77,10 +78,11 @@ jobs:
         include: ${{fromJson(needs.prepare.outputs.strategy)}}
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: bin
+          pattern: dl-*
           path: dist
+          merge-multiple: true
       - name: Create archives
         run: |
           cd "$GITHUB_WORKSPACE"/dist &&
@@ -88,10 +90,10 @@ jobs:
           chmod a+x dl &&
           tar -czvf dl-${{ needs.prepare.outputs.version }}-${{ matrix.os }}-${{ matrix.arch }}.tar.gz dl
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: dist/dl-${{ needs.prepare.outputs.version }}-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
-          name: releases
+          name: releases-${{ matrix.os }}-${{ matrix.arch }}
           retention-days: 1
 
   packages:
@@ -117,10 +119,11 @@ jobs:
         with:
           fetch-depth: 0
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: bin
+          pattern: dl-*
           path: bin
+          merge-multiple: true
       - name: Prepare binary
         run: |
           cd "$GITHUB_WORKSPACE"/bin &&
@@ -140,10 +143,10 @@ jobs:
           mkdir -p dist &&
           ./nfpm package -p ${{ matrix.package }} -t dist/dl-${{ needs.prepare.outputs.version }}-linux-${{ matrix.arch }}.${{ matrix.type }}
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: dist/
-          name: releases
+          name: releases-${{ matrix.arch }}.${{ matrix.type }}
           retention-days: 1
 
   checksum:
@@ -154,9 +157,10 @@ jobs:
       - archives
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: releases
+          pattern: releases-*
+          merge-multiple: true
       - name: Generate checksum
         uses: jmgilman/actions-generate-checksum@v1
         with:
@@ -166,9 +170,9 @@ jobs:
             *.deb
             *.rpm
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: releases
+          name: releases-checksum
           path: checksum.txt
           retention-days: 1
 
@@ -185,11 +189,12 @@ jobs:
       - name: Changelog
         uses: varrcan/generate-pretty-changelog-action@v1
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: releases
+          pattern: releases-*
+          merge-multiple: true
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           prerelease: ${{ contains(github.ref, '-rc') }}
           body_path: ${{ github.workspace }}/CHANGELOG.md
@@ -209,7 +214,7 @@ jobs:
       - release
     steps:
       - name: Publish AUR package
-        uses: ATiltedTree/create-aur-release@v1
+        uses: guumaster/aur-publish-docker-action@v1
         with:
           package_name: dl-bin
           commit_username: "dlbot"
@@ -232,10 +237,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: releases
+          pattern: releases-*
           path: dist
+          merge-multiple: true
       - name: Publish Fury package
         env:
           FURY_TOKEN: ${{ secrets.FURY_TOKEN }}
