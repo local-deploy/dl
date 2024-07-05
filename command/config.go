@@ -15,6 +15,7 @@ func configCommand() *cobra.Command {
 	configCmd.AddCommand(
 		configLangCommand(),
 		configRepoCommand(),
+		configServiceCommand(),
 	)
 	return configCmd
 }
