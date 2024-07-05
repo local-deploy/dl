@@ -2,12 +2,14 @@ package command
 
 import (
 	"context"
+	"slices"
 
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/local-deploy/dl/containers"
 	"github.com/local-deploy/dl/utils"
 	"github.com/local-deploy/dl/utils/docker"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var recreate bool
@@ -17,7 +19,7 @@ func upServiceCommand() *cobra.Command {
 		Use:   "up",
 		Short: "Start local services",
 		Long:  `Start portainer, mailcatcher and traefik containers.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 			err := upServiceRun(ctx)
 			if err != nil {
@@ -61,6 +63,9 @@ func upServiceRun(ctx context.Context) error {
 	services := types.Services{}
 	servicesContainers := getServicesContainer()
 	for _, service := range servicesContainers {
+		if !isEnable(service.Name) {
+			continue
+		}
 		services[service.Name] = service
 	}
 
@@ -81,4 +86,22 @@ func upServiceRun(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func isEnable(service string) bool {
+	if service == "traefik" {
+		return true
+	}
+
+	hasKeys := viper.IsSet("services")
+	services := viper.GetStringSlice("services")
+	if !hasKeys {
+		services = append(services, "portainer", "mail")
+	}
+
+	index := slices.IndexFunc(services, func(v string) bool {
+		return v == service
+	})
+
+	return index != -1
 }

@@ -13,7 +13,7 @@ func configRepoCommand() *cobra.Command {
 		Use:   "repo",
 		Short: "Repository source configuration",
 		Long:  `Menu for setting up the images source repository.`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			configRepoRun()
 		},
 		Hidden: false,
@@ -26,6 +26,7 @@ func configRepoRun() {
 	options := []string{"ghcr.io", "quay.io"}
 	selectedOption, _ := pterm.DefaultInteractiveSelect.
 		WithOptions(options).
+		WithFilter(false).
 		WithDefaultOption(currentRepo).
 		Show("Select application repository source")
 	pterm.Printfln("Selected repo: %s", pterm.Green(selectedOption))
