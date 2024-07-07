@@ -24,7 +24,7 @@ func upCommand() *cobra.Command {
 		Short: "Up project",
 		Long: `Start project containers. On completion, displays the local links to the project.
 Analogue of the "docker-compose up -d" command.`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			upRun()
 			// check for new version
 			utils.CheckUpdates()
