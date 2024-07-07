@@ -2,14 +2,12 @@ package command
 
 import (
 	"context"
-	"slices"
 
 	"github.com/compose-spec/compose-go/v2/types"
 	"github.com/local-deploy/dl/containers"
 	"github.com/local-deploy/dl/utils"
 	"github.com/local-deploy/dl/utils/docker"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var recreate bool
@@ -31,25 +29,10 @@ func upServiceCommand() *cobra.Command {
 
 			return nil
 		},
-		ValidArgs: []string{"--service", "--restart"},
+		ValidArgs: []string{"--services", "--restart"},
 	}
 	cmd.Flags().BoolVarP(&recreate, "recreate", "r", false, "Recreate running containers")
 	return cmd
-}
-
-func MapsAppend[T comparable, U any](target map[T]U, source map[T]U) map[T]U {
-	if target == nil {
-		return source
-	}
-	if source == nil {
-		return target
-	}
-	for key, value := range source {
-		if _, ok := target[key]; !ok {
-			target[key] = value
-		}
-	}
-	return target
 }
 
 func upServiceRun(ctx context.Context) error {
@@ -60,19 +43,19 @@ func upServiceRun(ctx context.Context) error {
 	client, _ := docker.NewClient()
 	checkOldNetwork(ctx, client)
 
-	services := types.Services{}
+	srv := types.Services{}
 	servicesContainers := getServicesContainer()
 	for _, service := range servicesContainers {
-		if !isEnable(service.Name) {
+		if isDisabled(service.Name) {
 			continue
 		}
-		services[service.Name] = service
+		srv[service.Name] = service
 	}
 
 	project := &types.Project{
 		Name:       "dl-services",
 		WorkingDir: "",
-		Services:   services,
+		Services:   srv,
 		Networks: map[string]types.NetworkConfig{
 			containers.ServicesNetworkName: {
 				Name: containers.ServicesNetworkName,
@@ -86,22 +69,4 @@ func upServiceRun(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func isEnable(service string) bool {
-	if service == "traefik" {
-		return true
-	}
-
-	hasKeys := viper.IsSet("services")
-	services := viper.GetStringSlice("services")
-	if !hasKeys {
-		services = append(services, "portainer", "mail")
-	}
-
-	index := slices.IndexFunc(services, func(v string) bool {
-		return v == service
-	})
-
-	return index != -1
 }
