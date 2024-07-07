@@ -14,7 +14,7 @@
 Deploy Local — is a command line interface designed to help developers quickly deploy projects to their local machine.  
 DL is a wrapper on top of Docker and docker-compose, in basic use no additional software or libraries are required to be installed.
 
-## Documentation [local-deploy.github.io](https://local-deploy.github.io/)
+## Documentation [local-deploy.github.io](https://v7m.ru/s/bvntg)
 
 ![cast](docs/dl.gif)
 

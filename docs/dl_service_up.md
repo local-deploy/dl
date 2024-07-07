@@ -20,7 +20,8 @@ dl service up [flags]
 ### Options inherited from parent commands
 
 ```
-      --debug   Show more output
+      --debug              Show more output
+  -s, --services strings   Manage only specified services (comma separated values)
 ```
 
 ### SEE ALSO

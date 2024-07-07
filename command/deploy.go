@@ -39,7 +39,7 @@ Directories that are downloaded by default
 Bitrix CMS: "bitrix"
 WordPress: "wp-admin" and "wp-includes"
 Laravel: only the database is downloaded`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			return deployRun()
 		},
 		Example:   "dl deploy\ndl deploy -d\ndl deploy -d -t b_user,b_file\ndl deploy -f\ndl deploy -f -o bitrix,upload",
@@ -186,5 +186,5 @@ func detectFw() (string, error) {
 
 	logrus.Errorf("Output of ls: %s", string(out))
 
-	return "", errors.New("failed determine the Framework, please specify accesses manually https://clck.ru/uAGwX")
+	return "", errors.New("failed determine the Framework, please specify accesses manually https://v7m.ru/s/mvavg")
 }

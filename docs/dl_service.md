@@ -9,7 +9,8 @@ Local services configuration (portainer, mailcatcher, traefik).
 ### Options
 
 ```
-  -h, --help   help for service
+  -h, --help               help for service
+  -s, --services strings   Manage only specified services (comma separated values)
 ```
 
 ### Options inherited from parent commands

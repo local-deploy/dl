@@ -22,4 +22,5 @@ Menu for setting up the application.
 
 * [dl](dl.md)     - Deploy Local
 * [dl config repo](dl_config_repo.md)     - Repository source configuration
+* [dl config service](dl_config_service.md)     - Additional service containers
 
