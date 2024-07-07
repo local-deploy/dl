@@ -87,7 +87,7 @@ func setDefaultEnv() {
 	Env.SetDefault("REDIS_PASSWORD", "pass")
 	Env.SetDefault("MEMCACHED", false)
 
-	host := getLocalIp()
+	host := getLocalIP()
 
 	Env.SetDefault("LOCAL_IP", host)
 	Env.SetDefault("NIP_DOMAIN", fmt.Sprintf("%s.%s.nip.io", projectName, host))
@@ -129,13 +129,13 @@ func setComposeFiles() {
 		}
 	}
 
-	if Env.GetFloat64("MYSQL_VERSION") > 0 {
+	if len(Env.GetString("MYSQL_VERSION")) > 0 {
 		files = append(files, images["mysql"])
 	}
-	if Env.GetFloat64("MARIADB_VERSION") > 0 {
+	if len(Env.GetString("MARIADB_VERSION")) > 0 {
 		files = append(files, images["mariadb"])
 	}
-	if Env.GetFloat64("POSTGRES_VERSION") > 0 {
+	if len(Env.GetString("POSTGRES_VERSION")) > 0 {
 		files = append(files, images["pgsql"])
 	}
 	if Env.GetBool("REDIS") {
@@ -210,7 +210,7 @@ func IsEnvExampleFileExists() bool {
 	return err == nil
 }
 
-func getLocalIp() string {
+func getLocalIP() string {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return "127.0.0.1"
