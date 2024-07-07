@@ -12,7 +12,7 @@ func recreateServiceCommand() *cobra.Command {
 		Aliases: []string{"restart"},
 		Short:   "Recreate containers",
 		Long:    `Recreate running service containers.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			ctx := context.Background()
 			recreate = true
 			err := upServiceRun(ctx)
@@ -22,6 +22,7 @@ func recreateServiceCommand() *cobra.Command {
 
 			return nil
 		},
+		ValidArgs: []string{"--services"},
 	}
 	return cmd
 }

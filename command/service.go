@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"slices"
 
 	"github.com/compose-spec/compose-go/v2/types"
 	dockerTypes "github.com/docker/docker/api/types"
@@ -11,9 +12,10 @@ import (
 	"github.com/local-deploy/dl/utils/docker"
 	"github.com/pterm/pterm"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-var source string
+var servicesFlag []string
 
 var serviceCmd = &cobra.Command{
 	Use:       "service",
@@ -28,6 +30,9 @@ func serviceCommand() *cobra.Command {
 		recreateServiceCommand(),
 		upServiceCommand(),
 	)
+
+	serviceCmd.PersistentFlags().StringSliceVarP(&servicesFlag, "services", "s", nil, "Manage only specified services (comma separated values)")
+
 	return serviceCmd
 }
 
@@ -37,6 +42,16 @@ func getServicesContainer() []types.ServiceConfig {
 		containers.Traefik(),
 		containers.Mail(),
 		containers.Portainer(),
+	}
+
+	if len(servicesFlag) > 0 {
+		var c []types.ServiceConfig
+		for _, service := range configs {
+			if isSetFlag(service.Name) {
+				c = append(c, service)
+			}
+		}
+		configs = c
 	}
 
 	return configs
@@ -72,4 +87,30 @@ func checkOldNetwork(ctx context.Context, client *docker.Client) {
 	}
 
 	pterm.FgYellow.Println("Successful removal containers of the previous version.")
+}
+
+func isDisabled(service string) bool {
+	if service == "traefik" {
+		return false
+	}
+
+	hasKeys := viper.IsSet("services")
+	services := viper.GetStringSlice("services")
+	if !hasKeys {
+		services = append(services, "portainer", "mail")
+	}
+
+	index := slices.IndexFunc(services, func(v string) bool {
+		return v == service
+	})
+
+	return index == -1
+}
+
+func isSetFlag(service string) bool {
+	index := slices.IndexFunc(servicesFlag, func(v string) bool {
+		return v == service
+	})
+
+	return index != -1
 }

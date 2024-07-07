@@ -5,6 +5,7 @@ go 1.21
 toolchain go1.22.2
 
 require (
+	atomicgo.dev/keyboard v0.2.9
 	github.com/compose-spec/compose-go/v2 v2.1.0
 	github.com/docker/cli v26.1.1+incompatible
 	github.com/docker/compose/v2 v2.27.0
@@ -25,7 +26,6 @@ require (
 
 require (
 	atomicgo.dev/cursor v0.2.0 // indirect
-	atomicgo.dev/keyboard v0.2.9 // indirect
 	atomicgo.dev/schedule v0.1.0 // indirect
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect

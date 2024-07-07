@@ -18,7 +18,7 @@ func downServiceCommand() *cobra.Command {
 		Long: `Stops and removes portainer, mailcatcher and traefik containers.
 Valid parameters for the "--service" flag: portainer, mail, traefik`,
 		Example: "dl down\ndl down -s portainer",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 			err := downServiceRun(ctx)
 			if err != nil {
@@ -27,6 +27,7 @@ Valid parameters for the "--service" flag: portainer, mail, traefik`,
 
 			return nil
 		},
+		ValidArgs: []string{"--services"},
 	}
 	return cmd
 }
