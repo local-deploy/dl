@@ -24,6 +24,8 @@ import (
 var noConfig bool
 var tag string
 
+const maxBinSize = 104857600 // 100 MB
+
 func selfUpdateCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "self-update",
@@ -31,12 +33,8 @@ func selfUpdateCommand() *cobra.Command {
 		Short:   "Update dl",
 		Long:    `Downloading the latest version of the app (if installed via bash script).`,
 		Example: "dl self-update\ndl self-update -n\ndl self-update --tag 0.5.2",
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx := context.Background()
-			tag, _ := selfUpdateRun(ctx)
-			if len(tag) > 0 {
-				printVersion(tag)
-			}
+		RunE: func(_ *cobra.Command, _ []string) error {
+			return selfUpdateRun()
 		},
 	}
 	cmd.Flags().BoolVarP(&noConfig, "no-overwrite", "n", false, "Do not overwrite configuration files")
@@ -44,7 +42,22 @@ func selfUpdateCommand() *cobra.Command {
 	return cmd
 }
 
-func selfUpdateRun(ctx context.Context) (string, error) {
+func selfUpdateRun() error {
+	ctx := context.Background()
+	err := progress.RunWithTitle(ctx, selfUpdateService, os.Stdout, "Update")
+	if err != nil {
+		fmt.Println("Something went wrong...")
+		return nil
+	}
+
+	if len(viper.GetString("version")) > 0 {
+		printVersion(viper.GetString("version"))
+	}
+
+	return nil
+}
+
+func selfUpdateService(ctx context.Context) error {
 	w := progress.ContextWriter(ctx)
 
 	if utils.IsAptInstall() {
@@ -63,57 +76,58 @@ func selfUpdateRun(ctx context.Context) (string, error) {
 		var rxTag, _ = regexp.MatchString("^\\d.\\d.\\d+$", tag)
 		if !rxTag {
 			w.Event(progress.ErrorMessageEvent("Getting the release", fmt.Sprintf("Incorrect release format: %s", tag)))
-			return "", nil
+			return err
 		}
 	}
 
 	release, err = github.GetRelease("local-deploy", "dl", tag)
 	if err != nil {
 		w.Event(progress.ErrorMessageEvent("Getting the release", fmt.Sprintf("Failed: %s", err)))
-		return "", nil
+		return err
 	}
 	w.Event(progress.Event{ID: "Getting the release", ParentID: "Update", Status: progress.Done})
-
-	w.Event(progress.Event{ID: "Downloading release", ParentID: "Update", Status: progress.Working})
+	w.Event(progress.Event{ID: "Downloading", ParentID: "Update", Status: progress.Working})
 	tmpPath := filepath.Join(os.TempDir(), release.AssetsName)
 	err = downloadRelease(tmpPath, release.AssetsURL)
 	if err != nil {
-		w.Event(progress.ErrorMessageEvent("Downloading release", fmt.Sprintf("Failed to download release: %s", err)))
-		return "", nil
+		w.Event(progress.ErrorMessageEvent("Downloading", fmt.Sprintf("Failed to download release: %s", err)))
+		return err
 	}
+	w.Event(progress.Event{ID: "Downloading", ParentID: "Update", Status: progress.Done})
+	w.Event(progress.Event{ID: "Unpacking", ParentID: "Update", Status: progress.Working})
 
 	err = extractArchive(tmpPath)
 	if err != nil {
-		w.Event(progress.ErrorMessageEvent("Unpacking archive", fmt.Sprintf("Extract archive failed: %s", err)))
-		return "", nil
+		w.Event(progress.ErrorMessageEvent("Unpacking", fmt.Sprintf("Extract archive failed: %s", err)))
+		return err
 	}
 
 	err = copyBin()
 	if err != nil {
-		w.Event(progress.ErrorMessageEvent("Copying files", fmt.Sprintf("Failed: %s", err)))
-		return "", nil
+		w.Event(progress.ErrorMessageEvent("Unpacking", fmt.Sprintf("Failed: %s", err)))
+		return err
 	}
 
 	if !noConfig {
 		err = utils.CreateTemplates(true)
 		if err != nil {
-			w.Event(progress.ErrorMessageEvent("Copying files", fmt.Sprint(err)))
-			return "", nil
+			w.Event(progress.ErrorMessageEvent("Unpacking", fmt.Sprint(err)))
+			return err
 		}
 	}
 
 	err = os.RemoveAll(filepath.Join(os.TempDir(), "dl"))
 	if err != nil {
-		w.Event(progress.ErrorMessageEvent("Cleaning up temporary directory", fmt.Sprint(err)))
-		return "", nil
+		w.Event(progress.ErrorMessageEvent("Unpacking", fmt.Sprint(err)))
+		return err
 	}
-	w.Event(progress.Event{ID: "Downloading release", ParentID: "Update", Status: progress.Done})
 
 	postUpdate(release)
 
+	w.Event(progress.Event{ID: "Unpacking", ParentID: "Update", Status: progress.Done})
 	w.Event(progress.Event{ID: "Update", Status: progress.Done})
 
-	return release.Version, nil
+	return nil
 }
 
 func postUpdate(release *github.Release) {
@@ -166,7 +180,7 @@ func extractArchive(archivePath string) error {
 		return err
 	}
 
-	uncompressedStream, err := gzip.NewReader(reader)
+	uncompressedStream, err := gzip.NewReader(io.LimitReader(reader, maxBinSize))
 	if err != nil {
 		return err
 	}
@@ -193,7 +207,7 @@ func extractArchive(archivePath string) error {
 			return err
 		}
 
-		tmpFiles := filepath.Join(tmpPath, header.Name)
+		tmpFiles := filepath.Join(tmpPath, filepath.Clean(header.Name))
 
 		switch header.Typeflag {
 		case tar.TypeDir:
@@ -205,9 +219,16 @@ func extractArchive(archivePath string) error {
 			if err != nil {
 				return err
 			}
-			if _, err := io.Copy(outFile, tarReader); err != nil { //nolint:gosec
-				return err
+			for {
+				_, err := io.CopyN(outFile, tarReader, maxBinSize)
+				if err != nil {
+					if errors.Is(err, io.EOF) {
+						break
+					}
+					return err
+				}
 			}
+
 			err = outFile.Close()
 			if err != nil {
 				return err
@@ -238,7 +259,7 @@ func copyBin() error {
 		return err
 	}
 
-	return os.WriteFile(binPath, bytesRead, 0500)
+	return os.WriteFile(binPath, bytesRead, 0600)
 }
 
 func printVersion(tag string) {
