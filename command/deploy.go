@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -73,6 +72,7 @@ func showSpecificInfo() {
 		n := project.Env.GetString("NIP_DOMAIN")
 		pterm.Println()
 		pterm.FgYellow.Println("Please specify the domain in the wp-config.php file:")
+		//goland:noinspection HttpUrlsUsage
 		pterm.FgDefault.Printfln("define('WP_HOME', 'http://%s');\ndefine('WP_SITEURL', 'http://%s');", n, n)
 	}
 }
@@ -186,5 +186,5 @@ func detectFw() (string, error) {
 
 	logrus.Errorf("Output of ls: %s", string(out))
 
-	return "", errors.New("failed determine the Framework, please specify accesses manually https://v7m.ru/s/mvavg")
+	return "", nil
 }

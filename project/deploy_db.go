@@ -93,6 +93,8 @@ func (c SSHClient) getMysqlSettings() (*DBSettings, error) {
 			db, err = c.accessLaravelDB()
 		case "wordpress":
 			db, err = c.accessWpDB()
+		default:
+			err = errors.New("failed determine the Framework, please specify accesses manually https://v7m.ru/s/mvavg")
 		}
 
 		if err != nil {
@@ -296,7 +298,7 @@ func (d DBSettings) DumpDataTablesParams() string {
 	}
 
 	mysqlVersion := Env.GetString("MYSQL_VERSION")
-	if mysqlVersion == "8.0" {
+	if mysqlVersion >= "8.0" {
 		params = append(params, "--column-statistics=0")
 	}
 
