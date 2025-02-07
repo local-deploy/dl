@@ -213,13 +213,17 @@ jobs:
     needs:
       - release
     steps:
-      - name: Publish AUR package
-        uses: guumaster/aur-publish-docker-action@v1
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          package_name: dl-bin
-          commit_username: "dlbot"
-          commit_email: dl@varme.pw
-          ssh_private_key: ${{ secrets.AUR_KEY }}
+          fetch-depth: 0
+      - name: Publish AUR package
+        uses: loqusion/aur-publish-action@v2
+        with:
+          package-name: dl-bin
+          git-username: "dlbot"
+          git-email: dl@varme.pw
+          ssh-private-key: ${{ secrets.AUR_KEY }}
 
   fury-publish:
     name: Fury publish ${{ matrix.arch }}.${{ matrix.type }}
