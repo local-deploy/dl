@@ -218,12 +218,14 @@ jobs:
         with:
           fetch-depth: 0
       - name: Publish AUR package
-        uses: loqusion/aur-publish-action@v2
+        uses: SergioRibera/cargo-pkgbuild-action@v1
         with:
-          package-name: dl-bin
-          git-username: "dlbot"
-          git-email: dl@varme.pw
-          ssh-private-key: ${{ secrets.AUR_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          ssh_private_key: ${{ secrets.AUR_KEY }}
+          package_name: dl-bin
+          git_username: "dlbot"
+          git_email: dl@varme.pw
+          test_pkgbuild: false
 
   fury-publish:
     name: Fury publish ${{ matrix.arch }}.${{ matrix.type }}
