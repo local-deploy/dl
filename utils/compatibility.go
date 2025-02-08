@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
@@ -71,4 +72,22 @@ func wpdeployDown() error {
 		return nil
 	}
 	return errorMsg
+}
+
+// BitrixCheck Check the presence of the Bitrix folder in the root directory of the site
+func BitrixCheck(docRoot string) bool {
+	rel, _ := filepath.Rel("/var/www/html", docRoot)
+	if rel == "." {
+		_, err := os.Stat("bitrix")
+		if err == nil {
+			return true
+		}
+	} else {
+		_, err := os.Stat(filepath.Join(rel, "bitrix"))
+		if err == nil {
+			return true
+		}
+	}
+
+	return false
 }

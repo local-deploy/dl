@@ -80,6 +80,12 @@ func setDefaultEnv() {
 	confDir := utils.TemplateDir()
 	Env.SetDefault("NGINX_CONF", filepath.Join(confDir, "default.conf.template"))
 
+	// bitrix check
+	if utils.BitrixCheck(Env.GetString("DOCUMENT_ROOT")) {
+		logrus.Info("Bitrix CMS was discovered, the default config bitrix.conf.template is used")
+		Env.SetDefault("NGINX_CONF", filepath.Join(confDir, "bitrix.conf.template"))
+	}
+
 	customConfig := Env.GetString("NGINX_CONF")
 	if len(customConfig) > 0 {
 		Env.Set("NGINX_CONF", getNginxConf())

@@ -127,6 +127,13 @@ func IsNeedInstall() bool {
 	return !PathExists(config) || !PathExists(templates)
 }
 
+// IsNeedReInstall checking for the existence of a lost files
+func IsNeedReInstall() bool {
+	bitrixNginxTemplate := filepath.Join(ConfigDir(), "templates", "bitrix.conf.template")
+
+	return !PathExists(bitrixNginxTemplate)
+}
+
 // IsBinFileExists checks the existence of a binary
 func IsBinFileExists() bool {
 	return PathExists(BinPath())

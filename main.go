@@ -32,6 +32,10 @@ func main() {
 		firstStart()
 	}
 
+	if utils.IsNeedReInstall() {
+		reinstallTemplates()
+	}
+
 	if !utils.IsCertPathExists() {
 		createCertDirectory()
 	}
@@ -83,6 +87,14 @@ func firstStart() {
 	err = utils.RemovePath(filepath.Join(utils.ConfigDir(), "config-files"))
 	if err != nil {
 		pterm.FgRed.Printfln("Unable to remove old template files: %s \n", err)
+	}
+}
+
+func reinstallTemplates() {
+	err := utils.CreateTemplates(false)
+	if err != nil {
+		pterm.FgRed.Printfln("Unable to create template files: %s \n", err)
+		os.Exit(1)
 	}
 }
 
