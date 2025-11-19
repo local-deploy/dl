@@ -14,7 +14,7 @@ var ServicesNetworkName = "dl_default"
 func Traefik() types.ServiceConfig {
 	return types.ServiceConfig{
 		Name:          "traefik",
-		Image:         "traefik:v2.10.7",
+		Image:         "traefik:v3.6.2",
 		ContainerName: "traefik",
 		Command: types.ShellCommand{
 			"--api.insecure=true",
@@ -39,7 +39,7 @@ func Traefik() types.ServiceConfig {
 			"traefik.enable":                                         "true",
 			"com.docker.compose.project":                             "dl-services",
 			"traefik.http.routers.traefik.entrypoints":               "web, websecure",
-			"traefik.http.routers.traefik.rule":                      "Host(`traefik.localhost`) || HostRegexp(`traefik.{ip:.*}.nip.io`)",
+			"traefik.http.routers.traefik.rule":                      "Host(`traefik.localhost`) || HostRegexp(`^traefik\\..+\\.nip\\.io$`)",
 			"traefik.http.services.traefik.loadbalancer.server.port": "8080",
 			"traefik.http.middlewares.site-compress.compress":        "true",
 			"traefik.http.routers.traefik.middlewares":               "site-compress",
@@ -77,7 +77,7 @@ func Mail() types.ServiceConfig {
 			"com.docker.compose.project":                          "dl-services",
 			"traefik.enable":                                      "true",
 			"traefik.http.routers.mail.entrypoints":               "web, websecure",
-			"traefik.http.routers.mail.rule":                      "Host(`mail.localhost`) || HostRegexp(`mail.{ip:.*}.nip.io`)",
+			"traefik.http.routers.mail.rule":                      "Host(`mail.localhost`) || HostRegexp(`^mail\\..+\\.nip\\.io$`)",
 			"traefik.http.services.mail.loadbalancer.server.port": "8025",
 		},
 		Ports: []types.ServicePortConfig{
@@ -125,7 +125,7 @@ func Portainer() types.ServiceConfig {
 			"com.docker.compose.project":                               "dl-services",
 			"traefik.enable":                                           "true",
 			"traefik.http.routers.portainer.entrypoints":               "web, websecure",
-			"traefik.http.routers.portainer.rule":                      "Host(`portainer.localhost`) || HostRegexp(`portainer.{ip:.*}.nip.io`)",
+			"traefik.http.routers.portainer.rule":                      "Host(`portainer.localhost`) || HostRegexp(`^portainer\\..+\\.nip\\.io$`)",
 			"traefik.http.services.portainer.loadbalancer.server.port": "9000",
 		},
 		Networks: map[string]*types.ServiceNetworkConfig{
