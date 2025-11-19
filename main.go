@@ -67,6 +67,18 @@ func initConfig() {
 		}
 	}
 
+	// > v1.2.0 update traefik 3 regexp
+	if viper.GetString("traefik") != "3" {
+		reinstallTemplates()
+
+		viper.Set("traefik", "3")
+		err = viper.WriteConfig()
+		if err != nil {
+			pterm.FgRed.Printfln("Error config file: %s \n", err)
+			os.Exit(1)
+		}
+	}
+
 	viper.AutomaticEnv()
 }
 
