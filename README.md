@@ -26,7 +26,7 @@ Supported frameworks and CMS: Bitrix, Laravel, WordPress, and many others with m
 
 ## Features
 
-- Support for PHP versions (apache and php-fpm) 7.3, 7.4, 8.0, 8.1, 8.2, 8.3
+- Support for PHP versions (apache and php-fpm) 7.3, 7.4, 8.0, 8.1, 8.2, 8.3, 8.4
 - Support for MySQL, MariaDB and PostgreSQL
 - Downloading the database and files from the production server
 - Redis
