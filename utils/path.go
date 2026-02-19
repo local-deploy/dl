@@ -18,7 +18,9 @@ func HomeDir() (string, error) {
 	return os.UserHomeDir()
 }
 
-// ConfigDir config directory (~/.config/dl)
+// ConfigDir config directory (~/.config/<binary_name>)
+// The directory name is derived from the executable name,
+// allowing multiple installations (e.g. dl and dl-test) to coexist.
 func ConfigDir() string {
 	conf, err := os.UserConfigDir()
 	if err != nil {
@@ -26,7 +28,12 @@ func ConfigDir() string {
 		os.Exit(1)
 	}
 
-	return filepath.Join(conf, "dl")
+	name := "dl"
+	if exe, err := os.Executable(); err == nil {
+		name = filepath.Base(exe)
+	}
+
+	return filepath.Join(conf, name)
 }
 
 // TemplateDir template directory (~/.config/dl/templates)

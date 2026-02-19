@@ -1,13 +1,58 @@
 package project
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/local-deploy/dl/utils"
+	"github.com/sirupsen/logrus"
 )
+
+// configNeedsUpdate checks whether the generated web server config is stale
+// by comparing a SHA-256 hash of .env contents + project folder name against a stored hash.
+func configNeedsUpdate(hashFilePath string) bool {
+	pwd := Env.GetString("PWD")
+	envPath := filepath.Join(pwd, ".env")
+
+	envContent, err := os.ReadFile(envPath)
+	if err != nil {
+		return true
+	}
+
+	h := sha256.New()
+	h.Write(envContent)
+	h.Write([]byte(filepath.Base(pwd)))
+	currentHash := hex.EncodeToString(h.Sum(nil))
+
+	storedHash, err := os.ReadFile(hashFilePath)
+	if err != nil {
+		return true
+	}
+
+	return strings.TrimSpace(string(storedHash)) != currentHash
+}
+
+// saveConfigHash persists the current hash so subsequent runs can skip regeneration.
+func saveConfigHash(hashFilePath string) {
+	pwd := Env.GetString("PWD")
+	envPath := filepath.Join(pwd, ".env")
+
+	envContent, err := os.ReadFile(envPath)
+	if err != nil {
+		return
+	}
+
+	h := sha256.New()
+	h.Write(envContent)
+	h.Write([]byte(filepath.Base(pwd)))
+	currentHash := hex.EncodeToString(h.Sum(nil))
+
+	_ = os.WriteFile(hashFilePath, []byte(currentHash), 0644)
+}
 
 // GenerateNginxConfig builds a complete nginx config from DomainMappings.
 // One server block is generated per DomainMapping entry.
@@ -66,21 +111,31 @@ func GenerateNginxConfig() string {
 }
 
 // WriteNginxConfig writes the generated nginx config to .docker/nginx/default.conf
-// in the project directory. Creates the directory structure if it does not exist.
-func WriteNginxConfig() error {
+// in the project directory. Skips regeneration if .env and project folder haven't changed.
+// Returns the absolute path to the config file.
+func WriteNginxConfig() (string, error) {
 	pwd := Env.GetString("PWD")
 	dir := filepath.Join(pwd, ".docker", "nginx")
+	confPath := filepath.Join(dir, "default.conf")
+	hashPath := filepath.Join(dir, ".confhash")
 
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("failed to create nginx config directory: %w", err)
+	if !configNeedsUpdate(hashPath) {
+		logrus.Info("Nginx config is up to date, skipping regeneration")
+		return confPath, nil
 	}
 
-	confPath := filepath.Join(dir, "default.conf")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", fmt.Errorf("failed to create nginx config directory: %w", err)
+	}
+
 	config := GenerateNginxConfig()
 
 	if err := os.WriteFile(confPath, []byte(config), 0644); err != nil {
-		return fmt.Errorf("failed to write nginx config: %w", err)
+		return "", fmt.Errorf("failed to write nginx config: %w", err)
 	}
 
-	return nil
+	saveConfigHash(hashPath)
+	logrus.Info("Nginx config regenerated")
+
+	return confPath, nil
 }

@@ -66,15 +66,20 @@ func upRun() {
 	if len(project.DomainMappings) > 1 {
 		phpVersion := project.Env.GetString("PHP_VERSION")
 		if strings.Contains(phpVersion, "fpm") {
-			if err := project.WriteNginxConfig(); err != nil {
+			confPath, err := project.WriteNginxConfig()
+			if err != nil {
 				pterm.FgRed.Printfln("Failed to generate nginx config: %s", err)
 				return
 			}
+			project.Env.Set("NGINX_CONF", confPath)
+			pterm.FgGreen.Printfln("Generated nginx config: %s", confPath)
 		} else if strings.Contains(phpVersion, "apache") {
-			if err := project.WriteApacheConfig(); err != nil {
+			confPath, err := project.WriteApacheConfig()
+			if err != nil {
 				pterm.FgRed.Printfln("Failed to generate apache config: %s", err)
 				return
 			}
+			_ = confPath // apache config mounted separately
 		}
 	}
 

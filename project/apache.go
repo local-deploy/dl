@@ -4,47 +4,59 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 // GenerateApacheConfig builds Apache vhost configuration from DomainMappings
 func GenerateApacheConfig() string {
-	var b strings.Builder
+	var b []byte
 
 	for i, dm := range DomainMappings {
 		if i > 0 {
-			b.WriteString("\n")
+			b = append(b, '\n')
 		}
-		fmt.Fprintf(&b, "<VirtualHost *:80>\n")
-		fmt.Fprintf(&b, "    ServerName %s\n", dm.LocalDomain)
-		fmt.Fprintf(&b, "    ServerAlias %s\n", dm.NipDomain)
-		fmt.Fprintf(&b, "    DocumentRoot %s\n", dm.DocumentRoot)
-		fmt.Fprintf(&b, "\n")
-		fmt.Fprintf(&b, "    <Directory %s>\n", dm.DocumentRoot)
-		fmt.Fprintf(&b, "        AllowOverride All\n")
-		fmt.Fprintf(&b, "        Require all granted\n")
-		fmt.Fprintf(&b, "    </Directory>\n")
-		fmt.Fprintf(&b, "</VirtualHost>\n")
+		b = fmt.Appendf(b, "<VirtualHost *:80>\n")
+		b = fmt.Appendf(b, "    ServerName %s\n", dm.LocalDomain)
+		b = fmt.Appendf(b, "    ServerAlias %s\n", dm.NipDomain)
+		b = fmt.Appendf(b, "    DocumentRoot %s\n", dm.DocumentRoot)
+		b = fmt.Appendf(b, "\n")
+		b = fmt.Appendf(b, "    <Directory %s>\n", dm.DocumentRoot)
+		b = fmt.Appendf(b, "        AllowOverride All\n")
+		b = fmt.Appendf(b, "        Require all granted\n")
+		b = fmt.Appendf(b, "    </Directory>\n")
+		b = fmt.Appendf(b, "</VirtualHost>\n")
 	}
 
-	return b.String()
+	return string(b)
 }
 
-// WriteApacheConfig writes the generated Apache vhost config to .docker/apache/vhosts.conf
-func WriteApacheConfig() error {
+// WriteApacheConfig writes the generated Apache vhost config to .docker/apache/vhosts.conf.
+// Skips regeneration if .env and project folder haven't changed.
+// Returns the absolute path to the config file.
+func WriteApacheConfig() (string, error) {
 	pwd := Env.GetString("PWD")
 	dir := filepath.Join(pwd, ".docker", "apache")
+	confPath := filepath.Join(dir, "vhosts.conf")
+	hashPath := filepath.Join(dir, ".confhash")
+
+	if !configNeedsUpdate(hashPath) {
+		logrus.Info("Apache config is up to date, skipping regeneration")
+		return confPath, nil
+	}
 
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", dir, err)
+		return "", fmt.Errorf("failed to create directory %s: %w", dir, err)
 	}
 
 	config := GenerateApacheConfig()
-	configPath := filepath.Join(dir, "vhosts.conf")
 
-	if err := os.WriteFile(configPath, []byte(config), 0644); err != nil {
-		return fmt.Errorf("failed to write %s: %w", configPath, err)
+	if err := os.WriteFile(confPath, []byte(config), 0644); err != nil {
+		return "", fmt.Errorf("failed to write %s: %w", confPath, err)
 	}
 
-	return nil
+	saveConfigHash(hashPath)
+	logrus.Info("Apache config regenerated")
+
+	return confPath, nil
 }
