@@ -71,7 +71,7 @@ func upRun() {
 			return
 		}
 		project.Env.Set("APACHE_CONF", confPath)
-	} else if strings.Contains(phpVersion, "fpm") && len(project.DomainMappings) > 1 {
+	} else if strings.Contains(phpVersion, "fpm") && (len(project.Env.GetString("DOMAIN_MAP")) > 0 || len(project.Env.GetString("DOMAINS")) > 0) {
 		confPath, err := project.WriteNginxConfig()
 		if err != nil {
 			pterm.FgRed.Printfln("Failed to generate nginx config: %s", err)
@@ -142,7 +142,7 @@ func showProjectInfo() {
 
 	pterm.FgCyan.Println()
 
-	if len(project.DomainMappings) > 1 {
+	if len(project.Env.GetString("DOMAIN_MAP")) > 0 || len(project.Env.GetString("DOMAINS")) > 0 {
 		tableData := pterm.TableData{{"Domain", "Document Root"}}
 		for _, m := range project.DomainMappings {
 			tableData = append(tableData, []string{schema + "://" + m.LocalDomain + "/", m.DocumentRoot})
