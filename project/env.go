@@ -17,6 +17,9 @@ import (
 // Env Project variables
 var Env *viper.Viper
 
+// DomainMappings holds parsed domain-to-document-root mappings
+var DomainMappings []DomainMapping
+
 var phpImagesVersion = map[string]string{
 	"7.3-apache": "1.1.3",
 	"7.3-fpm":    "1.0.3",
@@ -55,6 +58,13 @@ func LoadEnv() {
 	}
 
 	setDefaultEnv()
+
+	if err := validateDomains(); err != nil {
+		pterm.FgRed.Println(err)
+		os.Exit(1)
+	}
+	parseDomainMappings()
+
 	setComposeFiles()
 }
 
@@ -216,6 +226,162 @@ func IsEnvExampleFileExists() bool {
 	_, err := os.Stat(env)
 
 	return err == nil
+}
+
+func validateDomains() error {
+	domains := Env.GetString("DOMAINS")
+	domainMap := Env.GetString("DOMAIN_MAP")
+
+	// Rule 1: DOMAINS and DOMAIN_MAP are mutually exclusive
+	if len(domains) > 0 && len(domainMap) > 0 {
+		return fmt.Errorf("DOMAINS and DOMAIN_MAP are mutually exclusive. Use DOMAINS for multiple domains with one document root, or DOMAIN_MAP for different document roots per domain.")
+	}
+
+	domainNameRegex := regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9.-]*$`)
+	seen := make(map[string]bool)
+
+	if len(domainMap) > 0 {
+		entries := strings.Split(domainMap, ",")
+		for _, entry := range entries {
+			entry = strings.TrimSpace(entry)
+
+			// Rule 3: must contain ':'
+			if !strings.Contains(entry, ":") {
+				return fmt.Errorf("Invalid DOMAIN_MAP format for entry \"%s\". Expected format: name:/path/to/docroot", entry)
+			}
+
+			parts := strings.SplitN(entry, ":", 2)
+			name := strings.TrimSpace(parts[0])
+			path := strings.TrimSpace(parts[1])
+
+			// Rule 4: empty name
+			if len(name) == 0 {
+				return fmt.Errorf("Empty domain name in DOMAIN_MAP entry: \"%s\"", entry)
+			}
+
+			// Rule 5: empty path
+			if len(path) == 0 {
+				return fmt.Errorf("Empty document root in DOMAIN_MAP entry for domain \"%s\"", name)
+			}
+
+			// Rule 6: path must be absolute
+			if !filepath.IsAbs(path) {
+				return fmt.Errorf("Document root must be an absolute path for domain \"%s\": got \"%s\"", name, path)
+			}
+
+			nameLower := strings.ToLower(name)
+
+			// Rule 8: invalid domain name chars
+			if !domainNameRegex.MatchString(nameLower) {
+				return fmt.Errorf("Invalid domain name \"%s\": only alphanumeric characters, hyphens, and dots are allowed.", nameLower)
+			}
+
+			// Rule 9: duplicate domain
+			if seen[nameLower] {
+				return fmt.Errorf("Duplicate domain name \"%s\" in DOMAIN_MAP.", nameLower)
+			}
+			seen[nameLower] = true
+		}
+	}
+
+	if len(domains) > 0 {
+		// Rule 2: DOMAINS requires DOCUMENT_ROOT
+		if len(Env.GetString("DOCUMENT_ROOT")) == 0 {
+			return fmt.Errorf("DOCUMENT_ROOT is required when using DOMAINS.")
+		}
+
+		entries := strings.Split(domains, ",")
+		for _, entry := range entries {
+			name := strings.TrimSpace(entry)
+
+			// Rule 7: empty entry
+			if len(name) == 0 {
+				return fmt.Errorf("Empty domain name in DOMAINS. Check for trailing commas.")
+			}
+
+			nameLower := strings.ToLower(name)
+
+			// Rule 8: invalid domain name chars
+			if !domainNameRegex.MatchString(nameLower) {
+				return fmt.Errorf("Invalid domain name \"%s\": only alphanumeric characters, hyphens, and dots are allowed.", nameLower)
+			}
+
+			// Rule 9: duplicate domain
+			if seen[nameLower] {
+				return fmt.Errorf("Duplicate domain name \"%s\" in DOMAINS.", nameLower)
+			}
+			seen[nameLower] = true
+		}
+	}
+
+	return nil
+}
+
+func parseDomainMappings() {
+	DomainMappings = nil
+	localIP := Env.GetString("LOCAL_IP")
+	domainMap := Env.GetString("DOMAIN_MAP")
+	domains := Env.GetString("DOMAINS")
+
+	if len(domainMap) > 0 {
+		entries := strings.Split(domainMap, ",")
+		for _, entry := range entries {
+			entry = strings.TrimSpace(entry)
+			parts := strings.SplitN(entry, ":", 2)
+			name := strings.ToLower(strings.TrimSpace(parts[0]))
+			docRoot := strings.TrimSpace(parts[1])
+
+			DomainMappings = append(DomainMappings, DomainMapping{
+				Name:         name,
+				DocumentRoot: docRoot,
+				LocalDomain:  fmt.Sprintf("%s.localhost", name),
+				NipDomain:    fmt.Sprintf("%s.%s.nip.io", name, localIP),
+			})
+		}
+		logrus.Infof("Parsed %d domain mappings from DOMAIN_MAP", len(DomainMappings))
+		generateTraefikRule()
+		return
+	}
+
+	if len(domains) > 0 {
+		docRoot := Env.GetString("DOCUMENT_ROOT")
+		entries := strings.Split(domains, ",")
+		for _, entry := range entries {
+			name := strings.ToLower(strings.TrimSpace(entry))
+
+			DomainMappings = append(DomainMappings, DomainMapping{
+				Name:         name,
+				DocumentRoot: docRoot,
+				LocalDomain:  fmt.Sprintf("%s.localhost", name),
+				NipDomain:    fmt.Sprintf("%s.%s.nip.io", name, localIP),
+			})
+		}
+		logrus.Infof("Parsed %d domain mappings from DOMAINS", len(DomainMappings))
+		generateTraefikRule()
+		return
+	}
+
+	// Backward compatibility: single mapping from HOST_NAME + DOCUMENT_ROOT
+	hostName := strings.ToLower(Env.GetString("HOST_NAME"))
+	DomainMappings = append(DomainMappings, DomainMapping{
+		Name:         hostName,
+		DocumentRoot: Env.GetString("DOCUMENT_ROOT"),
+		LocalDomain:  fmt.Sprintf("%s.localhost", hostName),
+		NipDomain:    fmt.Sprintf("%s.%s.nip.io", hostName, localIP),
+	})
+	logrus.Infof("Using single domain mapping from HOST_NAME: %s", hostName)
+	generateTraefikRule()
+}
+
+func generateTraefikRule() {
+	var rules []string
+	for _, m := range DomainMappings {
+		rules = append(rules, fmt.Sprintf("Host(`%s`)", m.LocalDomain))
+		rules = append(rules, fmt.Sprintf("HostRegexp(`^.+\\.%s$`)", m.LocalDomain))
+		rules = append(rules, fmt.Sprintf("HostRegexp(`^%s\\..+\\.nip\\.io$`)", m.Name))
+		rules = append(rules, fmt.Sprintf("HostRegexp(`^.+\\.%s\\..+\\.nip\\.io$`)", m.Name))
+	}
+	Env.Set("TRAEFIK_RULE", strings.Join(rules, " || "))
 }
 
 func getLocalIP() string {

@@ -49,10 +49,11 @@ func CreateCert() {
 	certDir := filepath.Join(utils.CertDir(), Env.GetString("NETWORK_NAME"))
 	_ = utils.CreateDirectory(certDir)
 
-	err = c.MakeCert([]string{
-		Env.GetString("LOCAL_DOMAIN"),
-		Env.GetString("NIP_DOMAIN"),
-	}, Env.GetString("NETWORK_NAME"))
+	var domains []string
+	for _, m := range DomainMappings {
+		domains = append(domains, m.LocalDomain, m.NipDomain)
+	}
+	err = c.MakeCert(domains, Env.GetString("NETWORK_NAME"))
 	if err != nil {
 		pterm.FgRed.Printfln("Error: %s", err)
 	}

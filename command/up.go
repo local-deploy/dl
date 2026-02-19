@@ -62,6 +62,22 @@ func upRun() {
 		project.CreateCert()
 	}
 
+	// Generate web server config for multi-domain
+	if len(project.DomainMappings) > 1 {
+		phpVersion := project.Env.GetString("PHP_VERSION")
+		if strings.Contains(phpVersion, "fpm") {
+			if err := project.WriteNginxConfig(); err != nil {
+				pterm.FgRed.Printfln("Failed to generate nginx config: %s", err)
+				return
+			}
+		} else if strings.Contains(phpVersion, "apache") {
+			if err := project.WriteApacheConfig(); err != nil {
+				pterm.FgRed.Printfln("Failed to generate apache config: %s", err)
+				return
+			}
+		}
+	}
+
 	bin, option := utils.GetCompose()
 	Args := []string{bin}
 	preArgs := []string{"-p", project.Env.GetString("NETWORK_NAME"), "--project-directory", project.Env.GetString("PWD"), "up", "-d"}
@@ -117,20 +133,26 @@ func startLocalServices() error {
 
 // showProjectInfo Display project links
 func showProjectInfo() {
-	l := project.Env.GetString("LOCAL_DOMAIN")
-	n := project.Env.GetString("NIP_DOMAIN")
-
 	schema := "http"
-
 	if viper.GetBool("ca") {
 		schema = "https"
 	}
 
 	pterm.FgCyan.Println()
-	panels := pterm.Panels{
-		{{Data: pterm.FgYellow.Sprintf("nip.io\nlocal")},
-			{Data: pterm.FgYellow.Sprintf(schema+"://%s/\n"+schema+"://%s/", n, l)}},
-	}
 
-	_ = pterm.DefaultPanel.WithPanels(panels).WithPadding(5).Render()
+	if len(project.DomainMappings) > 1 {
+		tableData := pterm.TableData{{"Domain", "Document Root"}}
+		for _, m := range project.DomainMappings {
+			tableData = append(tableData, []string{schema + "://" + m.LocalDomain + "/", m.DocumentRoot})
+		}
+		_ = pterm.DefaultTable.WithHasHeader().WithData(tableData).Render()
+	} else {
+		l := project.Env.GetString("LOCAL_DOMAIN")
+		n := project.Env.GetString("NIP_DOMAIN")
+		panels := pterm.Panels{
+			{{Data: pterm.FgYellow.Sprintf("nip.io\nlocal")},
+				{Data: pterm.FgYellow.Sprintf(schema+"://%s/\n"+schema+"://%s/", n, l)}},
+		}
+		_ = pterm.DefaultPanel.WithPanels(panels).WithPadding(5).Render()
+	}
 }
