@@ -62,6 +62,24 @@ func upRun() {
 		project.CreateCert()
 	}
 
+	// Generate web server config
+	phpVersion := project.Env.GetString("PHP_VERSION")
+	if strings.Contains(phpVersion, "apache") {
+		confPath, err := project.WriteApacheConfig()
+		if err != nil {
+			pterm.FgRed.Printfln("Failed to generate apache config: %s", err)
+			return
+		}
+		project.Env.Set("APACHE_CONF", confPath)
+	} else if strings.Contains(phpVersion, "fpm") && (len(project.Env.GetString("DOMAIN_MAP")) > 0 || len(project.Env.GetString("DOMAINS")) > 0) {
+		confPath, err := project.WriteNginxConfig()
+		if err != nil {
+			pterm.FgRed.Printfln("Failed to generate nginx config: %s", err)
+			return
+		}
+		project.Env.Set("NGINX_CONF", confPath)
+	}
+
 	bin, option := utils.GetCompose()
 	Args := []string{bin}
 	preArgs := []string{"-p", project.Env.GetString("NETWORK_NAME"), "--project-directory", project.Env.GetString("PWD"), "up", "-d"}
@@ -117,20 +135,26 @@ func startLocalServices() error {
 
 // showProjectInfo Display project links
 func showProjectInfo() {
-	l := project.Env.GetString("LOCAL_DOMAIN")
-	n := project.Env.GetString("NIP_DOMAIN")
-
 	schema := "http"
-
 	if viper.GetBool("ca") {
 		schema = "https"
 	}
 
 	pterm.FgCyan.Println()
-	panels := pterm.Panels{
-		{{Data: pterm.FgYellow.Sprintf("nip.io\nlocal")},
-			{Data: pterm.FgYellow.Sprintf(schema+"://%s/\n"+schema+"://%s/", n, l)}},
-	}
 
-	_ = pterm.DefaultPanel.WithPanels(panels).WithPadding(5).Render()
+	if len(project.Env.GetString("DOMAIN_MAP")) > 0 || len(project.Env.GetString("DOMAINS")) > 0 {
+		tableData := pterm.TableData{{"Domain", "Document Root"}}
+		for _, m := range project.DomainMappings {
+			tableData = append(tableData, []string{schema + "://" + m.LocalDomain + "/", m.DocumentRoot})
+		}
+		_ = pterm.DefaultTable.WithHasHeader().WithData(tableData).Render()
+	} else {
+		l := project.Env.GetString("LOCAL_DOMAIN")
+		n := project.Env.GetString("NIP_DOMAIN")
+		panels := pterm.Panels{
+			{{Data: pterm.FgYellow.Sprintf("nip.io\nlocal")},
+				{Data: pterm.FgYellow.Sprintf(schema+"://%s/\n"+schema+"://%s/", n, l)}},
+		}
+		_ = pterm.DefaultPanel.WithPanels(panels).WithPadding(5).Render()
+	}
 }

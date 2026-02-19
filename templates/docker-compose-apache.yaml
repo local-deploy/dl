@@ -21,15 +21,16 @@ services:
     volumes:
       - "${PWD}/:/var/www/html/"
       - "${PHP_INI_SOURCE:-/dev/null}:/usr/local/etc/php/conf.custom.d/custom.ini:ro"
+      - "${APACHE_CONF}:/etc/apache2/sites-enabled/000-default.conf:ro"
       - "~/.ssh/${SSH_KEY:-id_rsa}:/var/www/.ssh/id_rsa:ro"
       - "~/.ssh/known_hosts:/var/www/.ssh/known_hosts"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${NETWORK_NAME}.entrypoints=web"
-      - "traefik.http.routers.${NETWORK_NAME}.rule=Host(`${HOST_NAME}.localhost`) || HostRegexp(`^.+\\.${HOST_NAME}\\.localhost$`) || HostRegexp(`^${HOST_NAME}\\..+\\.nip\\.io$`) || HostRegexp(`^.+\\.${HOST_NAME}\\..+\\.nip\\.io$`)"
+      - "traefik.http.routers.${NETWORK_NAME}.rule=${TRAEFIK_RULE}"
       - "traefik.http.routers.${NETWORK_NAME}.middlewares=site-compress"
       - "traefik.http.routers.${NETWORK_NAME}_ssl.entrypoints=websecure"
-      - "traefik.http.routers.${NETWORK_NAME}_ssl.rule=Host(`${HOST_NAME}.localhost`) || HostRegexp(`^.+\\.${HOST_NAME}\\.localhost$`) || HostRegexp(`^${HOST_NAME}\\..+\\.nip\\.io$`) || HostRegexp(`^.+\\.${HOST_NAME}\\..+\\.nip\\.io$`)"
+      - "traefik.http.routers.${NETWORK_NAME}_ssl.rule=${TRAEFIK_RULE}"
       - "traefik.http.routers.${NETWORK_NAME}_ssl.middlewares=site-compress"
       - "traefik.http.routers.${NETWORK_NAME}_ssl.tls=true"
       - "traefik.docker.network=dl_default"

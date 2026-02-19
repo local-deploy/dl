@@ -430,14 +430,18 @@ func (c SSHClient) ImportDB(ctx context.Context) error {
 	}
 
 	if c.Config.FwType == "bitrix" {
-		local := Env.GetString("LOCAL_DOMAIN")
-		nip := Env.GetString("NIP_DOMAIN")
+		firstDomain := DomainMappings[0]
+
+		var domainInserts strings.Builder
+		for _, m := range DomainMappings {
+			domainInserts.WriteString(fmt.Sprintf("INSERT IGNORE INTO b_lang_domain VALUES ('s1', '%s');\n", m.LocalDomain))
+			domainInserts.WriteString(fmt.Sprintf("INSERT IGNORE INTO b_lang_domain VALUES ('s1', '%s');\n", m.NipDomain))
+		}
 
 		strSQL := `"UPDATE b_option SET VALUE = 'Y' WHERE MODULE_ID = 'main' AND NAME = 'update_devsrv';
-UPDATE b_lang SET SERVER_NAME='` + site + `.localhost' WHERE LID='s1';
+UPDATE b_lang SET SERVER_NAME='` + firstDomain.LocalDomain + `' WHERE LID='s1';
 UPDATE b_lang SET b_lang.DOC_ROOT='' WHERE 1=(SELECT DOC_ROOT FROM (SELECT COUNT(LID) FROM b_lang) as cnt);
-INSERT IGNORE INTO b_lang_domain VALUES ('s1', '` + local + `');
-INSERT IGNORE INTO b_lang_domain VALUES ('s1', '` + nip + `');"`
+` + domainInserts.String() + `"`
 
 		commandUpdate := "echo " + strSQL + " | " + docker + " exec -i " + siteDB + " /usr/bin/mysql --user=" + mysqlUser + " --password=" + mysqlPassword + " --host=db " + mysqlDB + ""
 		logrus.Infof("Run command: %s", commandUpdate)

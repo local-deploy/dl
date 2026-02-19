@@ -15,6 +15,10 @@ import (
 
 var version = "dev"
 
+// templateVersion must be incremented whenever files in the templates/ directory change.
+// This triggers a full re-extraction of embedded templates to ~/.config/dl/templates/.
+const templateVersion = "2"
+
 //go:embed templates/*
 var templates embed.FS
 
@@ -72,6 +76,21 @@ func initConfig() {
 		reinstallTemplates()
 
 		viper.Set("traefik", "3")
+		err = viper.WriteConfig()
+		if err != nil {
+			pterm.FgRed.Printfln("Error config file: %s \n", err)
+			os.Exit(1)
+		}
+	}
+
+	// Re-extract templates when templateVersion changes
+	if viper.GetString("template_version") != templateVersion {
+		err = utils.CreateTemplates(true)
+		if err != nil {
+			pterm.FgRed.Printfln("Error updating templates: %s \n", err)
+			os.Exit(1)
+		}
+		viper.Set("template_version", templateVersion)
 		err = viper.WriteConfig()
 		if err != nil {
 			pterm.FgRed.Printfln("Error config file: %s \n", err)
