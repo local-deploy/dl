@@ -110,12 +110,12 @@ func GenerateNginxConfig() string {
 	return b.String()
 }
 
-// WriteNginxConfig writes the generated nginx config to .docker/nginx/default.conf
-// in the project directory. Skips regeneration if .env and project folder haven't changed.
+// WriteNginxConfig writes the generated nginx config to /tmp/dl/<project>/nginx/.
+// Skips regeneration if .env and project folder haven't changed.
 // Returns the absolute path to the config file.
 func WriteNginxConfig() (string, error) {
-	pwd := Env.GetString("PWD")
-	dir := filepath.Join(pwd, ".docker", "nginx")
+	networkName := Env.GetString("NETWORK_NAME")
+	dir := filepath.Join(os.TempDir(), "dl", networkName, "nginx")
 	confPath := filepath.Join(dir, "default.conf")
 	hashPath := filepath.Join(dir, ".confhash")
 

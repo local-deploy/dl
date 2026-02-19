@@ -31,12 +31,12 @@ func GenerateApacheConfig() string {
 	return string(b)
 }
 
-// WriteApacheConfig writes the generated Apache vhost config to .docker/apache/vhosts.conf.
+// WriteApacheConfig writes the generated Apache vhost config to /tmp/dl/<project>/apache/.
 // Skips regeneration if .env and project folder haven't changed.
 // Returns the absolute path to the config file.
 func WriteApacheConfig() (string, error) {
-	pwd := Env.GetString("PWD")
-	dir := filepath.Join(pwd, ".docker", "apache")
+	networkName := Env.GetString("NETWORK_NAME")
+	dir := filepath.Join(os.TempDir(), "dl", networkName, "apache")
 	confPath := filepath.Join(dir, "vhosts.conf")
 	hashPath := filepath.Join(dir, ".confhash")
 
