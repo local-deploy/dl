@@ -93,6 +93,7 @@ func GenerateNginxConfig() string {
 		b.WriteString(fmt.Sprintf("        fastcgi_pass %s_php:9000;\n", hostName))
 		b.WriteString("        fastcgi_index index.php;\n")
 		b.WriteString("        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;\n")
+		b.WriteString("        fastcgi_param DOCUMENT_ROOT $realpath_root;\n")
 		b.WriteString("        include /etc/nginx/fastcgi_params;\n")
 		b.WriteString("     }\n")
 		b.WriteString("\n")

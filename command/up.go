@@ -62,25 +62,22 @@ func upRun() {
 		project.CreateCert()
 	}
 
-	// Generate web server config for multi-domain
-	if len(project.DomainMappings) > 1 {
-		phpVersion := project.Env.GetString("PHP_VERSION")
-		if strings.Contains(phpVersion, "fpm") {
-			confPath, err := project.WriteNginxConfig()
-			if err != nil {
-				pterm.FgRed.Printfln("Failed to generate nginx config: %s", err)
-				return
-			}
-			project.Env.Set("NGINX_CONF", confPath)
-			pterm.FgGreen.Printfln("Generated nginx config: %s", confPath)
-		} else if strings.Contains(phpVersion, "apache") {
-			confPath, err := project.WriteApacheConfig()
-			if err != nil {
-				pterm.FgRed.Printfln("Failed to generate apache config: %s", err)
-				return
-			}
-			_ = confPath // apache config mounted separately
+	// Generate web server config
+	phpVersion := project.Env.GetString("PHP_VERSION")
+	if strings.Contains(phpVersion, "apache") {
+		confPath, err := project.WriteApacheConfig()
+		if err != nil {
+			pterm.FgRed.Printfln("Failed to generate apache config: %s", err)
+			return
 		}
+		project.Env.Set("APACHE_CONF", confPath)
+	} else if strings.Contains(phpVersion, "fpm") && len(project.DomainMappings) > 1 {
+		confPath, err := project.WriteNginxConfig()
+		if err != nil {
+			pterm.FgRed.Printfln("Failed to generate nginx config: %s", err)
+			return
+		}
+		project.Env.Set("NGINX_CONF", confPath)
 	}
 
 	bin, option := utils.GetCompose()

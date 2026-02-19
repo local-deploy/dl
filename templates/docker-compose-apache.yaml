@@ -21,6 +21,7 @@ services:
     volumes:
       - "${PWD}/:/var/www/html/"
       - "${PHP_INI_SOURCE:-/dev/null}:/usr/local/etc/php/conf.custom.d/custom.ini:ro"
+      - "${APACHE_CONF}:/etc/apache2/sites-enabled/000-default.conf:ro"
       - "~/.ssh/${SSH_KEY:-id_rsa}:/var/www/.ssh/id_rsa:ro"
       - "~/.ssh/known_hosts:/var/www/.ssh/known_hosts"
     labels:

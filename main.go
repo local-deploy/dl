@@ -17,7 +17,7 @@ var version = "dev"
 
 // templateVersion must be incremented whenever files in the templates/ directory change.
 // This triggers a full re-extraction of embedded templates to ~/.config/dl/templates/.
-const templateVersion = "1"
+const templateVersion = "2"
 
 //go:embed templates/*
 var templates embed.FS

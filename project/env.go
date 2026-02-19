@@ -101,6 +101,8 @@ func setDefaultEnv() {
 		Env.Set("NGINX_CONF", getNginxConf())
 	}
 
+	Env.SetDefault("APACHE_CONF", "/dev/null")
+
 	Env.SetDefault("REDIS", false)
 	Env.SetDefault("REDIS_PASSWORD", "pass")
 	Env.SetDefault("MEMCACHED", false)
