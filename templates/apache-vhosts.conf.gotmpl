@@ -1,0 +1,10 @@
+{{ range $i, $d := .Domains }}{{ if $i }}
+{{ end }}<VirtualHost *:80>
+    ServerName {{ $d.LocalDomain }}
+    ServerAlias *.{{ $d.LocalDomain }}
+    ServerAlias {{ $d.NipDomain }}
+    ServerAlias *.{{ $d.NipDomain }}
+
+    DocumentRoot {{ $d.DocumentRoot }}
+</VirtualHost>
+{{ end -}}

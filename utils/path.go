@@ -18,8 +18,15 @@ func HomeDir() (string, error) {
 	return os.UserHomeDir()
 }
 
-// ConfigDir config directory (~/.config/dl)
+// ConfigDirEnv environment variable overriding the configuration directory
+const ConfigDirEnv = "DL_CONFIG_DIR"
+
+// ConfigDir config directory (~/.config/dl or $DL_CONFIG_DIR)
 func ConfigDir() string {
+	if custom := os.Getenv(ConfigDirEnv); len(custom) > 0 {
+		return custom
+	}
+
 	conf, err := os.UserConfigDir()
 	if err != nil {
 		pterm.FgRed.Println(err)

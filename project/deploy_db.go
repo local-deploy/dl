@@ -430,14 +430,9 @@ func (c SSHClient) ImportDB(ctx context.Context) error {
 	}
 
 	if c.Config.FwType == "bitrix" {
-		local := Env.GetString("LOCAL_DOMAIN")
-		nip := Env.GetString("NIP_DOMAIN")
+		warnOnMixedDocumentRoots(ctx, Domains)
 
-		strSQL := `"UPDATE b_option SET VALUE = 'Y' WHERE MODULE_ID = 'main' AND NAME = 'update_devsrv';
-UPDATE b_lang SET SERVER_NAME='` + site + `.localhost' WHERE LID='s1';
-UPDATE b_lang SET b_lang.DOC_ROOT='' WHERE 1=(SELECT DOC_ROOT FROM (SELECT COUNT(LID) FROM b_lang) as cnt);
-INSERT IGNORE INTO b_lang_domain VALUES ('s1', '` + local + `');
-INSERT IGNORE INTO b_lang_domain VALUES ('s1', '` + nip + `');"`
+		strSQL := `"` + bitrixDomainsSQL(Domains) + `"`
 
 		commandUpdate := "echo " + strSQL + " | " + docker + " exec -i " + siteDB + " /usr/bin/mysql --user=" + mysqlUser + " --password=" + mysqlPassword + " --host=db " + mysqlDB + ""
 		logrus.Infof("Run command: %s", commandUpdate)
@@ -454,4 +449,53 @@ INSERT IGNORE INTO b_lang_domain VALUES ('s1', '` + nip + `');"`
 	}
 
 	return nil
+}
+
+// bitrixMainSite the active site marked as the default one; the s1 identifier is only
+// the installer's default and cannot be relied upon
+const bitrixMainSite = "(SELECT LID FROM (SELECT LID FROM b_lang WHERE DEF = 'Y' AND ACTIVE = 'Y' LIMIT 1) AS main)"
+
+// bitrixDomainsSQL statements registering every project domain for the main Bitrix site
+func bitrixDomainsSQL(domains []DomainMapping) string {
+	statements := []string{
+		"UPDATE b_option SET VALUE = 'Y' WHERE MODULE_ID = 'main' AND NAME = 'update_devsrv';",
+		"UPDATE b_lang SET b_lang.DOC_ROOT='' WHERE 1=(SELECT DOC_ROOT FROM (SELECT COUNT(LID) FROM b_lang) as cnt);",
+	}
+
+	if len(domains) == 0 {
+		return strings.Join(statements, "\n")
+	}
+
+	statements = append(statements,
+		"UPDATE b_lang SET SERVER_NAME='"+domains[0].LocalDomain+"' WHERE DEF = 'Y' AND ACTIVE = 'Y';")
+
+	for _, domain := range domains {
+		for _, host := range []string{domain.LocalDomain, domain.NipDomain} {
+			statements = append(statements,
+				"INSERT IGNORE INTO b_lang_domain SELECT "+bitrixMainSite+", '"+host+"';")
+		}
+	}
+
+	return strings.Join(statements, "\n")
+}
+
+// warnOnMixedDocumentRoots domains served from different document roots mean the project
+// is a Bitrix multisite, which this command does not configure on its own
+func warnOnMixedDocumentRoots(ctx context.Context, domains []DomainMapping) {
+	if len(domains) < 2 {
+		return
+	}
+
+	for _, domain := range domains[1:] {
+		if domain.DocumentRoot != domains[0].DocumentRoot {
+			w := progress.ContextWriter(ctx)
+			w.Event(progress.Event{
+				ID: "Database",
+				StatusText: "Project domains use different document roots. All of them are registered for the main site; " +
+					"check the site settings in the Bitrix control panel",
+			})
+
+			return
+		}
+	}
 }

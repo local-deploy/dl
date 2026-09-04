@@ -49,10 +49,7 @@ func CreateCert() {
 	certDir := filepath.Join(utils.CertDir(), Env.GetString("NETWORK_NAME"))
 	_ = utils.CreateDirectory(certDir)
 
-	err = c.MakeCert([]string{
-		Env.GetString("LOCAL_DOMAIN"),
-		Env.GetString("NIP_DOMAIN"),
-	}, Env.GetString("NETWORK_NAME"))
+	err = c.MakeCert(certHosts(Domains), Env.GetString("NETWORK_NAME"))
 	if err != nil {
 		pterm.FgRed.Printfln("Error: %s", err)
 	}
@@ -77,4 +74,14 @@ func CreateCert() {
 	if err != nil {
 		pterm.FgRed.Printfln("failed to create config certificate file: %s", err)
 	}
+}
+
+// certHosts SAN covering the local and the nip.io domain of every project domain
+func certHosts(domains []DomainMapping) []string {
+	hosts := make([]string, 0, len(domains)*2)
+	for _, domain := range domains {
+		hosts = append(hosts, domain.LocalDomain, domain.NipDomain)
+	}
+
+	return hosts
 }
