@@ -18,7 +18,7 @@ func TestBitrixDomainsSQL(t *testing.T) {
 			"'msk.localhost'",
 			"'omsk.10.0.0.5.nip.io'",
 			"'msk.10.0.0.5.nip.io'",
-			"UPDATE b_lang SET SERVER_NAME='omsk.localhost' WHERE DEF = 'Y' AND ACTIVE = 'Y';",
+			"UPDATE b_lang SET SERVER_NAME='omsk.localhost' WHERE LID = ",
 		} {
 			if !strings.Contains(got, want) {
 				t.Errorf("bitrixDomainsSQL() = %s, want it to contain %s", got, want)
@@ -51,4 +51,25 @@ func TestBitrixDomainsSQL(t *testing.T) {
 			t.Errorf("bitrixDomainsSQL() = %s, want the devsrv option still set", got)
 		}
 	})
+}
+
+func TestBitrixMainSiteFallback(t *testing.T) {
+	domains, err := ParseDomains("omsk", "mysite", "/var/www/html", testIP)
+	if err != nil {
+		t.Fatalf("ParseDomains() unexpected error = %v", err)
+	}
+
+	got := bitrixDomainsSQL(domains)
+
+	// a dump where no site carries DEF='Y' must still get its domains registered instead
+	// of inserting NULL, so the site is picked by sorting rather than by a WHERE filter
+	if strings.Contains(got, "WHERE DEF = 'Y'") {
+		t.Errorf("bitrixDomainsSQL() = %s, want the main site chosen by ordering, not filtered out", got)
+	}
+	if !strings.Contains(got, "ORDER BY (DEF = 'Y' AND ACTIVE = 'Y') DESC") {
+		t.Errorf("bitrixDomainsSQL() = %s, want the default active site preferred first", got)
+	}
+	if !strings.Contains(got, "LIMIT 1") {
+		t.Errorf("bitrixDomainsSQL() = %s, want exactly one site selected", got)
+	}
 }

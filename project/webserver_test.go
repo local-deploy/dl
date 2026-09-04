@@ -132,3 +132,60 @@ func TestNginxRuntimeVariablesSurvive(t *testing.T) {
 		}
 	}
 }
+
+func TestBitrixInDocumentRoot(t *testing.T) {
+	dir := t.TempDir()
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("unable to read the working directory: %v", err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatalf("unable to enter the temporary directory: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(cwd) })
+
+	// the project directory maps onto /var/www/html, so "en" here is /var/www/html/en
+	if err := os.MkdirAll(filepath.Join("en", "bitrix"), 0755); err != nil {
+		t.Fatalf("unable to create the fixture: %v", err)
+	}
+
+	tests := []struct {
+		name         string
+		documentRoot string
+		want         bool
+	}{
+		{name: "Bitrix in a nested document root", documentRoot: "/var/www/html/en", want: true},
+		{name: "No bitrix in the project root", documentRoot: "/var/www/html", want: false},
+		{name: "Document root outside the mounted tree", documentRoot: "/var/www/site2", want: false},
+		{name: "Unrelated absolute path", documentRoot: "/srv/site", want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := bitrixInDocumentRoot(tt.documentRoot); got != tt.want {
+				t.Errorf("bitrixInDocumentRoot(%q) = %v, want %v", tt.documentRoot, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestApacheGrantsAccessToDocumentRoot apache2.conf denies everything outside /var/www/,
+// so every generated virtual host must grant access to its own document root explicitly
+func TestApacheGrantsAccessToDocumentRoot(t *testing.T) {
+	got, err := os.ReadFile(filepath.Join("testdata", "apache-separate-roots.conf"))
+	if err != nil {
+		t.Fatalf("unable to read the golden file: %v", err)
+	}
+
+	for _, want := range []string{
+		"<Directory /var/www/html/public-en>",
+		"<Directory /var/www/html/public-ru>",
+	} {
+		if !strings.Contains(string(got), want) {
+			t.Errorf("the rendered apache configuration is missing %q", want)
+		}
+	}
+
+	if strings.Count(string(got), "Require all granted") != 2 {
+		t.Errorf("the rendered apache configuration must grant access once per virtual host:\n%s", got)
+	}
+}

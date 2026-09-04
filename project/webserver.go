@@ -58,11 +58,31 @@ func newWebserverConfig(hostName string, domains []DomainMapping) webserverConfi
 	for _, domain := range domains {
 		config.Domains = append(config.Domains, webserverDomain{
 			DomainMapping: domain,
-			Bitrix:        utils.BitrixCheck(domain.DocumentRoot),
+			Bitrix:        bitrixInDocumentRoot(domain.DocumentRoot),
 		})
 	}
 
 	return config
+}
+
+// bitrixInDocumentRoot whether the document root holds a bitrix directory.
+//
+// The container path maps onto the project directory: only what lives under /var/www/html
+// is mounted from it, so a document root outside that prefix has no counterpart on the host
+// to look into. utils.BitrixCheck would resolve such a path to "../<name>/bitrix" and probe
+// the parent of the project directory — an unrelated place.
+func bitrixInDocumentRoot(documentRoot string) bool {
+	rel, err := filepath.Rel("/var/www/html", documentRoot)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return false
+	}
+
+	return utils.PathExists(filepath.Join(rel, "bitrix"))
+}
+
+// WebserverConfigDir directory holding the generated web server configuration of a project
+func WebserverConfigDir(networkName string) string {
+	return filepath.Join(utils.ConfigDir(), "conf", networkName)
 }
 
 // generateWebserverConfig render the template and write the result into the project
@@ -78,7 +98,7 @@ func generateWebserverConfig(templateName, configName, hostName, networkName str
 		return "", fmt.Errorf("unable to render the %s template: %w", templateName, err)
 	}
 
-	confDir := filepath.Join(utils.ConfigDir(), "conf", networkName)
+	confDir := WebserverConfigDir(networkName)
 	if err := utils.CreateDirectory(confDir); err != nil {
 		return "", fmt.Errorf("unable to create the %s directory: %w", confDir, err)
 	}
@@ -103,8 +123,10 @@ func setWebserverConfig() {
 	case strings.Contains(phpVersion, "apache"):
 		conf, err := generateWebserverConfig(apacheTemplateName, apacheConfigName, hostName, networkName, Domains)
 		if err != nil {
-			pterm.FgRed.Printfln("Error: %s", err)
-			os.Exit(1)
+			// LoadEnv runs for every project command, down and ps included: a failure here
+			// must not stop the user from tearing their containers down
+			pterm.FgYellow.Printfln("Unable to generate the apache configuration: %s", err)
+			return
 		}
 		Env.Set("APACHE_CONF", conf)
 
@@ -121,8 +143,8 @@ func setWebserverConfig() {
 
 		conf, err := generateWebserverConfig(nginxTemplateName, nginxConfigName, hostName, networkName, Domains)
 		if err != nil {
-			pterm.FgRed.Printfln("Error: %s", err)
-			os.Exit(1)
+			pterm.FgYellow.Printfln("Unable to generate the nginx configuration: %s", err)
+			return
 		}
 		Env.Set("NGINX_CONF", conf)
 	}

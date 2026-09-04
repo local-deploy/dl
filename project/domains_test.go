@@ -154,6 +154,24 @@ func TestParseDomainsValidation(t *testing.T) {
 			wantErr:  "invalid domain name",
 		},
 		{
+			name:     "Consecutive dots in the domain name",
+			domains:  "a..b",
+			hostName: "mysite",
+			wantErr:  "invalid domain name",
+		},
+		{
+			name:     "Trailing dot in the domain name",
+			domains:  "english.",
+			hostName: "mysite",
+			wantErr:  "invalid domain name",
+		},
+		{
+			name:     "Trailing hyphen in the domain name",
+			domains:  "english-",
+			hostName: "mysite",
+			wantErr:  "invalid domain name",
+		},
+		{
 			name:     "Duplicate domains",
 			domains:  "english, english",
 			hostName: "mysite",

@@ -451,9 +451,12 @@ func (c SSHClient) ImportDB(ctx context.Context) error {
 	return nil
 }
 
-// bitrixMainSite the active site marked as the default one; the s1 identifier is only
-// the installer's default and cannot be relied upon
-const bitrixMainSite = "(SELECT LID FROM (SELECT LID FROM b_lang WHERE DEF = 'Y' AND ACTIVE = 'Y' LIMIT 1) AS main)"
+// bitrixMainSite the active site marked as the default one; the s1 identifier is only the
+// installer's default and cannot be relied upon. Sorting puts the default active site first
+// and falls back to any other row, so a dump where nothing carries DEF='Y' still gets its
+// domains registered instead of silently inserting NULL.
+const bitrixMainSite = "(SELECT LID FROM (SELECT LID FROM b_lang " +
+	"ORDER BY (DEF = 'Y' AND ACTIVE = 'Y') DESC, (ACTIVE = 'Y') DESC, SORT ASC, LID ASC LIMIT 1) AS main)"
 
 // bitrixDomainsSQL statements registering every project domain for the main Bitrix site
 func bitrixDomainsSQL(domains []DomainMapping) string {
@@ -466,8 +469,9 @@ func bitrixDomainsSQL(domains []DomainMapping) string {
 		return strings.Join(statements, "\n")
 	}
 
+	// the derived table is what lets the subquery read b_lang while b_lang is being updated
 	statements = append(statements,
-		"UPDATE b_lang SET SERVER_NAME='"+domains[0].LocalDomain+"' WHERE DEF = 'Y' AND ACTIVE = 'Y';")
+		"UPDATE b_lang SET SERVER_NAME='"+domains[0].LocalDomain+"' WHERE LID = "+bitrixMainSite+";")
 
 	for _, domain := range domains {
 		for _, host := range []string{domain.LocalDomain, domain.NipDomain} {

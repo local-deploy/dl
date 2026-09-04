@@ -10,8 +10,10 @@ import (
 	"github.com/pterm/pterm"
 )
 
-// domainNameRe valid domain name: letters, digits, hyphens and dots, starts with a letter or a digit
-var domainNameRe = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]*$`)
+// domainNameRe valid domain name: dot-separated labels of letters, digits and hyphens,
+// each starting and ending with a letter or a digit. Empty labels and a trailing hyphen
+// are rejected here rather than producing a name no browser will resolve.
+var domainNameRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$`)
 
 // setDomains fill the project domain model and the variables derived from it.
 // LOCAL_DOMAIN and NIP_DOMAIN keep pointing at the main domain — the first entry of the list.
