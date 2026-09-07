@@ -37,6 +37,9 @@ func downRun() {
 		_ = utils.RemovePath(filepath.Join(utils.CertDir(), project.Env.GetString("NETWORK_NAME")))
 	}
 
+	// the generated web server configuration is written regardless of the ca option
+	_ = utils.RemovePath(project.WebserverConfigDir(project.Env.GetString("NETWORK_NAME")))
+
 	bin, option := utils.GetCompose()
 	Args := []string{bin}
 	preArgs := []string{"-p", project.Env.GetString("NETWORK_NAME"), "down"}

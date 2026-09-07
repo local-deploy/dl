@@ -67,19 +67,34 @@ func initConfig() {
 		}
 	}
 
-	// > v1.2.0 update traefik 3 regexp
-	if viper.GetString("traefik") != "3" {
-		reinstallTemplates()
-
-		viper.Set("traefik", "3")
-		err = viper.WriteConfig()
-		if err != nil {
-			pterm.FgRed.Printfln("Error config file: %s \n", err)
-			os.Exit(1)
-		}
-	}
+	updateTemplates()
 
 	viper.AutomaticEnv()
+}
+
+// templatesVersion the version of the files in templates/. Bump it whenever a template
+// changes: existing installations keep their unpacked copies until the number differs.
+// It subsumes the "traefik != 3" migration that used to live in initConfig.
+const templatesVersion = "2"
+
+// updateTemplates unpack the templates again when the installation carries an older version
+func updateTemplates() {
+	if viper.GetString("templates") == templatesVersion {
+		return
+	}
+
+	// overwrite: templates removed in the new version must not linger in the directory
+	if err := utils.CreateTemplates(true); err != nil {
+		pterm.FgRed.Printfln("Unable to create template files: %s \n", err)
+		os.Exit(1)
+	}
+
+	viper.Set("templates", templatesVersion)
+	if err := viper.WriteConfig(); err != nil {
+		// the templates are already unpacked, so a failed write only means unpacking them
+		// again on the next run — not a reason to refuse to run the command
+		pterm.FgYellow.Printfln("Unable to save the template version: %s", err)
+	}
 }
 
 func firstStart() {
@@ -130,6 +145,7 @@ func createConfigFile() error {
 	viper.Set("version", version)
 	viper.Set("locale", "en")
 	viper.Set("repo", "ghcr.io")
+	viper.Set("templates", templatesVersion)
 	viper.Set("check-updates", time.Now())
 
 	errWrite := viper.SafeWriteConfig()

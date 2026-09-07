@@ -37,6 +37,7 @@ Supported frameworks and CMS: Bitrix, Laravel, WordPress, and many others with m
 - Portainer - docker container management system
 - Does not require root access (when installing the executable file in the user's directory)
 - Accessing sites from the browser via .localhost or .nip.io
+- Several domains per project, each with its own document root (the `DOMAINS` variable in `.env`)
 - Ability to add custom docker-compose.yaml files to DL configuration
 
 ## Dependencies

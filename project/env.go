@@ -1,7 +1,6 @@
 package project
 
 import (
-	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -16,6 +15,9 @@ import (
 
 // Env Project variables
 var Env *viper.Viper
+
+// Domains project domain model, derived from the DOMAINS variable
+var Domains []DomainMapping
 
 var phpImagesVersion = map[string]string{
 	"7.3-apache": "1.1.3",
@@ -56,6 +58,7 @@ func LoadEnv() {
 
 	setDefaultEnv()
 	setComposeFiles()
+	setWebserverConfig()
 }
 
 // setNetworkName Set network name from project name
@@ -77,17 +80,10 @@ func setDefaultEnv() {
 	res := re.ReplaceAllString(projectName, "")
 	Env.SetDefault("NETWORK_NAME", res)
 
-	confDir := utils.TemplateDir()
-	Env.SetDefault("NGINX_CONF", filepath.Join(confDir, "default.conf.template"))
-
-	// bitrix check
-	if utils.BitrixCheck(Env.GetString("DOCUMENT_ROOT")) {
-		logrus.Info("Bitrix CMS was discovered, the default config bitrix.conf.template is used")
-		Env.SetDefault("NGINX_CONF", filepath.Join(confDir, "bitrix.conf.template"))
-	}
-
+	// a user-supplied NGINX_CONF keeps its priority over the generated configuration
 	customConfig := Env.GetString("NGINX_CONF")
 	if len(customConfig) > 0 {
+		logrus.Infof("Custom nginx config is used: %s", customConfig)
 		Env.Set("NGINX_CONF", getNginxConf())
 	}
 
@@ -98,8 +94,8 @@ func setDefaultEnv() {
 	host := getLocalIP()
 
 	Env.SetDefault("LOCAL_IP", host)
-	Env.SetDefault("NIP_DOMAIN", fmt.Sprintf("%s.%s.nip.io", projectName, host))
-	Env.SetDefault("LOCAL_DOMAIN", fmt.Sprintf("%s.localhost", projectName))
+
+	setDomains(projectName, Env.GetString("LOCAL_IP"))
 
 	Env.SetDefault("REPO", viper.GetString("repo"))
 

@@ -117,9 +117,6 @@ func startLocalServices() error {
 
 // showProjectInfo Display project links
 func showProjectInfo() {
-	l := project.Env.GetString("LOCAL_DOMAIN")
-	n := project.Env.GetString("NIP_DOMAIN")
-
 	schema := "http"
 
 	if viper.GetBool("ca") {
@@ -127,10 +124,29 @@ func showProjectInfo() {
 	}
 
 	pterm.FgCyan.Println()
-	panels := pterm.Panels{
-		{{Data: pterm.FgYellow.Sprintf("nip.io\nlocal")},
-			{Data: pterm.FgYellow.Sprintf(schema+"://%s/\n"+schema+"://%s/", n, l)}},
+
+	// projects without DOMAINS keep the panel they had before multiple domains appeared
+	if len(strings.TrimSpace(project.Env.GetString("DOMAINS"))) == 0 {
+		l := project.Env.GetString("LOCAL_DOMAIN")
+		n := project.Env.GetString("NIP_DOMAIN")
+
+		panels := pterm.Panels{
+			{{Data: pterm.FgYellow.Sprintf("nip.io\nlocal")},
+				{Data: pterm.FgYellow.Sprintf(schema+"://%s/\n"+schema+"://%s/", n, l)}},
+		}
+
+		_ = pterm.DefaultPanel.WithPanels(panels).WithPadding(5).Render()
+		return
 	}
 
-	_ = pterm.DefaultPanel.WithPanels(panels).WithPadding(5).Render()
+	rows := pterm.TableData{{"Domain", "nip.io", "Document Root"}}
+	for _, domain := range project.Domains {
+		rows = append(rows, []string{
+			fmt.Sprintf("%s://%s/", schema, domain.LocalDomain),
+			fmt.Sprintf("%s://%s/", schema, domain.NipDomain),
+			domain.DocumentRoot,
+		})
+	}
+
+	_ = pterm.DefaultTable.WithHasHeader().WithData(rows).Render()
 }
